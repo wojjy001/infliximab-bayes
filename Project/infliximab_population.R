@@ -10,7 +10,7 @@
 # Define population's characteristics
 # Only going to pre-specify weight as 70 kg and randomly generate ADA_TIME, BASE_ALB and FINAL_ALB
 	n <- 12	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 1	# Number of simulations of the seed individuals to perform
+	nsim <- 100	# Number of simulations of the seed individuals to perform
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs
 	SIM <- sort(c(rep(seq(from = 0,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
 	WT <- 70 # Weight, kg
@@ -56,12 +56,28 @@
 	pop.data <- pop.data[with(pop.data, order(pop.data$SIM,pop.data$ID)), ]
 	pop.data$TIME <- TIME
 
-# Calculate albumin concentrations for each individual for all time-points
+# Function for calculating albumin concentrations for each individual for all time-points
 # A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
+	albumin.function <- function(input.data) {
+		TIMEalb <- c(min(input.data$TIME),max(input.data$TIME))
+		RATEalb <- c(head(input.data$BASE_ALB,1),head(input.data$FINAL_ALB,1))
+		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
+		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB*sin(2*pi*FREQ_ALB*input.data$TIME+PHASE_ALB))	# Apply function to every time-point
+		as.data.frame(input.data)
+	}
+# Calculate albumin concentrations for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), albumin.function)
 
-# Flag if ADA are present for each individual for all time-points
+# Function for flagging if ADA are present for each individual for all time-points
 # This assumes that once a person develops ADA, they stay with ADA
+	ada.function <- function(input.data) {
+		TIMEada <- c(min(input.data$TIME),input.data$ADA_TIME[1],END)	# Specify times when ADA changes
+		RATEada <- c(0,1,1)	# Specify the values for it to change to
+		step.ada <- approxfun(TIMEada,RATEada,method = "const")	# Step function
+		input.data$ADA <- step.ada(input.data$TIME)	# Apply function to every time-point
+		as.data.frame(input.data)
+	}
+# Flag if ADA are present for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), ada.function)
 
 # Create a data frame of covariate values for each individual at key time-points
