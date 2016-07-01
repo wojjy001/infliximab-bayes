@@ -26,9 +26,22 @@
 		INFD <- 2/24
 	# Time sequence for the different sampling intervals, days
 		TIME1 <- seq(from = 0,to = 98,by = 14)
+		# Times in TIME1 that are infusion times
+			TIME1i <- TIME1[TIME1 %in% TIMEi]
 		TIME2 <- seq(from = 98,to = 210,by = 14)
+		# Times in TIME2 that are infusion times
+			TIME2i <- TIME2[TIME2 %in% TIMEi]
 		TIME3 <- seq(from = 210,to = 378,by = 14)
+		# Times in TIME3 that are infusion times
+			TIME3i <- TIME3[TIME3 %in% TIMEi]
 		TIME4 <- seq(from = 378,to = 546,by = 14)
+		# Times in TIME4 that are infusion times
+			TIME4i <- TIME4[TIME4 %in% TIMEi]
+
+	# Overall time sequence
+		TIME <- unique(sort(c(TIME1,TIME2,TIME3,TIME4)))
+	# Object specifying beyond the TIME sequence
+		END <- max(TIME)+100
 
 #-------------------------------------------------------------------------------
 # Pre-defined universal functions
@@ -68,6 +81,7 @@
 						ALB = 4,	// Albumin
 						ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)
 						target = 3	// Target trough concentration (mg/L)
+						SIM = 0	// Simulation identifier
 
 	$OMEGA		name = "BSV"
 						block = FALSE
@@ -88,6 +102,15 @@
 						double ADACOV = 1;	// No anti-drug antibodies
 						if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies
 
+						// Reset PPV for SIM == 0
+						// Population typical individual
+						if (SIM == 0) {
+							PPVCL = 0;
+							PPVV1 = 0;
+							PPVQ = 0;
+							PPVV2 = 0;
+						}
+
 						// Individual parameter values
 						double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);
 						double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);
@@ -106,7 +129,7 @@
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*exp(ERRPRO);
 
-	$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2
+	$CAPTURE	SIM WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
