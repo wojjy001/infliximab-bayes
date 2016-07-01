@@ -19,6 +19,12 @@
 	trough.target <- 3	# Set the target trough concentration for dose optimisation
 	trough.upper <- 5	# Set upper bound for trough concentrations
 
+# Values for PPV (Population Parameter Variability), as SDs
+	PPVCL <- 0.327
+	PPVV1 <- 0.150
+	PPVQ <- 1.10
+	PPVV2 <- 0.799
+
 # Define time sequences
 	# Infusion times (0, 2, 6 weeks and then every 8 weeks) in days
 		TIMEi <- c(0,14,42,98,154,210,266,322,378,434,490)
@@ -83,6 +89,12 @@
 						target = 3	// Target trough concentration (mg/L)
 						SIM = 0	// Simulation identifier
 
+						// Presimulated PPV values
+						ETA1 = 0,
+						ETA2 = 0,
+						ETA3 = 0,
+						ETA4 = 0
+
 	$OMEGA		name = "BSV"
 						block = FALSE
 						labels = s(PPVCL,PPVV1,PPVQ,PPVV2)
@@ -102,20 +114,11 @@
 						double ADACOV = 1;	// No anti-drug antibodies
 						if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies
 
-						// Reset PPV for SIM == 0
-						// Population typical individual
-						if (SIM == 0) {
-							PPVCL = 0;
-							PPVV1 = 0;
-							PPVQ = 0;
-							PPVV2 = 0;
-						}
-
 						// Individual parameter values
-						double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);
-						double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);
-						double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);
-						double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);
+						double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(ETA1);
+						double V1 = POPV1*pow(WT/70,WT_V1)*exp(ETA2);
+						double Q = POPQ*pow(WT/70,WT_Q)*exp(ETA3);
+						double V2 = POPV2*pow(WT/70,WT_V2)*exp(ETA4);
 
 	$ODE			// Differential equations
 						dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;
@@ -129,7 +132,7 @@
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*exp(ERRPRO);
 
-	$CAPTURE	SIM WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2
+	$CAPTURE	SIM WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
