@@ -15,947 +15,7 @@ sumfuncx <- function(x) {#
 	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
 	result#
 }#
-		code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-		$ODE			// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322),#
-		rate = 5*70/2/24,#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% mrgsim(tgrid = TIME.tgrid)
-TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322),#
-		rate = 5*70/2/24#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% mrgsim(tgrid = TIME.tgrid)
-plot(conc.data)
-?plot
-conc.data <- as.data.frame(conc.data)
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE),colour = "red")#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1
-conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1
-TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322),#
-		rate = 5*70/2/24#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)
-rm(list=ls(all=TRUE))#
-library(deSolve)	#
-library(ggplot2)	#
-library(plyr)	#
-library(grid)	#
-library(compiler)	#
-library(mrgsolve)	#
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-theme_bw2 <- theme_set(theme_bw(base_size = 16))#
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F)#
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}#
-		code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-							// Infusion duration#
-							D_CENT = 2/24;  // 2 hours#
-		$ODE			// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1
-rm(list=ls(all=TRUE))#
-library(deSolve)	#
-library(ggplot2)	#
-library(plyr)	#
-library(grid)	#
-library(compiler)	#
-library(mrgsolve)	#
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-theme_bw2 <- theme_set(theme_bw(base_size = 16))#
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F)#
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}#
-		code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Infusion duration#
-							D_CENT = 2/24;  // 2 hours			#
-							// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-		$ODE			// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)
-code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-		$ODE			// Infusion duration#
-							D_CENT = 2/24;  // 2 hours#
-							// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1
-rm(list=ls(all=TRUE))#
-library(deSolve)	#
-library(ggplot2)	#
-library(plyr)	#
-library(grid)	#
-library(compiler)	#
-library(mrgsolve)	#
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-theme_bw2 <- theme_set(theme_bw(base_size = 16))#
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F)#
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}#
-		code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Infusion duration#
-							D_CENT = 2;  // 2 hours			#
-							// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-		$ODE			// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_log10()#
-	plotobj1
-rm(list=ls(all=TRUE))#
-library(deSolve)	#
-library(ggplot2)	#
-library(plyr)	#
-library(grid)	#
-library(compiler)	#
-library(mrgsolve)	#
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-theme_bw2 <- theme_set(theme_bw(base_size = 16))#
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F)#
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}#
-		code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Infusion duration#
-							D_CENT = 2;  // 2 hours#
-							// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-		$ODE			// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365*24,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_log10()#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("Time (hours)")#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n")#
-	plotobj1
-365*24
-TIME.tgrid <- tgrid(0,14*24,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n")#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(1,10,100,100))#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.1,1,10,100,100))#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE,colour = ID))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-TIME.tgrid <- tgrid(0,14*24,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = c(1,1,1,1,1,1,1,1,1,1,1),#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322,378,434,490),#
-		rate = -2#
-	)
-input.conc.data <- expand.ev(#
-		ID = c(1,1,1,1,1,1,1,1,1,1,1),#
-		WT = 70,#
-		amt = 5*70,#
-		evid = c(1,1,1,1,1,1,1,1,1,1,1),#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322,378,434,490),#
-		rate = -2#
-	)
-?mrgsim
-?expand.ev
-TIME.tgrid <- tgrid(0,14*24,1)#
-	input.conc.data <- expand.ev(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = 0,#
-		ii = c(14,28,56),#
-		addl = c(1,1,5),#
-		rate = -2#
-	)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)
-input.conc.data <- data.frame(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322,378,434,490),#
-		rate = -2#
-		)
-conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)
-tail(conc.data)
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-2/24
-code <- '#
-		$INIT			// Initial conditions for compartments#
-							CENT = 0,	// Central#
-							PERI = 0, // Peripheral#
-							AUT = 0	//Time below target compartment#
-		$PARAM		// Population parameters#
-							POPCL = 0.294,#
-							POPV1 = 3.33,#
-							POPQ = 0.0719,#
-							POPV2 = 1.14,#
-							// Covariate effects#
-							WT_CL = 0.614,	// Effect of weight on clearance#
-							WT_V1 = 0.691,	// Effect of weight on V1#
-							WT_Q = 1.1,	// Effect of weight on Q#
-							WT_V2 = 0.59,	// Effect of weight on V2#
-							ALB_CL = -1.17,	// Effect of albumin on clearance#
-							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
-							// Covariate values for simulation#
-							WT = 70,	// Weight (kg)#
-							ALB = 4,	// Albumin#
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
-							target = 3	// Target trough concentration (mg/L)#
-		$OMEGA		name = "BSV"#
-							block = FALSE#
-							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
-							0.00106929#
-							0.0225#
-							1.21#
-							0.638401#
-		$SIGMA		block = FALSE#
-							labels = s(ERRPRO)#
-							0.175561#
-		$MAIN			// Infusion duration#
-							D_CENT = 0.08333333;  // 2 hours#
-							// Covariate effects#
-							double ADACOV = 1;	// No anti-drug antibodies#
-							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
-							// Individual parameter values#
-							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
-							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
-							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
-							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
-		$ODE			// Differential equations#
-							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
-							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
-							// Time below target#
-							double CP = CENT/V1;	// Plasma concentration of the central compartment#
-							dxdt_AUT = 0;#
-							if (CP < target) dxdt_AUT = 1;#
-		$TABLE		table(IPRE) = CENT/V1;#
-							table(DV) = table(IPRE)*exp(ERRPRO);#
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
-		'#
-		mod <- mcode("popINFLIX",code)#
-	TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- data.frame(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322,378,434,490),#
-		rate = -2#
-		)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-TIME.tgrid <- tgrid(0,365,1)#
-	input.conc.data <- data.frame(#
-		ID = 1,#
-		WT = 70,#
-		amt = 5*70,#
-		evid = 1,#
-		cmt = 1,#
-		time = c(0,14,42,98,154,210,266,322),#
-		rate = -2#
-		)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	conc.data$ID <- as.factor(conc.data$ID)#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(conc.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = IPRE))#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-?ldply
-ID.list <- 1:100#
-	population.function <- function(ID.list) {#
-		ID.number <- ID.list[1]#
-		input.conc.data <- data.frame(#
-			ID = ID.number,#
-			amt = 5*70,#
-			evid = 1,#
-			cmt = 1,#
-			time = c(0,14,42,98,154,210,266,322),#
-			rate = -2#
-		)#
-	}#
-	input.conc.data <- ldply(ID.list, population.function)
-head(input.conc.data)
-tail(input.conc.data)
-conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)
-summary.data <- ddply(conc.data, .(time), sumfunx)
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F)#
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}
-summary.data <- ddply(conc.data, .(time), sumfuncx)
-summary.data <- ddply(conc.data, .(time), function(conc.data) sumfuncx(conc.data$IPRE))
-head(summary.data)
-plotobj1 <- NULL#
-	plotobj1 <- ggplot(summary.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median),colour = "red")#
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi),fill = "red",alpha = 0.3)#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-TIME.tgrid <- tgrid(0,365,1)#
-	ID.list <- 1:1000#
-	population.function <- function(ID.list) {#
-		ID.number <- ID.list[1]#
-		input.conc.data <- data.frame(#
-			ID = ID.number,#
-			amt = 5*70,#
-			evid = 1,#
-			cmt = 1,#
-			time = c(0,14,42,98,154,210,266,322),#
-			rate = -2#
-		)#
-	}#
-	input.conc.data <- ldply(ID.list, population.function)#
-	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
-	conc.data <- as.data.frame(conc.data)#
-	summary.data <- ddply(conc.data, .(time), function(conc.data) sumfuncx(conc.data$IPRE))#
-	plotobj1 <- NULL#
-	plotobj1 <- ggplot(summary.data)#
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median),colour = "red")#
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi),fill = "red",alpha = 0.3)#
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-	plotobj1
-rm(list=ls(all=TRUE))#
-library(deSolve)	#
-library(ggplot2)	#
-library(plyr)	#
-library(grid)	#
-library(compiler)	#
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/")#
-theme_bw2 <- theme_set(theme_bw(base_size = 16)) #
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F) #
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}#
-n <- 1000	#
-ID <- seq(from = 1,to = n,by = 1)	#
-WT <- 70 #
-ADA_TIME <- 900	#
-ALB <- 4	#
-TIMEi <- c(0,14,42,98,154,210,266,322)	#
-INFD <- round(2/24,digits = 3)	#
-TIMEend <- TIMEi+INFD	#
-TIMEr <- seq(from = 0,to = 365,by = 10)	#
-TIME <- unique(sort(c(TIMEi,TIMEend,TIMEr,365)))#
-AMT <- 5*WT #
-RATE <- AMT/INFD	#
-	POPCL <- 0.294#
-	POPV1 <- 3.33#
-	POPQ <- 0.0719#
-	POPV2 <- 1.14#
-	WT_CL <- 0.614	#
-	WT_V1 <- 0.691	#
-	WT_Q <- 1.1	#
-	WT_V2 <- 0.59	#
-	ALB_CL <- -1.17	#
-	ADA_CL <- 0.257	#
-	PPVCL <- 0.327#
-	PPVV1 <- 0.150#
-	PPVQ <- 1.10#
-	PPVV2 <- 0.799#
-	ERRPRO <- 0.419#
-set.seed(123456)#
-ETA1 <- rnorm(n,mean = 0,sd = PPVCL)	#
-ETA2 <- rnorm(n,mean = 0,sd = PPVV1)	#
-ETA3 <- rnorm(n,mean = 0,sd = PPVQ)	#
-ETA4 <- rnorm(n,mean = 0,sd = PPVV2)	#
-input.data <- data.frame(ID,WT,ADA_TIME,ALB,ETA1,ETA2,ETA3,ETA4)#
-if (n > 1) {#
-	input.data$ETA1[input.data$ID == 1] <- 0#
-	input.data$ETA2[input.data$ID == 1] <- 0#
-	input.data$ETA3[input.data$ID == 1] <- 0#
-	input.data$ETA4[input.data$ID == 1] <- 0#
-}#
-END <- max(TIME)+1	#
-TIMEada <- c(0,ADA_TIME,END)#
-RATEada <- c(0,1,1)	#
-step.ada <- approxfun(TIMEada, RATEada, method="const")#
-event.data <- data.frame(var = c(rep(3,times = length(TIME))),#
-												time = TIME,#
-												value = step.ada(TIME),#
-												method = "rep")#
-TIMEinf <- sort(c(TIMEi,TIMEi+INFD,END))	#
-#
-RATEinf <- c(rep(c(RATE,0),times = length(TIMEi)),0)	#
-#
-step.doseinf <- approxfun(TIMEinf, RATEinf, method="const")#
-DES <- function(T, A, PAR) {#
-	dAdt <- vector(length = 3)#
-	WT <- PAR[1]	#
-	ALB <- PAR[2]	#
-	ADA <- A[3]	#
-	dAdt[3] = 0 #
-	ETA1 <- PAR[3]	#
-	ETA2 <- PAR[4]	#
-	ETA3 <- PAR[5]	#
-	ETA4 <- PAR[6]	#
-	CL <- POPCL*((WT/70)^WT_CL)*((ALB/4)^ALB_CL)*(1+ADA_CL*ADA)*exp(ETA1)#
-	V1 <- POPV1*((WT/70)^WT_V1)*exp(ETA2)#
-	Q <- POPQ*((WT/70)^WT_Q)*exp(ETA3)#
-	V2 <- POPV2*((WT/70)^WT_V2)*exp(ETA4)#
-	RATEin <- step.doseinf(T)#
-	dAdt[1] = RATEin -Q/V1*A[1] +Q/V2*A[2] -CL/V1*A[1]	#
-	dAdt[2] = Q/V1*A[1] -Q/V2*A[2]	#
-	c(list(dAdt),"V1"=V1)#
-}#
-DES.cmpf <- cmpfun(DES)#
-simulate.conc <- function(input.data) {	#
-	PARAMETER.list <- c(WT = input.data$WT,	#
-											ALB = input.data$ALB,	#
-											ETA1 = input.data$ETA1,	#
-											ETA2 = input.data$ETA2,	#
-											ETA3 = input.data$ETA3,	#
-											ETA4 = input.data$ETA4)	#
-	A1_0 <- 0	#
-	A2_0 <- 0	#
-	ADA_0 <- event.data$value[event.data$var == 3 & event.data$time == 0]	#
-	A_0 <- c(A1 = A1_0,A2 = A2_0,ADA = ADA_0)#
-	var.data <- ode(y = A_0,TIME,DES.cmpf,PARAMETER.list,events = list(data = event.data))#
-	var.data <- as.data.frame(var.data)	#
-}#
-simulate.conc.cmpf <- cmpfun(simulate.conc)#
-sim.data <- ddply(input.data, .(ID), simulate.conc.cmpf)#
-names(sim.data)[6] <- "V1"#
-sim.data$CONC <- sim.data$A1/sim.data$V1#
-ERR <- rnorm(length(sim.data$CONC),mean = 0,sd = ERRPRO)#
-sim.data$DV <- sim.data$CONC*(1+ERR)#
-statsCONC <- ddply(sim.data, .(time), function(sim.data) sumfuncx(sim.data$CONC))#
-names(statsCONC)[c(2,3,4)] <- c("median","low","hi")#
-TIMEobs <- 120#
-DVobs <- sim.data$DV[sim.data$time %in% TIMEobs]#
-plotobj1 <- NULL#
-plotobj1 <- ggplot(statsCONC)#
-plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi), alpha = 0.3)#
-plotobj1 <- plotobj1 + geom_line(aes(x = time,y = CONC),data = sim.data[sim.data$ID == 1,], colour="red")#
-plotobj1 <- plotobj1 + scale_y_continuous("Infliximab Concentration (mg/L)\n", breaks=c(0,20,40,60,80,100,120))#
-plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")#
-print(plotobj1)
-plotobj1 <- NULL#
-plotobj1 <- ggplot(statsCONC)#
-plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median),colour = "red")#
-plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi),fill = "red",alpha = 0.3)#
-plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
-plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
-plotobj1
-head(input.data)
-head(conc.data)
-head(sim.data)
-0.327^2
-0.150^2
-rm(list=ls(all=TRUE))#
-library(deSolve)	#
-library(ggplot2)	#
-library(plyr)	#
-library(grid)	#
-library(compiler)	#
-library(mrgsolve)	#
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-theme_bw2 <- theme_set(theme_bw(base_size = 16))#
-sumfuncx <- function(x) {#
-	stat1 <- median(x)#
-	stat2 <- quantile(x, probs=0.025, names=F)#
-	stat3 <- quantile(x, probs=0.975, names=F)#
-	stat4 <- length(x)#
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
-	result#
-}#
+	set.seed(123456)#
 		code <- '#
 		$INIT			// Initial conditions for compartments#
 							CENT = 0,	// Central#
@@ -1034,3 +94,101 @@ sumfuncx <- function(x) {#
 	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
 	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
 	plotobj1
+conc.data1 <- conc.data
+library(deSolve)	#
+library(ggplot2)	#
+library(plyr)	#
+library(grid)	#
+library(compiler)	#
+library(mrgsolve)	#
+setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
+theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+sumfuncx <- function(x) {#
+	stat1 <- median(x)#
+	stat2 <- quantile(x, probs=0.025, names=F)#
+	stat3 <- quantile(x, probs=0.975, names=F)#
+	stat4 <- length(x)#
+	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)#
+	result#
+}#
+	set.seed(123456)#
+		code <- '#
+		$INIT			// Initial conditions for compartments#
+							CENT = 0,	// Central#
+							PERI = 0, // Peripheral#
+							AUT = 0	//Time below target compartment#
+		$PARAM		// Population parameters#
+							POPCL = 0.294,#
+							POPV1 = 3.33,#
+							POPQ = 0.0719,#
+							POPV2 = 1.14,#
+							// Covariate effects#
+							WT_CL = 0.614,	// Effect of weight on clearance#
+							WT_V1 = 0.691,	// Effect of weight on V1#
+							WT_Q = 1.1,	// Effect of weight on Q#
+							WT_V2 = 0.59,	// Effect of weight on V2#
+							ALB_CL = -1.17,	// Effect of albumin on clearance#
+							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance#
+							// Covariate values for simulation#
+							WT = 70,	// Weight (kg)#
+							ALB = 4,	// Albumin#
+							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)#
+							target = 3	// Target trough concentration (mg/L)#
+		$OMEGA		name = "BSV"#
+							block = FALSE#
+							labels = s(PPVCL,PPVV1,PPVQ,PPVV2)#
+							0.106929#
+							0.0225#
+							1.21#
+							0.638401#
+		$SIGMA		block = FALSE#
+							labels = s(ERRPRO)#
+							0.175561#
+		$MAIN			// Infusion duration#
+							D_CENT = 0.08333333;  // 2 hours#
+							// Covariate effects#
+							double ADACOV = 1;	// No anti-drug antibodies#
+							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies#
+							// Individual parameter values#
+							double CL = POPCL*pow(WT/70,WT_CL)*pow(ALB/4,ALB_CL)*ADACOV*exp(PPVCL);#
+							double V1 = POPV1*pow(WT/70,WT_V1)*exp(PPVV1);#
+							double Q = POPQ*pow(WT/70,WT_Q)*exp(PPVQ);#
+							double V2 = POPV2*pow(WT/70,WT_V2)*exp(PPVV2);#
+		$ODE			// Differential equations#
+							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;#
+							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;#
+							// Time below target#
+							double CP = CENT/V1;	// Plasma concentration of the central compartment#
+							dxdt_AUT = 0;#
+							if (CP < target) dxdt_AUT = 1;#
+		$TABLE		table(IPRE) = CENT/V1;#
+							table(DV) = table(IPRE)*exp(ERRPRO);#
+		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2#
+		'#
+		mod <- mcode("popINFLIX",code)#
+	TIME.tgrid <- tgrid(0,365,1)#
+	ID.list <- 1:1000#
+	population.function <- function(ID.list) {#
+		ID.number <- ID.list[1]#
+		input.conc.data <- data.frame(#
+			ID = ID.number,#
+			amt = 5*70,#
+			evid = 1,#
+			cmt = 1,#
+			time = c(0,14,42,98,154,210,266,322),#
+			rate = -2#
+		)#
+	}#
+	input.conc.data <- ldply(ID.list, population.function)#
+	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)#
+	conc.data <- as.data.frame(conc.data)#
+	summary.data <- ddply(conc.data, .(time), function(conc.data) sumfuncx(conc.data$IPRE))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot(summary.data)#
+	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median),colour = "red")#
+	plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi),fill = "red",alpha = 0.3)#
+	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")#
+	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))#
+	plotobj1
+head(conc.data1)
+head(conc.data)
