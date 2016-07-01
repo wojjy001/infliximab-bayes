@@ -29,6 +29,9 @@ sumfuncx <- function(x) {
 	result
 }
 
+# Set seed for reproducible results
+	set.seed(123456)
+
 # ------------------------------------------------------------------------------
 # Define the model parameters and equations
 	# Using mrgsolve - differential equations
