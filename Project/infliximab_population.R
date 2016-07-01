@@ -49,6 +49,20 @@
 		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB4] <- 4	# FINAL_ALB == 4
 		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB5] <- 5	# FINAL_ALB == 5
 
+# Simulate random effect parameters
+# Simulating a baseline ETA and a final ETA to accommodate random changes in the individual that cannot be explained by model covariates
+	cov.data <- cov.data[with(cov.data, order(cov.data$ID,cov.data$SIM)), ]	# Sort by ID then SIM
+	# Pull out model PPV values from model code
+		BSV <- as.matrix(omat(mod))	# PPV for model parameters in "mod"
+	# Clearance stays as one value for ETA as it has a few time-dependent covariates on it
+		cov.data$ETA1 <- rnorm(n*(nsim+1),mean = 0,sd = PPVCL)	# ETA for clearance
+		cov.data$BASE_ETA2 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV1)	# Baseline ETA for V1
+		cov.data$FINAL_ETA2 <- log(exp(cov.data$BASE_ETA2)*c(0.95,1.05))	# Final ETA for V1
+		cov.data$BASE_ETA3 <- rnorm(n*(nsim+1),mean = 0,sd = PPVQ)	# Baseline ETA for Q
+		cov.data$FINAL_ETA3 <- log(exp(cov.data$BASE_ETA3)*c(1.05,0.95))	# Final ETA for Q
+		cov.data$BASE_ETA4 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV2)	# Baseline ETA for V2
+		cov.data$FINAL_ETA4 <- log(exp(cov.data$BASE_ETA4)*c(0.95,1.05))	# Final ETA for V2
+
 # ------------------------------------------------------------------------------
 # Data frame of individual characteristics
 	pop.data <- lapply(cov.data,rep.int,times = length(TIME))
@@ -56,6 +70,7 @@
 	pop.data <- pop.data[with(pop.data, order(pop.data$SIM,pop.data$ID)), ]
 	pop.data$TIME <- TIME
 
+# ------------------------------------------------------------------------------
 # Function for calculating albumin concentrations for each individual for all time-points
 # A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
 	albumin.function <- function(input.data) {
@@ -68,6 +83,7 @@
 # Calculate albumin concentrations for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), albumin.function)
 
+# ------------------------------------------------------------------------------
 # Function for flagging if ADA are present for each individual for all time-points
 # This assumes that once a person develops ADA, they stay with ADA
 	ada.function <- function(input.data) {
@@ -79,6 +95,38 @@
 	}
 # Flag if ADA are present for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), ada.function)
+
+# ------------------------------------------------------------------------------
+# Function for calculating changes in random effects
+# A linear function containing the baseline ETA (BASE_ETA) and their last ETA (FINAL_ETA)
+	eta.function <- function(input.data) {
+		# ETA2
+			TIMEeta2 <- c(min(input.data$TIME),max(input.data$TIME))
+			RATEeta2 <- c(head(input.data$BASE_ETA2,1),head(input.data$FINAL_ETA2,1))
+			step.eta2 <- approxfun(TIMEeta2,RATEeta2,method = "linear")	# Linear function
+			input.data$ETA2 <- step.eta2(input.data$TIME)	# Apply function to every time-point
+		# ETA3
+			TIMEeta3 <- c(min(input.data$TIME),max(input.data$TIME))
+			RATEeta3 <- c(head(input.data$BASE_ETA3,1),head(input.data$FINAL_ETA3,1))
+			step.eta3 <- approxfun(TIMEeta3,RATEeta3,method = "linear")	# Linear function
+			input.data$ETA3 <- step.eta3(input.data$TIME)	# Apply function to every time-point
+		# ETA4
+			TIMEeta4 <- c(min(input.data$TIME),max(input.data$TIME))
+			RATEeta4 <- c(head(input.data$BASE_ETA4,1),head(input.data$FINAL_ETA4,1))
+			step.eta4 <- approxfun(TIMEeta4,RATEeta4,method = "linear")	# Linear function
+			input.data$ETA4 <- step.eta4(input.data$TIME)	# Apply function to every time-point
+		# If SIM = 0, i.e, population typical patient, make ETAs equal zero
+			if (input.data$SIM[1] == 0) {
+				input.data$ETA1 <- 0
+				input.data$ETA2 <- 0
+				input.data$ETA3 <- 0
+				input.data$ETA4 <- 0
+			}
+		# Return the resulting data frame
+		input.data
+	}
+# Calculate ETA values for all time-points
+	pop.data <- ddply(pop.data, .(SIM,ID), eta.function)
 
 # Create a data frame of covariate values for each individual at key time-points
 # i.e., baseline (0), day 98, 210, 378 and 546
