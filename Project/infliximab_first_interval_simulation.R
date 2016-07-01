@@ -20,12 +20,20 @@
 			SIM.number <- input.data$SIM[1]	# Individual simulation number
 			ALB <- input.data$ALB[input.data$TIME %in% TIME1i]	# Individual albumin
 			ADA <- input.data$ADA[input.data$TIME %in% TIME1i]	# Individual ADA status
+			ETA1 <- input.data$ETA1[input.data$TIME %in% TIME1i]
+			ETA2 <- input.data$ETA2[input.data$TIME %in% TIME1i]
+			ETA3 <- input.data$ETA3[input.data$TIME %in% TIME1i]
+			ETA4 <- input.data$ETA4[input.data$TIME %in% TIME1i]
 			input.conc.data1 <- data.frame(
 				ID = ID.number,
 				SIM = SIM.number,
 				time = TIME1i,	# Infusion times
 				ALB,	# Albumin
 				ADA,	# Anti-drug antibodies
+				ETA1,
+				ETA2,
+				ETA3,
+				ETA4,
 				amt = amt1*70,	# mg/kg dose
 				evid = 1,	# Dosing event
 				cmt = 1,	# Dose into the central compartment (compartment = 1)
