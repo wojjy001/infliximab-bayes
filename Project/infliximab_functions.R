@@ -24,6 +24,8 @@
 	PPVV1 <- 0.150
 	PPVQ <- 1.10
 	PPVV2 <- 0.799
+# Value for RUV (Residual Unexplained Variability), as SD
+	ERRPRO <- 0.419
 
 # Define time sequences
 	# Infusion times (0, 2, 6 weeks and then every 8 weeks) in days
@@ -31,16 +33,16 @@
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
 	# Time sequence for the different sampling intervals, days
-		TIME1 <- seq(from = 0,to = 98,by = 2)
+		TIME1 <- seq(from = 0,to = 98,by = 14)
 		# Times in TIME1 that are infusion times
 			TIME1i <- TIME1[TIME1 %in% TIMEi]
-		TIME2 <- seq(from = 98,to = 210,by = 2)
+		TIME2 <- seq(from = 98,to = 210,by = 14)
 		# Times in TIME2 that are infusion times
 			TIME2i <- TIME2[TIME2 %in% TIMEi]
-		TIME3 <- seq(from = 210,to = 378,by = 2)
+		TIME3 <- seq(from = 210,to = 378,by = 14)
 		# Times in TIME3 that are infusion times
 			TIME3i <- TIME3[TIME3 %in% TIMEi]
-		TIME4 <- seq(from = 378,to = 546,by = 2)
+		TIME4 <- seq(from = 378,to = 546,by = 14)
 		# Times in TIME4 that are infusion times
 			TIME4i <- TIME4[TIME4 %in% TIMEi]
 
@@ -48,6 +50,11 @@
 		TIME <- unique(sort(c(TIME1,TIME2,TIME3,TIME4)))
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
+
+#	Define sampling times
+	sample.time1 <- 98	# First interval
+	sample.time2 <- 210	# Second interval
+	sample.time3 <- 378	# Third interval
 
 #-------------------------------------------------------------------------------
 # Pre-defined universal functions
@@ -130,10 +137,18 @@
 						if (CP < target) dxdt_AUT = 1;
 
 	$TABLE		table(IPRE) = CENT/V1;
-						table(DV) = table(IPRE)*exp(ERRPRO);
 
 	$CAPTURE	SIM WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
 		# There is opportunity to simply update model parameters after the model code has been compiled
+
+# Function for simulating individual concentration time profiles
+# A single ID is present in all simulations (SIM) - which mrgsolve does not like
+# Run each "SIM" group through mrgsolve sequently
+# This could be parallelised if need be for speed!
+	conc.per.simulation <- function(input.data) {
+		conc.data <- mod %>% data_set(input.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
+		conc.data <- as.data.frame(conc.data)
+	}
