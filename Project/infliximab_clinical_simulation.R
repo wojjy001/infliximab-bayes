@@ -5,6 +5,99 @@
 # Assuming linear kinetics - double the dose, double the trough concentration
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
-	source(paste0(work.dir,"infliximab_population.R"))
+	source(paste0(work.dir,"infliximab_first_interval_simulation.R"))
 
 # ------------------------------------------------------------------------------
+# Simulate intervals separately
+# Change doses based on "standard clinical practice" methods
+	clinical.data1 <- conc.data1
+	interval.clinical <- function(clinical.data,prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
+		population.clinical <- function(input.data) {
+			ID.number <- input.data$ID[1]	# Individual ID
+			SIM.number <- input.data$SIM[1]	# Individual simulation number
+
+			# clinical.data = simulated concentration data from the previous interval
+				ind.clinical.data <- clinical.data[clinical.data$ID == ID.number & clinical.data$SIM == SIM.number,]
+			# Pull out the sampled concentration from the individual's simulated concentration profile
+				err <- ind.clinical.data$ERRPRO[ind.clinical.data$time == sample.time]	# Individual's residual error
+				sample <- ind.clinical.data$IPRE[ind.clinical.data$time == sample.time]*exp(err)
+			# Pull out the dose that was given that resulted in that sampled concentration
+				prev.dose <- ind.clinical.data$amt[ind.clinical.data$time == prev.TIMEXi[1]]
+
+			# Calculate the new dose for the second interval based on "sample1" and "dose1"
+				if (sample < trough.target | sample >= trough.upper) {
+					new.dose <- trough.target/sample*prev.dose	# Adjust the dose if out of range
+				} else {
+					new.dose <- prev.dose	# Continue with previous dose if within range
+				}
+
+			# Pull the amount in the compartments at the end of the previous interval
+				prev.cent <- ind.clinical.data$CENT[ind.clinical.data$time == sample.time]
+				prev.peri <- ind.clinical.data$PERI[ind.clinical.data$time == sample.time]
+				prev.aut <- ind.clinical.data$AUT[ind.clinical.data$time == sample.time]
+
+			# Set up the new input data frame for mrgsolve for the second interval
+				# Subset "pop.data" for the individual's data
+					ind.data <- pop.data[pop.data$ID == ID.number & pop.data$SIM == SIM.number,]
+				# Then call on parameter values and put into input.clinical.data
+					ALB <- ind.data$ALB[ind.data$TIME %in% TIMEX]	# Individual albumin
+					ADA <- ind.data$ADA[ind.data$TIME %in% TIMEX]	# Individual ADA status
+					ETA1 <- ind.data$ETA1[ind.data$TIME %in% TIMEX]
+					ETA2 <- ind.data$ETA2[ind.data$TIME %in% TIMEX]
+					ETA3 <- ind.data$ETA3[ind.data$TIME %in% TIMEX]
+					ETA4 <- ind.data$ETA4[ind.data$TIME %in% TIMEX]
+					ERRPRO <- ind.data$ERRPRO[ind.data$TIME %in% TIMEX]
+					input.clinical.data <- data.frame(
+						ID = ID.number,
+						SIM = SIM.number,
+						time = TIMEX,	# Time points for simulation
+						ALB,	# Albumin
+						ADA,	# Anti-drug antibodies
+						ETA1,
+						ETA2,
+						ETA3,
+						ETA4,
+						ERRPRO,
+						amt = new.dose,	# Clinically optimised dose
+						evid = 1,	# Dosing event
+						cmt = 1,	# Dose into the central compartment (compartment = 1)
+						rate = -2	# Infusion duration is specific in the model file
+					)
+				# Make the amt given in the last time-point == 0
+				# Change evid and rate accordingly
+					if (max(TIMEXi) != 490) {
+						input.clinical.data$amt[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
+						input.clinical.data$evid[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
+						input.clinical.data$rate[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
+					} else {
+						input.clinical.data$amt[!c(input.clinical.data$time %in% TIMEXi)] <- 0
+						input.clinical.data$evid[!c(input.clinical.data$time %in% TIMEXi)] <- 0
+						input.clinical.data$rate[!c(input.clinical.data$time %in% TIMEXi)] <- 0
+					}
+			# Simulate concentration time profile
+				initial.compartment <- list(CENT = prev.cent,PERI = prev.peri,AUT = prev.aut)
+				new.clinical.data <- mod %>% init(initial.compartment) %>% data_set(input.clinical.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
+				new.clinical.data <- as.data.frame(new.clinical.data)
+		}
+		# Simulate concentration-time profiles for individuals in input.clinical.data
+			new.clinical.data <- ddply(ID.data, .(SIM,ID), population.clinical)
+	}
+# Simulate the second interval
+	clinical.data2 <- interval.clinical(clinical.data = clinical.data1,prev.TIMEXi = TIME1i,TIMEX = TIME2,TIMEXi = TIME2i,sample.time = sample.time1)
+# Simulate the third interval
+	clinical.data3 <- interval.clinical(clinical.data = clinical.data2,prev.TIMEXi = TIME2i,TIMEX = TIME3,TIMEXi = TIME3i,sample.time = sample.time2)
+# Simulate the fourth interval
+	clinical.data4 <- interval.clinical(clinical.data = clinical.data3,prev.TIMEXi = TIME3i,TIMEX = TIME4,TIMEXi = TIME4i,sample.time = sample.time3)
+
+# Combine clinical.dataX
+	clinical.data <- rbind(clinical.data1,clinical.data2,clinical.data3,clinical.data4)
+
+# ------------------------------------------------------------------------------
+# Test plot
+	plotobj3 <- NULL
+	plotobj3 <- ggplot(clinical.data)
+	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
+	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+	plotobj3 <- plotobj3 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
+	plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)")
+	plotobj3
