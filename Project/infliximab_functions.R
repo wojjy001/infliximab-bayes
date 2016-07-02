@@ -31,16 +31,16 @@
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
 	# Time sequence for the different sampling intervals, days
-		TIME1 <- seq(from = 0,to = 98,by = 14)
+		TIME1 <- seq(from = 0,to = 98,by = 2)
 		# Times in TIME1 that are infusion times
 			TIME1i <- TIME1[TIME1 %in% TIMEi]
-		TIME2 <- seq(from = 98,to = 210,by = 14)
+		TIME2 <- seq(from = 98,to = 210,by = 2)
 		# Times in TIME2 that are infusion times
 			TIME2i <- TIME2[TIME2 %in% TIMEi]
-		TIME3 <- seq(from = 210,to = 378,by = 14)
+		TIME3 <- seq(from = 210,to = 378,by = 2)
 		# Times in TIME3 that are infusion times
 			TIME3i <- TIME3[TIME3 %in% TIMEi]
-		TIME4 <- seq(from = 378,to = 546,by = 14)
+		TIME4 <- seq(from = 378,to = 546,by = 2)
 		# Times in TIME4 that are infusion times
 			TIME4i <- TIME4[TIME4 %in% TIMEi]
 
