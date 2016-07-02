@@ -9,7 +9,7 @@
 # Define population's characteristics
 # Only going to pre-specify weight as 70 kg and randomly generate ADA_TIME, BASE_ALB and FINAL_ALB
 	n <- 12	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 100	# Number of simulations of the seed individuals to perform
+	nsim <- 2	# Number of simulations of the seed individuals to perform
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs
 	SIM <- sort(c(rep(seq(from = 0,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
 	WT <- 70 # Weight, kg
@@ -51,8 +51,6 @@
 # Simulate random effect parameters
 # Simulating a baseline ETA and a final ETA to accommodate random changes in the individual that cannot be explained by model covariates
 	cov.data <- cov.data[with(cov.data, order(cov.data$ID,cov.data$SIM)), ]	# Sort by ID then SIM
-	# Pull out model PPV values from model code
-		BSV <- as.matrix(omat(mod))	# PPV for model parameters in "mod"
 	# Clearance stays as one value for ETA as it has a few time-dependent covariates on it
 		cov.data$ETA1 <- rnorm(n*(nsim+1),mean = 0,sd = PPVCL)	# ETA for clearance
 		cov.data$BASE_ETA2 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV1)	# Baseline ETA for V1
@@ -126,6 +124,9 @@
 	}
 # Calculate ETA values for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), eta.function)
+
+# Simulating the same residual error
+	pop.data$ERRPRO <- rnorm(length(pop.data$TIME),mean = 0,sd = ERRPRO)	# Proportional residual error
 
 # Create a data frame of covariate values for each individual at key time-points
 # i.e., baseline (0), day 98, 210, 378 and 546
