@@ -1,9 +1,8 @@
 # Time-weighted Bayes project
 # Script for simulating characteristics of the study population
 # Does not simulation concentrations
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Source the other R scripts and execute
-	# infliximab_functions.R
 	source(paste0(work.dir,"infliximab_functions.R"))
 
 # ------------------------------------------------------------------------------
