@@ -2,10 +2,6 @@
 # Script for simulating concentrations for the second, third and fourth intervals
 # Everyone will receive 5 mg/kg dose
 # ------------------------------------------------------------------------------
-# Source the other R scripts and execute
-	source(paste0(work.dir,"infliximab_population.R"))
-
-# ------------------------------------------------------------------------------
 # Create a data frame ready for mrgsolve simulation
 	# Function for creating a data frame ready for mrgsolve simulation
 		all.interval.label <- function(input.data) {
@@ -44,13 +40,21 @@
 
 # Simulate concentration-time profiles for individuals in input.label.data
 	label.data <- ddply(input.label.data, .(SIM), conc.per.simulation)
+	label.data <- label.data[with(label.data, order(label.data$ID,label.data$SIM)), ]	# Sort by ID then SIM
 
 # ------------------------------------------------------------------------------
-# Test plot
-	plotobj2 <- NULL
-	plotobj2 <- ggplot(label.data)
-	plotobj2 <- plotobj2 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
-	plotobj2 <- plotobj2 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
-	plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
-	plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)")
-	plotobj2
+# Write label.data to a .csv file
+	label.data.filename <- "label_simulation.csv"
+	write.csv(label.data,file = label.data.filename,na = ".",quote = F,row.names = F)
+
+# # ------------------------------------------------------------------------------
+# # Test plot
+# 	plotobj2 <- NULL
+# 	plotobj2 <- ggplot(label.data)
+# 	plotobj2 <- plotobj2 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
+# 	plotobj2 <- plotobj2 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+# 	plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
+# 	plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
+# 	plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
+# 	plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)")
+# 	plotobj2

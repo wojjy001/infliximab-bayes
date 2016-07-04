@@ -4,13 +4,9 @@
 # If trough target = 3 mg/L, and measured trough is 1.5 mg/L, then next dose will be doubled
 # Assuming linear kinetics - double the dose, double the trough concentration
 # ------------------------------------------------------------------------------
-# Source the other R scripts and execute
-	source(paste0(work.dir,"infliximab_first_interval_simulation.R"))
-
-# ------------------------------------------------------------------------------
 # Simulate intervals separately
 # Change doses based on "standard clinical practice" methods
-	clinical.data1 <- conc.data1
+	clinical.data1 <- conc.data
 	interval.clinical <- function(clinical.data,prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
 		population.clinical <- function(input.data) {
 			ID.number <- input.data$ID[1]	# Individual ID
@@ -24,7 +20,7 @@
 			# Pull out the dose that was given that resulted in that sampled concentration
 				prev.dose <- ind.clinical.data$amt[ind.clinical.data$time == prev.TIMEXi[1]]
 
-			# Calculate the new dose for the second interval based on "sample1" and "dose1"
+			# Calculate the new dose for the next interval based on "sample" and "dose"
 				if (sample < trough.target | sample >= trough.upper) {
 					new.dose <- trough.target/sample*prev.dose	# Adjust the dose if out of range
 				} else {
@@ -36,7 +32,7 @@
 				prev.peri <- ind.clinical.data$PERI[ind.clinical.data$time == sample.time]
 				prev.aut <- ind.clinical.data$AUT[ind.clinical.data$time == sample.time]
 
-			# Set up the new input data frame for mrgsolve for the second interval
+			# Set up the new input data frame for mrgsolve for the next interval
 				# Subset "pop.data" for the individual's data
 					ind.data <- pop.data[pop.data$ID == ID.number & pop.data$SIM == SIM.number,]
 				# Then call on parameter values and put into input.clinical.data
@@ -83,21 +79,29 @@
 			new.clinical.data <- ddply(ID.data, .(SIM,ID), population.clinical)
 	}
 # Simulate the second interval
-	clinical.data2 <- interval.clinical(clinical.data = clinical.data1,prev.TIMEXi = TIME1i,TIMEX = TIME2,TIMEXi = TIME2i,sample.time = sample.time1)
+	clinical.data2 <- interval.clinical(clinical.data1,TIME1i,TIME2,TIME2i,sample.time1)
 # Simulate the third interval
-	clinical.data3 <- interval.clinical(clinical.data = clinical.data2,prev.TIMEXi = TIME2i,TIMEX = TIME3,TIMEXi = TIME3i,sample.time = sample.time2)
+	clinical.data3 <- interval.clinical(clinical.data2,TIME2i,TIME3,TIME3i,sample.time2)
 # Simulate the fourth interval
-	clinical.data4 <- interval.clinical(clinical.data = clinical.data3,prev.TIMEXi = TIME3i,TIMEX = TIME4,TIMEXi = TIME4i,sample.time = sample.time3)
+	clinical.data4 <- interval.clinical(clinical.data3,TIME3i,TIME4,TIME4i,sample.time3)
 
 # Combine clinical.dataX
 	clinical.data <- rbind(clinical.data1,clinical.data2,clinical.data3,clinical.data4)
+	clinical.data <- clinical.data[with(clinical.data, order(clinical.data$ID,clinical.data$SIM)), ]	# Sort by ID then SIM
 
 # ------------------------------------------------------------------------------
-# Test plot
-	plotobj3 <- NULL
-	plotobj3 <- ggplot(clinical.data)
-	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
-	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
-	plotobj3 <- plotobj3 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
-	plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)")
-	plotobj3
+# Write clinical.data to a .csv file
+	clinical.data.filename <- "clinical_simulation.csv"
+	write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)
+
+# # ------------------------------------------------------------------------------
+# # Test plot
+# 	plotobj3 <- NULL
+# 	plotobj3 <- ggplot(clinical.data)
+# 	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
+# 	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+# 	plotobj3 <- plotobj3 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
+# 	plotobj3 <- plotobj3 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
+# 	plotobj3 <- plotobj3 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
+# 	plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)")
+# 	plotobj3

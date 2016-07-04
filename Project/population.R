@@ -3,13 +3,15 @@
 # Does not simulation concentrations
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
+	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
 	source(paste0(work.dir,"infliximab_functions.R"))
+# Objects that need to be sent to the cluster
+	n <- 12
+	nsim <- 1
 
 # ------------------------------------------------------------------------------
 # Define population's characteristics
 # Only going to pre-specify weight as 70 kg and randomly generate ADA_TIME, BASE_ALB and FINAL_ALB
-	n <- 12	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 2	# Number of simulations of the seed individuals to perform
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs
 	SIM <- sort(c(rep(seq(from = 0,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
 	WT <- 70 # Weight, kg
@@ -68,15 +70,6 @@
 	pop.data$TIME <- TIME
 
 # ------------------------------------------------------------------------------
-# Function for calculating albumin concentrations for each individual for all time-points
-# A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
-	albumin.function <- function(input.data) {
-		TIMEalb <- c(min(input.data$TIME),max(input.data$TIME))
-		RATEalb <- c(head(input.data$BASE_ALB,1),head(input.data$FINAL_ALB,1))
-		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
-		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB*sin(2*pi*FREQ_ALB*input.data$TIME+PHASE_ALB))	# Apply function to every time-point
-		as.data.frame(input.data)
-	}
 # Calculate albumin concentrations for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), albumin.function)
 
@@ -128,7 +121,7 @@
 # Simulating the same residual error
 	pop.data$ERRPRO <- rnorm(length(pop.data$TIME),mean = 0,sd = ERRPRO)	# Proportional residual error
 
-# Create a data frame of covariate values for each individual at key time-points
-# i.e., baseline (0), day 98, 210, 378 and 546
-	cov.time.data <- subset(pop.data,select = c(ID,SIM,TIME,ALB,ADA))
-	cov.time.data <- cov.time.data[cov.time.data$TIME %in% c(0,98,210,378,546),]
+# ------------------------------------------------------------------------------
+# Write pop.data to a .csv file
+	pop.data.filename <- "population_characteristics.csv"
+	write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)

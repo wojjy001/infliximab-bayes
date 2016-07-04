@@ -1,0 +1,84 @@
+# Time-weighted Bayes project
+# Script for containing universal functions
+#-------------------------------------------------------------------------------
+# Load package libaries
+	library(ggplot2)	# Plotting package
+	library(grid)	# Plotting package
+	library(plyr)	# Split and rearrange data, ddply functions
+	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
+	library(compiler)	# Compile repeatedly called functions
+# Custom ggplot2 theme
+	theme_bw2 <- theme_set(theme_bw(base_size = 14))
+# Set seed for reproducible results
+	set.seed(123456)
+
+#-------------------------------------------------------------------------------
+# Pre-defined universal objects
+# Target trough concentration definitions
+	trough.target <- 3	# Set the target trough concentration for dose optimisation
+	trough.upper <- 5	# Set upper bound for trough concentrations
+
+# Values for PPV (Population Parameter Variability), as SDs
+	PPVCL <- 0.327
+	PPVV1 <- 0.150
+	PPVQ <- 1.10
+	PPVV2 <- 0.799
+# Value for RUV (Residual Unexplained Variability), as SD
+	ERRPRO <- 0.419
+
+# Define time sequences
+	# Infusion times (0, 2, 6 weeks and then every 8 weeks) in days
+		TIMEi <- c(0,14,42,98,154,210,266,322,378,434,490)
+	# Infusion duration (2 hours) in days
+		INFD <- 2/24
+	# Time sequence for the different sampling intervals, days
+		TIME1 <- sort(c(seq(from = 0,to = 98,by = 14),seq(from = 0,to = 98,by = 14)+INFD))
+		# Times in TIME1 that are infusion times
+			TIME1i <- TIME1[TIME1 %in% TIMEi]
+		TIME2 <- sort(c(seq(from = 98,to = 210,by = 14),seq(from = 98,to = 210,by = 14)+INFD))
+		# Times in TIME2 that are infusion times
+			TIME2i <- TIME2[TIME2 %in% TIMEi]
+		TIME3 <- sort(c(seq(from = 210,to = 378,by = 14),seq(from = 210,to = 378,by = 14)+INFD))
+		# Times in TIME3 that are infusion times
+			TIME3i <- TIME3[TIME3 %in% TIMEi]
+		TIME4 <- sort(c(seq(from = 378,to = 546,by = 14),seq(from = 378,to = 546,by = 14)+INFD))
+		# Times in TIME4 that are infusion times
+			TIME4i <- TIME4[TIME4 %in% TIMEi]
+
+	# Overall time sequence
+		TIME <- unique(sort(c(TIME1,TIME2,TIME3,TIME4)))
+	# Object specifying beyond the TIME sequence
+		END <- max(TIME)+100
+
+#	Define sampling times
+	sample.time1 <- 98	# First interval
+	sample.time2 <- 210	# Second interval
+	sample.time3 <- 378	# Third interval
+
+# ------------------------------------------------------------------------------
+# Pre-defined universal functions
+# Functions for calculating 95% prediction intervals
+	CI95lo <- function(x) quantile(x,probs = 0.025)
+	CI95hi <- function(x) quantile(x,probs = 0.975)
+
+# Function for taking the last row of a given factor (commonly use for taking the last row of each individual)
+	lastperID <- function(x) tail(x,1)
+
+# Function for calculating albumin concentrations for each individual for all time-points
+# A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
+	albumin.function <- function(input.data) {
+		TIMEalb <- c(min(input.data$TIME),max(input.data$TIME))
+		RATEalb <- c(head(input.data$BASE_ALB,1),head(input.data$FINAL_ALB,1))
+		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
+		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB*sin(2*pi*FREQ_ALB*input.data$TIME+PHASE_ALB))	# Apply function to every time-point
+		as.data.frame(input.data)
+	}
+
+# Function for simulating individual concentration time profiles
+# A single ID is present in all simulations (SIM) - which mrgsolve does not like
+# Run each "SIM" group through mrgsolve sequently
+# This could be parallelised if need be for speed!
+	conc.per.simulation <- function(input.data) {
+		conc.data <- mod %>% data_set(input.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
+		conc.data <- as.data.frame(conc.data)
+	}
