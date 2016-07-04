@@ -3,22 +3,21 @@
 # Subsequent doses are dependent on measured trough concentrations
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
-# Call simulated data for the first interval
-	optimise.bayes.data1 <- conc.data
-
 # Optimise doses using maximum likelihood estimation
 	interval.bayes <- function(prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
-
-		if (max(prev.TIMEXi) == 98) {
-			optimise.bayes.data <- optimise.bayes.data1
-		} else if (max(prev.TIMEXi) == 210) {
-			optimise.bayes.data <- optimise.bayes.data2
-		} else {
-			optimise.bayes.data <- optimise.bayes.data3
-		}
-
-		covariate.scenario <- covariate
-		method.scenario <- method
+		# Call simulated data for the previous interval
+			if (max(prev.TIMEXi) == 98) {
+				optimise.bayes.data <- conc.data	# From the first interval
+			} else if (max(prev.TIMEXi) == 210) {
+				optimise.bayes.data <- optimise.bayes.data2	# From the second interval
+			} else {
+				optimise.bayes.data <- optimise.bayes.data3	# From the third interval
+			}
+		# Call in other objects/data frames required
+		# Need to be placed here for parallelisation to work
+			covariate.scenario <- covariate	# Level of covariate information for scenario
+			method.scenario <- method	# Time-weighting method
+			pop.data.import <- pop.data	# Data frame of population's characteristics
 
 		population.bayes <- function(ID.data) {
 			ID.number <- ID.data$ID[1]	# Individual ID
@@ -253,7 +252,6 @@
 							objective
 					}
 					optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(lower.dose.limit,lower.dose.limit,lower.dose.limit,0.0001),upper = c(upper.dose.limit,upper.dose.limit,upper.dose.limit,1))
-					optimised.doses
 
 			# Create a data frame ready for simulating what happened to the patient given the Bayesian guided doses
 				# Input optimised doses ready for simulation
@@ -261,7 +259,7 @@
 					input.optimise.data$amt[input.optimise.data$time == TIMEXi[2]] <- optimised.doses$par[2]	# Second dose
 					input.optimise.data$amt[input.optimise.data$time == TIMEXi[3]] <- optimised.doses$par[3]	# Third dose
 				# Input changing ETA values and covariate values
-					ind.data <- pop.data[pop.data$ID == ID.number & pop.data$SIM == SIM.number & pop.data$TIME %in% TIMEX,]
+					ind.data <- pop.data.import[pop.data.import$ID == ID.number & pop.data.import$SIM == SIM.number & pop.data.import$TIME %in% TIMEX,]
 					input.optimise.data$ETA1 <- ind.data$ETA1
 					input.optimise.data$ETA2 <- ind.data$ETA2
 					input.optimise.data$ETA3 <- ind.data$ETA3
@@ -287,7 +285,7 @@
 	optimise.bayes.data4 <- interval.bayes(TIME3i,TIME4,TIME4i,sample.time3)
 
 # Combine bayes.dataX
-	optimise.bayes.data <- rbind(optimise.bayes.data1,optimise.bayes.data2,optimise.bayes.data3,optimise.bayes.data4)
+	optimise.bayes.data <- rbind(conc.data,optimise.bayes.data2,optimise.bayes.data3,optimise.bayes.data4)
 	optimise.bayes.data <- optimise.bayes.data[with(optimise.bayes.data, order(optimise.bayes.data$ID,optimise.bayes.data$SIM)), ]	# Sort by ID then SIM
 
 # # ------------------------------------------------------------------------------

@@ -1,5 +1,15 @@
 # Time-weighted Bayes project
 # Script for containing universal functions
+# -------------------------------------------------------------------------------
+# Create and set working directory
+# Specific for the simulation
+	n <- 1	# Number of seed individuals (where each seed individual has a different set of covariate values)
+	nsim <- 1	# Number of simulations of the seed individuals to perform
+	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
+	sim.output.dir <- paste0(work.dir,sim.name,"/")	# Simulation directory
+	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
+	setwd(file.path(sim.output.dir))	#Set the working directory
+
 #-------------------------------------------------------------------------------
 # Load package libaries
 	library(ggplot2)	# Plotting package
@@ -11,6 +21,7 @@
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
 # Set seed for reproducible results
 	set.seed(123456)
+	inputEnv <- new.env()
 
 #-------------------------------------------------------------------------------
 # Pre-defined universal objects

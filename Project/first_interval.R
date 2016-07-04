@@ -4,9 +4,8 @@
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
 	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
-	source(paste0(work.dir,"infliximab_functions.R"))
-	source(paste0(work.dir,"infliximab_population.R"))
-	source(paste0(work.dir,"infliximab_model.R"))
+	source(paste0(work.dir,"population.R"))
+	source(paste0(work.dir,"model.R"))
 
 # ------------------------------------------------------------------------------
 # Set the dose for simulating the first intervals

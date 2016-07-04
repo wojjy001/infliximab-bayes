@@ -3,22 +3,19 @@
 # Subsequent doses are dependent on measured trough concentrations
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
-# Call simulated data for the first interval
-	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
-	source(paste0(work.dir,"infliximab_first_interval_simulation.R"))
-
-	optimise.data1 <- conc.data
-
 # Optimise doses using maximum likelihood estimation
 	interval.optimise <- function(prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
-
-		if (max(prev.TIMEXi) == 98) {
-			optimise.data <- optimise.data1
-		} else if (max(prev.TIMEXi) == 210) {
-			optimise.data <- optimise.data2
-		} else {
-			optimise.data <- optimise.data3
-		}
+		# Call simulated data for the previous interval
+			if (max(prev.TIMEXi) == 98) {
+				optimise.data <- conc.data	# From the first interval
+			} else if (max(prev.TIMEXi) == 210) {
+				optimise.data <- optimise.data2	# From the second interval
+			} else {
+				optimise.data <- optimise.data3	# From the third interval
+			}
+		# Call in other objects/data frames required
+		# Need to be placed here for parallelisation to work
+			pop.data.import <- pop.data	# Data frame of population's characteristics
 
 		population.optimise <- function(ID.data) {
 			ID.number <- ID.data$ID[1]	# Individual ID
@@ -127,7 +124,6 @@
 							objective
 					}
 					optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(lower.dose.limit,lower.dose.limit,lower.dose.limit,0.0001),upper = c(upper.dose.limit,upper.dose.limit,upper.dose.limit,1))
-					optimised.doses
 				# Input optimised doses ready for simulation
 					input.optimise.data$amt[input.optimise.data$time == TIMEXi[1]] <- optimised.doses$par[1]	# First dose
 					input.optimise.data$amt[input.optimise.data$time == TIMEXi[2]] <- optimised.doses$par[2]	# Second dose
@@ -150,7 +146,7 @@
 	optimise.data4 <- interval.optimise(TIME3i,TIME4,TIME4i,sample.time3)
 
 # Combine optimise.dataX
-	optimise.data <- rbind(optimise.data1,optimise.data2,optimise.data3,optimise.data4)
+	optimise.data <- rbind(conc.data,optimise.data2,optimise.data3,optimise.data4)
 	optimise.data <- optimise.data[with(optimise.data, order(optimise.data$ID,optimise.data$SIM)), ]	# Sort by ID then SIM
 
 # ------------------------------------------------------------------------------

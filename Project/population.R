@@ -4,9 +4,9 @@
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
 	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
-	source(paste0(work.dir,"infliximab_functions.R"))
+	source(paste0(work.dir,"functions.R"))
 # Objects that need to be sent to the cluster
-	n <- 12
+	n <- 2
 	nsim <- 1
 
 # ------------------------------------------------------------------------------
