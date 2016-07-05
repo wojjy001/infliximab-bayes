@@ -3,11 +3,8 @@
 # Does not simulation concentrations
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
-	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
+	work.dir <- "D:/infliximab-bayes/Project/"
 	source(paste0(work.dir,"functions.R"))
-# Objects that need to be sent to the cluster
-	n <- 2
-	nsim <- 1
 
 # ------------------------------------------------------------------------------
 # Define population's characteristics
