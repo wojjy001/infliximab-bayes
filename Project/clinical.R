@@ -6,8 +6,29 @@
 # ------------------------------------------------------------------------------
 # Simulate intervals separately
 # Change doses based on "standard clinical practice" methods
-	clinical.data1 <- conc.data
-	interval.clinical <- function(clinical.data,prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
+	conc.data.x <- conc.data[conc.data$time < 98,]
+	interval.clinical <- function(interval) {
+		# Call simulated data for the previous interval
+			if (interval == 2) {
+				clinical.data <- conc.data	# From the first interval
+				prev.TIMEXi <- TIME1i
+				TIMEX <- TIME2
+				TIMEXi <- TIME2i
+				sample.time <- sample.time1
+			} else if (interval == 3) {
+				clinical.data <- clinical.data2	# From the second interval
+				prev.TIMEXi <- TIME2i
+				TIMEX <- TIME3
+				TIMEXi <- TIME3i
+				sample.time <- sample.time2
+			} else {
+				clinical.data <- clinical.data3	# From the third interval
+				prev.TIMEXi <- TIME3i
+				TIMEX <- TIME4
+				TIMEXi <- TIME4i
+				sample.time <- sample.time3
+			}
+
 		population.clinical <- function(input.data) {
 			ID.number <- input.data$ID[1]	# Individual ID
 			SIM.number <- input.data$SIM[1]	# Individual simulation number
@@ -61,7 +82,7 @@
 					)
 				# Make the amt given in the last time-point == 0
 				# Change evid and rate accordingly
-					if (max(TIMEXi) != 490) {
+					if (interval != 4) {
 						input.clinical.data$amt[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
 						input.clinical.data$evid[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
 						input.clinical.data$rate[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
@@ -79,14 +100,16 @@
 			new.clinical.data <- ddply(ID.data, .(SIM,ID), population.clinical)
 	}
 # Simulate the second interval
-	clinical.data2 <- interval.clinical(clinical.data1,TIME1i,TIME2,TIME2i,sample.time1)
+	clinical.data2 <- interval.clinical(2)
+	clinical.data2.x <- clinical.data2[clinical.data2$time < 210,]
 # Simulate the third interval
-	clinical.data3 <- interval.clinical(clinical.data2,TIME2i,TIME3,TIME3i,sample.time2)
+	clinical.data3 <- interval.clinical(3)
+	clinical.data3.x <- clinical.data3[clinical.data3$time < 378,]
 # Simulate the fourth interval
-	clinical.data4 <- interval.clinical(clinical.data3,TIME3i,TIME4,TIME4i,sample.time3)
+	clinical.data4 <- interval.clinical(4)
 
 # Combine clinical.dataX
-	clinical.data <- rbind(clinical.data1,clinical.data2,clinical.data3,clinical.data4)
+	clinical.data <- rbind(conc.data.x,clinical.data2.x,clinical.data3.x,clinical.data4)
 	clinical.data <- clinical.data[with(clinical.data, order(clinical.data$ID,clinical.data$SIM)), ]	# Sort by ID then SIM
 
 # ------------------------------------------------------------------------------
