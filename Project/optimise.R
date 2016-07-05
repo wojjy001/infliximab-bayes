@@ -4,14 +4,27 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	interval.optimise <- function(prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
+	conc.data.x <- conc.data[conc.data$time < 98,]
+	interval.optimise <- function(interval) {
 		# Call simulated data for the previous interval
-			if (max(prev.TIMEXi) == 98) {
+			if (interval == 2) {
 				optimise.data <- conc.data	# From the first interval
-			} else if (max(prev.TIMEXi) == 210) {
+				prev.TIMEXi <- TIME1i	# Previous intervals time sequence
+				TIMEX <- TIME2	# Time sequence for the next interval
+				TIMEXi <- TIME2i	# Infusion times for the next interval
+				sample.time <- sample.time1	# Sampling time
+			} else if (interval == 3) {
 				optimise.data <- optimise.data2	# From the second interval
+				prev.TIMEXi <- TIME2i
+				TIMEX <- TIME3
+				TIMEXi <- TIME3i
+				sample.time <- sample.time2
 			} else {
 				optimise.data <- optimise.data3	# From the third interval
+				prev.TIMEXi <- TIME3i
+				TIMEX <- TIME4
+				TIMEXi <- TIME4i
+				sample.time <- sample.time3
 			}
 		# Call in other objects/data frames required
 		# Need to be placed here for parallelisation to work
@@ -62,13 +75,13 @@
 					)
 					# Make the amt given in the last time-point == 0
 					# Change evid and rate accordingly
-						if (max(TIMEXi) != 490) {
+						if (interval != 4) {
 							input.optimise.data$amt[!c(input.optimise.data$time %in% TIMEXi) | input.optimise.data$time == max(TIMEXi)] <- 0
 							input.optimise.data$evid[!c(input.optimise.data$time %in% TIMEXi) | input.optimise.data$time == max(TIMEXi)] <- 0
 							input.optimise.data$rate[!c(input.optimise.data$time %in% TIMEXi) | input.optimise.data$time == max(TIMEXi)] <- 0
 						}
 						# If looking at the fourth interval, still give the last time-point a dose
-							if (max(TIMEXi) == 490) {
+							if (interval == 4) {
 								input.optimise.data$amt[!c(input.optimise.data$time %in% TIMEXi)] <- 0
 								input.optimise.data$evid[!c(input.optimise.data$time %in% TIMEXi)] <- 0
 								input.optimise.data$rate[!c(input.optimise.data$time %in% TIMEXi)] <- 0
@@ -76,7 +89,7 @@
 
 			# Modify model code ready for simulation
 				initial.compartment <- list(CENT = prev.cent,PERI = prev.peri,AUT = prev.aut)
-				mod <- mod %>% init(initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
+				optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
 			# Reduce input data frame to only infusion and trough times
 			# This will be the data frame that will be used for dose optimisation - as few time-points as possible
 			# optim function is a bit of a bottleneck
@@ -114,7 +127,7 @@
 							input.optimise.dose.data$amt[input.optimise.dose.data$time == TIMEXi[2]] <- par[2]
 							input.optimise.dose.data$amt[input.optimise.dose.data$time == TIMEXi[3]] <- par[3]
 						# Simulate concentration-time profiles with fitted doses
-							new.optimise.data <- mod %>% data_set(input.optimise.dose.data) %>% mrgsim()
+							new.optimise.data <- optim.mod1 %>% data_set(input.optimise.dose.data) %>% mrgsim()
 							new.optimise.data <- as.data.frame(new.optimise.data)
 						# Pull out the predicted trough concentrations with the fitted doses for the interval
 							yhat <- new.optimise.data$IPRE
@@ -129,7 +142,7 @@
 					input.optimise.data$amt[input.optimise.data$time == TIMEXi[2]] <- optimised.doses$par[2]	# Second dose
 					input.optimise.data$amt[input.optimise.data$time == TIMEXi[3]] <- optimised.doses$par[3]	# Third dose
 			# Simulate
-				new.optimise.data <- mod %>% data_set(input.optimise.data) %>% mrgsim()
+				new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
 				new.optimise.data <- as.data.frame(new.optimise.data)
 		}
 		# Simulate concentration-time profiles for individuals in ID.data
@@ -139,14 +152,16 @@
 
 # Simulate intervals separately
 # Simulate the second interval
-	optimise.data2 <- interval.optimise(TIME1i,TIME2,TIME2i,sample.time1)
+	optimise.data2 <- interval.optimise(2)
+	optimise.data2.x <- optimise.data2[optimise.data2$time < 210,]
 # Simulate the third interval
-	optimise.data3 <- interval.optimise(TIME2i,TIME3,TIME3i,sample.time2)
+	optimise.data3 <- interval.optimise(3)
+	optimise.data3.x <- optimise.data3[optimise.data3$time < 378,]
 # Simulate the fourth interval
-	optimise.data4 <- interval.optimise(TIME3i,TIME4,TIME4i,sample.time3)
+	optimise.data4 <- interval.optimise(4)
 
 # Combine optimise.dataX
-	optimise.data <- rbind(conc.data,optimise.data2,optimise.data3,optimise.data4)
+	optimise.data <- rbind(conc.data.x,optimise.data2.x,optimise.data3.x,optimise.data4)
 	optimise.data <- optimise.data[with(optimise.data, order(optimise.data$ID,optimise.data$SIM)), ]	# Sort by ID then SIM
 
 # ------------------------------------------------------------------------------

@@ -73,9 +73,8 @@
 
 	$TABLE		table(IPRE) = CENT/V1;
 
-	$CAPTURE	SIM WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4
+	$CAPTURE	WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
 		# There is opportunity to simply update model parameters after the model code has been compiled
-		

@@ -22,7 +22,7 @@
 	# Register the parallel backend with the foreach package
 		registerDoParallel(cl)
 
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Run "single-run" simulation files
 # First standard interval simulation
 	suppressPackageStartupMessages(	# Suppress package loading messages
@@ -37,7 +37,7 @@
 # Optimise simulation
 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"optimise.R"))))
 
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Run the various Bayes estimation scenarios sequentially
 # Scenarios with no time-weighting
 	method <- "NTimeWeight"
@@ -72,6 +72,6 @@
 	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
 	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
 
-# # -------------------------------------------------------------------------------
+# # -----------------------------------------------------------------------------
 # # Quit R once all completed
 # 	q("no")

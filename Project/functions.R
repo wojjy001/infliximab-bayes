@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------------
 # Create and set working directory
 # Specific for the simulation
-	n <- 1	# Number of seed individuals (where each seed individual has a different set of covariate values)
+	n <- 12	# Number of seed individuals (where each seed individual has a different set of covariate values)
 	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
 	sim.output.dir <- paste0(work.dir,sim.name,"/")	# Simulation directory
@@ -21,7 +21,6 @@
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
 # Set seed for reproducible results
 	set.seed(123456)
-	inputEnv <- new.env()
 
 #-------------------------------------------------------------------------------
 # Pre-defined universal objects
@@ -83,6 +82,45 @@
 		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
 		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB*sin(2*pi*FREQ_ALB*input.data$TIME+PHASE_ALB))	# Apply function to every time-point
 		as.data.frame(input.data)
+	}
+
+# Function for flagging if ADA are present for each individual for all time-points
+# This assumes that once a person develops ADA, they stay with ADA
+	ada.function <- function(input.data) {
+		TIMEada <- c(min(input.data$TIME),input.data$ADA_TIME[1],END)	# Specify times when ADA changes
+		RATEada <- c(0,1,1)	# Specify the values for it to change to
+		step.ada <- approxfun(TIMEada,RATEada,method = "const")	# Step function
+		input.data$ADA <- step.ada(input.data$TIME)	# Apply function to every time-point
+		as.data.frame(input.data)
+	}
+
+# Function for calculating changes in random effects
+# A linear function containing the baseline ETA (BASE_ETA) and their last ETA (FINAL_ETA)
+	eta.function <- function(input.data) {
+		# ETA2
+			TIMEeta2 <- c(min(input.data$TIME),max(input.data$TIME))
+			RATEeta2 <- c(head(input.data$BASE_ETA2,1),head(input.data$FINAL_ETA2,1))
+			step.eta2 <- approxfun(TIMEeta2,RATEeta2,method = "linear")	# Linear function
+			input.data$ETA2 <- step.eta2(input.data$TIME)	# Apply function to every time-point
+		# ETA3
+			TIMEeta3 <- c(min(input.data$TIME),max(input.data$TIME))
+			RATEeta3 <- c(head(input.data$BASE_ETA3,1),head(input.data$FINAL_ETA3,1))
+			step.eta3 <- approxfun(TIMEeta3,RATEeta3,method = "linear")	# Linear function
+			input.data$ETA3 <- step.eta3(input.data$TIME)	# Apply function to every time-point
+		# ETA4
+			TIMEeta4 <- c(min(input.data$TIME),max(input.data$TIME))
+			RATEeta4 <- c(head(input.data$BASE_ETA4,1),head(input.data$FINAL_ETA4,1))
+			step.eta4 <- approxfun(TIMEeta4,RATEeta4,method = "linear")	# Linear function
+			input.data$ETA4 <- step.eta4(input.data$TIME)	# Apply function to every time-point
+		# If SIM = 0, i.e, population typical patient, make ETAs equal zero
+			if (input.data$SIM[1] == 0) {
+				input.data$ETA1 <- 0
+				input.data$ETA2 <- 0
+				input.data$ETA3 <- 0
+				input.data$ETA4 <- 0
+			}
+		# Return the resulting data frame
+		input.data
 	}
 
 # Function for simulating individual concentration time profiles

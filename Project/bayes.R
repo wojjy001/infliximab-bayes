@@ -4,14 +4,36 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	interval.bayes <- function(prev.TIMEXi,TIMEX,TIMEXi,sample.time) {
+	conc.data.x <- conc.data[conc.data$time < 98,]
+	interval.bayes <- function(interval) {
 		# Call simulated data for the previous interval
-			if (max(prev.TIMEXi) == 98) {
+			if (interval == 2) {
 				optimise.bayes.data <- conc.data	# From the first interval
-			} else if (max(prev.TIMEXi) == 210) {
-				optimise.bayes.data <- optimise.bayes.data2	# From the second interval
+				TIMEX <- unique(c(TIME1,TIME2))	# Time sequence for the first x intervals and the next one
+				next.TIMEX <- TIME2	# Next time interval's sequence
+				TIMEXi <- unique(c(TIME1i,TIME2i))	# Infusion times for the previous x intervals and the next one
+				prev.TIMEXi <- TIME1i	# Infusion times from the previous x intervals
+				next.TIMEXi <- TIME2i	# Infusion times for the next interval
+				sample.times <- sample.time1	# Sample times from the previous x intervals
+				sample.time <- sample.time1	# Most recent sample time
+			} else if (interval == 3) {
+				optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2)	# From the first two intervals
+				TIMEX <- unique(c(TIME1,TIME2,TIME3))
+				next.TIMEX <- TIME3
+				TIMEXi <- unique(c(TIME1i,TIME2i,TIME3i))
+				prev.TIMEXi <- unique(c(TIME1i,TIME2i))
+				next.TIMEXi <- TIME3i
+				sample.times <- c(sample.time1,sample.time2)
+				sample.time <- sample.time2
 			} else {
-				optimise.bayes.data <- optimise.bayes.data3	# From the third interval
+				optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3)	# From the first three intervals
+				TIMEX <- unique(c(TIME1,TIME2,TIME3,TIME4))
+				next.TIMEX <- TIME4
+				TIMEXi <- unique(c(TIME1i,TIME2i,TIME3i,TIME4i))
+				prev.TIMEXi <- unique(c(TIME1i,TIME2i,TIME3i))
+				next.TIMEXi <- TIME4i
+				sample.times <- c(sample.time1,sample.time2,sample.time3)
+				sample.time <- sample.time3
 			}
 		# Call in other objects/data frames required
 		# Need to be placed here for parallelisation to work
@@ -34,54 +56,53 @@
 			# optimise.bayes.data = simulated concentration data from the previous interval
 				ind.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
 			# Pull out the sampled concentration from the individual's simulated concentration profile
-				prev.err <- ind.bayes.data$ERRPRO[ind.bayes.data$time == sample.time]
-				prev.DV <- ind.bayes.data$IPRE[ind.bayes.data$time == sample.time]*exp(prev.err)
+				prev.err <- ind.bayes.data$ERRPRO[ind.bayes.data$time %in% sample.times]
+				prev.DV <- ind.bayes.data$IPRE[ind.bayes.data$time %in% sample.times]*exp(prev.err)
 			# Pull out the dose from the previous interval
-				prev.dose <- ind.bayes.data$amt[ind.bayes.data$time == prev.TIMEXi[1]]
-
-			# Pull the amount in the compartments at the beginning of the previous interval
-				prev.init.cent <- ind.bayes.data$CENT[ind.bayes.data$time == prev.TIMEXi[1]]
-				prev.init.peri <- ind.bayes.data$PERI[ind.bayes.data$time == prev.TIMEXi[1]]
-				prev.init.aut <- ind.bayes.data$AUT[ind.bayes.data$time == prev.TIMEXi[1]]
-
-			# Pull out previous ETA values - guide optimisation algorithm with decent initial estimates
-				prev.ETA1 <- 0
-				prev.ETA2 <- 0
-				prev.ETA3 <- 0
-				prev.ETA4 <- 0
-				# If looking not looking at the first interval, make ETAs be the previously estimated ETA value
-					if (prev.TIMEXi[1] != 0) {
-						prev.ETA1 <- ind.bayes.data$ETA1[ind.bayes.data$time == prev.TIMEXi[1]]
-						prev.ETA2 <- ind.bayes.data$ETA2[ind.bayes.data$time == prev.TIMEXi[1]]
-						prev.ETA3 <- ind.bayes.data$ETA3[ind.bayes.data$time == prev.TIMEXi[1]]
-						prev.ETA4 <- ind.bayes.data$ETA4[ind.bayes.data$time == prev.TIMEXi[1]]
-					}
+				prev.dose <- ind.bayes.data$amt[ind.bayes.data$amt != 0]
 
 			# Pull covariate information from at the beginning and end of the previous interval
-				if (covariate.scenario == "AllCov") {	# All covariate information is used
-					BASE_ALB <- ind.bayes.data$ALB[ind.bayes.data$time == prev.TIMEXi[1]]
-					FINAL_ALB <- ind.bayes.data$ALB[ind.bayes.data$time == tail(prev.TIMEXi,1)]
-					TIMEalb <- c(min(prev.TIMEXi),max(prev.TIMEXi))
-					RATEalb <- c(BASE_ALB,FINAL_ALB)
-					alb.function <- approxfun(TIMEalb,RATEalb,method = "linear")
-					prev.ALB <- alb.function(prev.TIMEXi)	# Linear extrapolation of ALB
-					prev.ADA <- ind.bayes.data$ADA[ind.bayes.data$time == tail(prev.TIMEXi,1)]
+				if (covariate.scenario == "AllCov" | covariate.scenario == "NoADA") {
+					ALB1 <- ind.bayes.data$ALB[ind.bayes.data$time == 0]
+					ALB2 <- ind.bayes.data$ALB[ind.bayes.data$time == sample.time1]
+					ALB3 <- ind.bayes.data$ALB[ind.bayes.data$time == sample.time2]
+					ALB4 <- ind.bayes.data$ALB[ind.bayes.data$time == sample.time3]
+					if (interval == 2) {
+						TIMEalb <- c(0,sample.time1)
+						RATEalb <- c(ALB1,ALB2)
+					}
+					if (interval == 3) {
+						TIMEalb <- c(0,sample.time1,sample.time2)
+						RATEalb <- c(ALB1,ALB2,ALB3)
+					}
+					if (interval == 4) {
+						TIMEalb <- c(0,sample.time1,sample.time2,sample.time3)
+						RATEalb <- c(ALB1,ALB2,ALB3,ALB4)
+					}
+					extrap.alb <- approxfun(TIMEalb,RATEalb,method = "linear")
+					prev.ALB <- extrap.alb(prev.TIMEXi)
 				}
-				if (covariate.scenario == "NoADA") {	# No ADA information available - assume population typical
-					BASE_ALB <- ind.bayes.data$ALB[ind.bayes.data$time == prev.TIMEXi[1]]
-					FINAL_ALB <- ind.bayes.data$ALB[ind.bayes.data$time == tail(prev.TIMEXi,1)]
-					TIMEalb <- c(min(prev.TIMEXi),max(prev.TIMEXi))
-					RATEalb <- c(BASE_ALB,FINAL_ALB)
-					alb.function <- approxfun(TIMEalb,RATEalb,method = "linear")
-					prev.ALB <- alb.function(prev.TIMEXi)	# Linear extrapolation of ALB
-					prev.ADA <- 0
-				}
-				if (covariate.scenario == "NoALB") {	# No ALB information available - assume population typical
+				if (covariate.scenario == "NoALB" | covariate.scenario == "NoCov") {
 					prev.ALB <- 4
-					prev.ADA <- ind.bayes.data$ADA[ind.bayes.data$time == tail(prev.TIMEXi,1)]
 				}
-				if (covariate.scenario == "NoCov") {	# No covariate information for ADA or ALB available
-					prev.ALB <- 4
+				if (covariate.scenario == "AllCov" | covariate.scenario == "NoALB") {
+					ADA1 <- ind.bayes.data$ADA[ind.bayes.data$time == sample.time1]
+					ADA2 <- ind.bayes.data$ADA[ind.bayes.data$time == sample.time2]
+					ADA3 <- ind.bayes.data$ADA[ind.bayes.data$time == sample.time3]
+					if (interval == 2) {
+						RATEada <- c(ADA1,ADA1)
+					}
+					if (interval == 3) {
+						RATEada <- c(ADA1,ADA2,ADA2)
+					}
+					if (interval == 4) {
+						RATEada <- c(ADA1,ADA2,ADA3,ADA3)
+					}
+					TIMEada <- c(0,sample.times)
+					extrap.ada <- approxfun(TIMEada,RATEada,method = "constant")
+					prev.ADA <- extrap.ada(prev.TIMEXi)
+				}
+				if (covariate.scenario == "NoADA" | covariate.scenario == "NoCov") {
 					prev.ADA <- 0
 				}
 
@@ -92,29 +113,24 @@
 					time = prev.TIMEXi,	# Time points for simulation
 					ALB = prev.ALB,	# Albumin
 					ADA = prev.ADA,	# Anti-drug antibodies
-					ETA1 = prev.ETA1,
-					ETA2 = prev.ETA2,
-					ETA3 = prev.ETA3,
-					ETA4 = prev.ETA4,
+					ETA1 = 0,
+					ETA2 = 0,
+					ETA3 = 0,
+					ETA4 = 0,
 					ERRPRO = 0,
-					amt = prev.dose,	# bayes dose
+					amt = 350,	# Automatically writes in the first dose, will replace other doses for other intervals
 					evid = 1,	# Dosing event
 					cmt = 1,	# Dose into the central compartment (compartment = 1)
 					rate = -2	# Infusion duration is specific in the model file
 				)
-				# Make the amt given in the last time-point == 0
+				# Input doses according to the interval they were actually administered in
+					if (interval > 2) input.bayes.est.data$amt[input.bayes.est.data$time %in% TIME2i] <- c(prev.dose[4],prev.dose[5],0)
+					if (interval > 3) input.bayes.est.data$amt[input.bayes.est.data$time %in% TIME3i] <- c(prev.dose[6],prev.dose[7],prev.dose[8],0)
+				# Make the amt given in the last time-point == 0 - only sampling here, not dosing straight away
 				# Change evid and rate accordingly
 					input.bayes.est.data$amt[input.bayes.est.data$time == max(prev.TIMEXi)] <- 0
 					input.bayes.est.data$evid[input.bayes.est.data$time == max(prev.TIMEXi)] <- 0
 					input.bayes.est.data$rate[input.bayes.est.data$time == max(prev.TIMEXi)] <- 0
-					if (max(TIMEXi) == 490) {
-						input.bayes.est.data$amt[input.bayes.est.data$time == max(prev.TIMEXi)] <- prev.dose
-						input.bayes.est.data$evid[input.bayes.est.data$time == max(prev.TIMEXi)] <- 1
-						input.bayes.est.data$rate[input.bayes.est.data$time == max(prev.TIMEXi)] <- -2
-					}
-			# Modify model code ready for simulation
-				prev.initial.compartment <- list(CENT = prev.init.cent,PERI = prev.init.peri,AUT = prev.init.aut)
-				mod <- mod %>% init(prev.initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
 
 			# Bayesian estimation
 				bayes.estimate <- function(par) {
@@ -132,7 +148,7 @@
 						new.bayes.data <- mod %>% data_set(input.bayes.est.data) %>% mrgsim()
 						new.bayes.data <- as.data.frame(new.bayes.data)
 					# Pull out the predicted trough concentrations with the fitted doses for the interval
-						yhat <- new.bayes.data$IPRE[new.bayes.data$time == sample.time]
+						yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times]
 						# Posterior log-likelihood
 						# Error model: Y = IPRE*exp(ERRPRO), log(Y) = log(IPRE) + ERRPRO
 							TIMET <- max(new.bayes.data$time) - new.bayes.data$time	# Time since last observation
@@ -148,7 +164,7 @@
 						objective <- -1*sum(loglikpost,loglikprior)
 				}
 			# Initial parameter estimates
-				initial.bayes.par <- exp(c(prev.ETA1,prev.ETA2,prev.ETA3,prev.ETA4))
+				initial.bayes.par <- exp(c(0,0,0,0))
 				par <- initial.bayes.par
 				bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e7))
 
@@ -177,89 +193,100 @@
 				input.optimise.data <- data.frame(
 					ID = ID.number,
 					SIM = SIM.number,
-					time = TIMEX,	# Time-points for Simulation
+					time = next.TIMEX,	# Time-points for Simulation
 					ALB = tail(prev.ALB,1),	# Carry forward last albumin concentration
-					ADA = prev.ADA,	# Carry forward last ADA status
+					ADA = tail(prev.ADA,1),	# Carry forward last ADA status
 					ETA1 = new.ETA1,
 					ETA2 = new.ETA2,
 					ETA3 = new.ETA3,
 					ETA4 = new.ETA4,
 					ERRPRO = 0,
-					amt = prev.dose,	# Dose to be optimised
+					amt = 0,	# Dose to be optimised
 					evid = 1,	# Dosing event
 					cmt = 1,	# Dose into the central compartment (compartment = 1)
 					rate = -2	# Infusion duration is specific in the model file
 				)
 			# Make the amt given in the last time-point == 0
 			# Change evid and rate accordingly
-				if (max(TIMEXi) != 490) {
-					input.optimise.data$amt[!c(input.optimise.data$time %in% TIMEXi) | input.optimise.data$time == max(TIMEXi)] <- 0
-					input.optimise.data$evid[!c(input.optimise.data$time %in% TIMEXi) | input.optimise.data$time == max(TIMEXi)] <- 0
-					input.optimise.data$rate[!c(input.optimise.data$time %in% TIMEXi) | input.optimise.data$time == max(TIMEXi)] <- 0
+				if (interval != 4) {
+					input.optimise.data$amt[!c(input.optimise.data$time %in% next.TIMEXi) | input.optimise.data$time == max(next.TIMEXi)] <- 0
+					input.optimise.data$evid[!c(input.optimise.data$time %in% next.TIMEXi) | input.optimise.data$time == max(next.TIMEXi)] <- 0
+					input.optimise.data$rate[!c(input.optimise.data$time %in% next.TIMEXi) | input.optimise.data$time == max(next.TIMEXi)] <- 0
 				}
-				# If looking at the fourth interval, still give the last time-point a dose
-					if (max(TIMEXi) == 490) {
-						input.optimise.data$amt[!c(input.optimise.data$time %in% TIMEXi)] <- 0
-						input.optimise.data$evid[!c(input.optimise.data$time %in% TIMEXi)] <- 0
-						input.optimise.data$rate[!c(input.optimise.data$time %in% TIMEXi)] <- 0
-					}
+			# If looking at the fourth interval, still give the last time-point a dose
+				if (interval == 4) {
+					input.optimise.data$amt[!c(input.optimise.data$time %in% next.TIMEXi)] <- 0
+					input.optimise.data$evid[!c(input.optimise.data$time %in% next.TIMEXi)] <- 0
+					input.optimise.data$rate[!c(input.optimise.data$time %in% next.TIMEXi)] <- 0
+				}
 
 			# Pull the amount in the compartments at the end of the previous interval
-				prev.cent <- new.bayes.data$CENT[new.bayes.data$time == sample.time]
-				prev.peri <- new.bayes.data$PERI[new.bayes.data$time == sample.time]
-				prev.aut <- new.bayes.data$AUT[new.bayes.data$time == sample.time]
+				prev.bayes.cent <- new.bayes.data$CENT[new.bayes.data$time == sample.time]
+				prev.bayes.peri <- new.bayes.data$PERI[new.bayes.data$time == sample.time]
+				prev.bayes.aut <- new.bayes.data$AUT[new.bayes.data$time == sample.time]
 			# Modify model code ready for simulation
-				initial.compartment <- list(CENT = prev.cent,PERI = prev.peri,AUT = prev.aut)
-				mod <- mod %>% init(initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
+				initial.bayes.compartment <- list(CENT = prev.bayes.cent,PERI = prev.bayes.peri,AUT = prev.bayes.aut)
+				optim.mod2 <- mod %>% init(initial.bayes.compartment) %>% carry.out(SIM,amt,ERRPRO)
 			# Reduce input data frame to only infusion and trough times
 			# This will be the data frame that will be used for dose optimisation - as few time-points as possible
 			# optim function is a bit of a bottleneck
-				trough.times <- TIMEXi+56	# Infusion time + 56 days
-				optimise.times <- unique(sort(c(TIMEXi,trough.times)))
+				trough.times <- next.TIMEXi+56	# Infusion time + 56 days
+				optimise.times <- unique(sort(c(next.TIMEXi,trough.times)))
 				input.optimise.dose.data <- input.optimise.data[input.optimise.data$time %in% optimise.times,]
 
 				# Initial parameter estimates
 					# Initial dose is what the "clinical" dose would have been - somewhere in the ballpark
 					# Calculate the new dose for the next interval based on "sample" and "dose"
-						if (prev.DV < trough.target | prev.DV >= trough.upper) {
-							initial.dose <- trough.target/prev.DV*prev.dose	# Adjust the dose if out of range
+						last.DV <- tail(prev.DV,1)
+						last.dose <- tail(prev.dose,1)
+						if (last.DV < trough.target | last.DV >= trough.upper) {
+							initial.dose <- trough.target/last.DV*last.dose	# Adjust the dose if out of range
 						} else {
-							initial.dose <- prev.dose	# Continue with previous dose if within range
+							initial.dose <- last.dose	# Continue with previous dose if within range
 						}
 
-					initial.err <- 0.001	# Initial estimate for the error
-					initial.par <- c(initial.dose,initial.dose,initial.dose,initial.err)
+				# Limits of parameters
+					if (interval == 2) {
+						initial.par <- c(initial.dose,initial.dose,0.001)
+						lower.limit <- c(initial.dose*0.5,initial.dose*0.5,0.0001)
+						upper.limit <- c(initial.dose*2,initial.dose*2,10)
+					} else {
+						initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
+						lower.limit <- c(initial.dose*0.5,initial.dose*0.5,initial.dose*0.5,0.0001)
+						upper.limit <- c(initial.dose*2,initial.dose*2,initial.dose*2,10)
+					}
 					par <- initial.par
-
-				# Dose parameter limits
-					lower.dose.limit <- initial.dose*0.5
-					upper.dose.limit <- initial.dose*2
 
 				# Find the doses that maximum the likelihood of trough concentrations being the target
 					optimise.dose <- function(par) {
 						# Add fitted parameters to the input data frame
-							input.optimise.dose.data$amt[input.optimise.dose.data$time == TIMEXi[1]] <- par[1]
-							input.optimise.dose.data$amt[input.optimise.dose.data$time == TIMEXi[2]] <- par[2]
-							input.optimise.dose.data$amt[input.optimise.dose.data$time == TIMEXi[3]] <- par[3]
+							input.optimise.dose.data$amt[input.optimise.dose.data$time == next.TIMEXi[1]] <- par[1]
+							input.optimise.dose.data$amt[input.optimise.dose.data$time == next.TIMEXi[2]] <- par[2]
+							if (interval == 2) {
+								err <- par[3]
+							} else {
+								input.optimise.dose.data$amt[input.optimise.dose.data$time == next.TIMEXi[3]] <- par[3]
+								err <- par[4]
+							}
 						# Simulate concentration-time profiles with fitted doses
-							new.optimise.data <- mod %>% data_set(input.optimise.dose.data) %>% mrgsim()
-							new.optimise.data <- as.data.frame(new.optimise.data)
+							new.optimise.dose.data <- optim.mod2 %>% data_set(input.optimise.dose.data) %>% mrgsim()
+							new.optimise.dose.data <- as.data.frame(new.optimise.dose.data)
 						# Pull out the predicted trough concentrations with the fitted doses for the interval
-							yhat <- new.optimise.data$IPRE
-							res <- dnorm(trough.target,yhat,yhat*par[4],log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
+							yhat <- new.optimise.dose.data$IPRE
+							res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
 						# Objective function value and minimise the value
 							objective <- -1*sum(res)
 							objective
 					}
-					optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(lower.dose.limit,lower.dose.limit,lower.dose.limit,0.0001),upper = c(upper.dose.limit,upper.dose.limit,upper.dose.limit,1))
+					optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit)
 
 			# Create a data frame ready for simulating what happened to the patient given the Bayesian guided doses
 				# Input optimised doses ready for simulation
-					input.optimise.data$amt[input.optimise.data$time == TIMEXi[1]] <- optimised.doses$par[1]	# First dose
-					input.optimise.data$amt[input.optimise.data$time == TIMEXi[2]] <- optimised.doses$par[2]	# Second dose
-					input.optimise.data$amt[input.optimise.data$time == TIMEXi[3]] <- optimised.doses$par[3]	# Third dose
+					input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[1]] <- optimised.doses$par[1]	# First dose
+					input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[2]] <- optimised.doses$par[2]	# Second dose
+					if (interval != 2) input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[3]] <- optimised.doses$par[3]	# Third dose
 				# Input changing ETA values and covariate values
-					ind.data <- pop.data.import[pop.data.import$ID == ID.number & pop.data.import$SIM == SIM.number & pop.data.import$TIME %in% TIMEX,]
+					ind.data <- pop.data.import[pop.data.import$ID == ID.number & pop.data.import$SIM == SIM.number & pop.data.import$TIME %in% next.TIMEX,]
 					input.optimise.data$ETA1 <- ind.data$ETA1
 					input.optimise.data$ETA2 <- ind.data$ETA2
 					input.optimise.data$ETA3 <- ind.data$ETA3
@@ -267,8 +294,16 @@
 					input.optimise.data$ALB <- ind.data$ALB
 					input.optimise.data$ADA <- ind.data$ADA
 					input.optimise.data$ERRPRO <- ind.data$ERRPRO
+
+			# Pull the amount in the compartments at the end of the previous interval
+				prev.cent <- ind.bayes.data$CENT[ind.bayes.data$time == sample.time]
+				prev.peri <- ind.bayes.data$PERI[ind.bayes.data$time == sample.time]
+				prev.aut <- ind.bayes.data$AUT[ind.bayes.data$time == sample.time]
+			# Modify model code ready for simulation
+				initial.compartment <- list(CENT = prev.cent,PERI = prev.peri,AUT = prev.aut)
+				optim.mod3 <- mod %>% init(initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
 			# Simulate
-				new.optimise.data <- mod %>% data_set(input.optimise.data) %>% mrgsim()
+				new.optimise.data <- optim.mod3 %>% data_set(input.optimise.data) %>% mrgsim()
 				new.optimise.data <- as.data.frame(new.optimise.data)
 		}
 		# Simulate concentration-time profiles for individuals in ID.data
@@ -278,22 +313,26 @@
 
 # Simulate intervals separately
 # Simulate the second interval
-	optimise.bayes.data2 <- interval.bayes(TIME1i,TIME2,TIME2i,sample.time1)
+	optimise.bayes.data2 <- interval.bayes(2)
+	optimise.bayes.data2.x <- optimise.bayes.data2[optimise.bayes.data2$time < 210,]
 # Simulate the third interval
-	optimise.bayes.data3 <- interval.bayes(TIME2i,TIME3,TIME3i,sample.time2)
+	optimise.bayes.data3 <- interval.bayes(3)
+	optimise.bayes.data3.x <- optimise.bayes.data3[optimise.bayes.data3$time < 378,]
 # Simulate the fourth interval
-	optimise.bayes.data4 <- interval.bayes(TIME3i,TIME4,TIME4i,sample.time3)
+	optimise.bayes.data4 <- interval.bayes(4)
 
 # Combine bayes.dataX
-	optimise.bayes.data <- rbind(conc.data,optimise.bayes.data2,optimise.bayes.data3,optimise.bayes.data4)
+	optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3.x,optimise.bayes.data4)
 	optimise.bayes.data <- optimise.bayes.data[with(optimise.bayes.data, order(optimise.bayes.data$ID,optimise.bayes.data$SIM)), ]	# Sort by ID then SIM
 
 # # ------------------------------------------------------------------------------
 # # Test plot
 # 	plotobj5 <- NULL
-# 	plotobj5 <- ggplot(optimise.bayes.data)
-# 	plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
-# 	plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+# 	plotobj5 <- ggplot()
+# 	plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.bayes.data,geom = "line",fun.y = median,colour = "red")
+# 	plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.bayes.data,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+# 	# plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.data,geom = "line",fun.y = median,colour = "blue")
+# 	# plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.data,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "blue",alpha = 0.3)
 # 	plotobj5 <- plotobj5 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
 # 	plotobj5 <- plotobj5 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
 # 	plotobj5 <- plotobj5 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))

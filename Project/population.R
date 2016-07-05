@@ -5,9 +5,6 @@
 # Source the other R scripts and execute
 	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
 	source(paste0(work.dir,"functions.R"))
-# Objects that need to be sent to the cluster
-	n <- 2
-	nsim <- 1
 
 # ------------------------------------------------------------------------------
 # Define population's characteristics
@@ -69,52 +66,12 @@
 	pop.data <- pop.data[with(pop.data, order(pop.data$SIM,pop.data$ID)), ]
 	pop.data$TIME <- TIME
 
-# ------------------------------------------------------------------------------
 # Calculate albumin concentrations for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), albumin.function)
 
-# ------------------------------------------------------------------------------
-# Function for flagging if ADA are present for each individual for all time-points
-# This assumes that once a person develops ADA, they stay with ADA
-	ada.function <- function(input.data) {
-		TIMEada <- c(min(input.data$TIME),input.data$ADA_TIME[1],END)	# Specify times when ADA changes
-		RATEada <- c(0,1,1)	# Specify the values for it to change to
-		step.ada <- approxfun(TIMEada,RATEada,method = "const")	# Step function
-		input.data$ADA <- step.ada(input.data$TIME)	# Apply function to every time-point
-		as.data.frame(input.data)
-	}
 # Flag if ADA are present for each individual for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), ada.function)
 
-# ------------------------------------------------------------------------------
-# Function for calculating changes in random effects
-# A linear function containing the baseline ETA (BASE_ETA) and their last ETA (FINAL_ETA)
-	eta.function <- function(input.data) {
-		# ETA2
-			TIMEeta2 <- c(min(input.data$TIME),max(input.data$TIME))
-			RATEeta2 <- c(head(input.data$BASE_ETA2,1),head(input.data$FINAL_ETA2,1))
-			step.eta2 <- approxfun(TIMEeta2,RATEeta2,method = "linear")	# Linear function
-			input.data$ETA2 <- step.eta2(input.data$TIME)	# Apply function to every time-point
-		# ETA3
-			TIMEeta3 <- c(min(input.data$TIME),max(input.data$TIME))
-			RATEeta3 <- c(head(input.data$BASE_ETA3,1),head(input.data$FINAL_ETA3,1))
-			step.eta3 <- approxfun(TIMEeta3,RATEeta3,method = "linear")	# Linear function
-			input.data$ETA3 <- step.eta3(input.data$TIME)	# Apply function to every time-point
-		# ETA4
-			TIMEeta4 <- c(min(input.data$TIME),max(input.data$TIME))
-			RATEeta4 <- c(head(input.data$BASE_ETA4,1),head(input.data$FINAL_ETA4,1))
-			step.eta4 <- approxfun(TIMEeta4,RATEeta4,method = "linear")	# Linear function
-			input.data$ETA4 <- step.eta4(input.data$TIME)	# Apply function to every time-point
-		# If SIM = 0, i.e, population typical patient, make ETAs equal zero
-			if (input.data$SIM[1] == 0) {
-				input.data$ETA1 <- 0
-				input.data$ETA2 <- 0
-				input.data$ETA3 <- 0
-				input.data$ETA4 <- 0
-			}
-		# Return the resulting data frame
-		input.data
-	}
 # Calculate ETA values for all time-points
 	pop.data <- ddply(pop.data, .(SIM,ID), eta.function)
 
