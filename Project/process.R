@@ -21,17 +21,24 @@
 # Functions for calculating 95% prediction intervals
 	CI95lo <- function(x) quantile(x,probs = 0.025)
 	CI95hi <- function(x) quantile(x,probs = 0.975)
+
 # Summary function for calculating median and 95% prediction intervals
 	summary.function95 <- function(x) {
-		median <- median(x)
-		stat.lo95 <- CI95lo(x)
-		stat.hi95 <- CI95hi(x)
+		median <- median(x)	# median
+		stat.lo95 <- CI95lo(x)	# 2.5th percentile
+		stat.hi95 <- CI95hi(x)	# 97.5th percentile
 		result <- c(median,stat.lo95,stat.hi95)
 		names(result)[c(1,2,3)] <- c("median","stat.lo95","stat.hi95")
 		result
 	}
 
+# Last per ID function
+	lastperID <- function(x) tail(x,1)
+
 # ------------------------------------------------------------------------------
+###########
+##_LABEL_##
+###########
 # Read in label_simulation.csv
 	label.data <- read.csv("label_simulation.csv")
 
@@ -59,3 +66,13 @@
 	plotobj2 <- plotobj2 + scale_y_continuous("Cumulative time under target trough (days)\n")
 	# plotobj2 <- plotobj2 + facet_wrap(~ID)
 	print(plotobj2)
+
+#	Find final AUT for each individual
+	label.data.last <- ddply(label.data, .(SIM,ID), lastperID)
+
+# Plot boxplots
+	plotobj3 <- NULL
+	plotobj3 <- ggplot(label.data.last)
+	plotobj3 <- plotobj3 + geom_boxplot(aes(x = ID,y = AUT,group = ID))
+	plotobj3 <- plotobj3 + scale_x_continuous(breaks = unique(label.data.last$ID))
+	plotobj3
