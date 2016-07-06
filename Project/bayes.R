@@ -5,11 +5,25 @@
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
 	conc.data.x <- conc.data[conc.data$time < 98,]
+
+	bayes.eta.data <- data.frame(
+		ID = NA,
+		SIM = NA,
+		interval = NA,
+		ETA1 = NA,
+		ETA2 = NA,
+		ETA3 = NA,
+		ETA4 = NA
+	)
+	bayes.eta.filename <- paste0(method,covariate,"_bayes_eta_data.csv")
+	write.csv(bayes.eta.data,file = bayes.eta.filename,na = ".",quote = F,row.names = F)
+
 	interval.bayes <- function(interval) {
 		# Call simulated data for the previous interval
 			if (interval == 2) {
 				optimise.bayes.data <- conc.data	# From the first interval
 				TIMEX <- unique(c(TIME1,TIME2))	# Time sequence for the first x intervals and the next one
+				prev.TIMEX <- TIME1	# Time sequence for previous x intervals
 				next.TIMEX <- TIME2	# Next time interval's sequence
 				TIMEXi <- unique(c(TIME1i,TIME2i))	# Infusion times for the previous x intervals and the next one
 				prev.TIMEXi <- TIME1i	# Infusion times from the previous x intervals
@@ -19,6 +33,7 @@
 			} else if (interval == 3) {
 				optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2)	# From the first two intervals
 				TIMEX <- unique(c(TIME1,TIME2,TIME3))
+				prev.TIMEX <- unique(c(TIME1,TIME2))
 				next.TIMEX <- TIME3
 				TIMEXi <- unique(c(TIME1i,TIME2i,TIME3i))
 				prev.TIMEXi <- unique(c(TIME1i,TIME2i))
@@ -28,6 +43,7 @@
 			} else {
 				optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3)	# From the first three intervals
 				TIMEX <- unique(c(TIME1,TIME2,TIME3,TIME4))
+				prev.TIMEX <- unique(c(TIME1,TIME2,TIME3))
 				next.TIMEX <- TIME4
 				TIMEXi <- unique(c(TIME1i,TIME2i,TIME3i,TIME4i))
 				prev.TIMEXi <- unique(c(TIME1i,TIME2i,TIME3i))
@@ -40,6 +56,7 @@
 			covariate.scenario <- covariate	# Level of covariate information for scenario
 			method.scenario <- method	# Time-weighting method
 			pop.data.import <- pop.data	# Data frame of population's characteristics
+			bayes.eta.filename.import <- paste0(method.scenario,covariate.scenario,"_bayes_eta_data.csv")  # Name of saved Bayes eta data frame
 
 		population.bayes <- function(ID.data) {
 			ID.number <- ID.data$ID[1]	# Individual ID
@@ -80,7 +97,7 @@
 						RATEalb <- c(ALB1,ALB2,ALB3,ALB4)
 					}
 					extrap.alb <- approxfun(TIMEalb,RATEalb,method = "linear")
-					prev.ALB <- extrap.alb(prev.TIMEXi)
+					prev.ALB <- extrap.alb(prev.TIMEX)
 				}
 				if (covariate.scenario == "NoALB" | covariate.scenario == "NoCov") {
 					prev.ALB <- 4
@@ -100,17 +117,17 @@
 					}
 					TIMEada <- c(0,sample.times)
 					extrap.ada <- approxfun(TIMEada,RATEada,method = "constant")
-					prev.ADA <- extrap.ada(prev.TIMEXi)
+					prev.ADA <- extrap.ada(prev.TIMEX)
 				}
 				if (covariate.scenario == "NoADA" | covariate.scenario == "NoCov") {
 					prev.ADA <- 0
 				}
 
 			# Set up the new input data frame for Bayes estimation
-				input.bayes.est.data <- data.frame(
+				input.bayes.data <- data.frame(
 					ID = ID.number,
 					SIM = SIM.number,
-					time = prev.TIMEXi,	# Time points for simulation
+					time = prev.TIMEX,	# Time points for simulation
 					ALB = prev.ALB,	# Albumin
 					ADA = prev.ADA,	# Anti-drug antibodies
 					ETA1 = 0,
@@ -124,13 +141,15 @@
 					rate = -2	# Infusion duration is specific in the model file
 				)
 				# Input doses according to the interval they were actually administered in
-					if (interval > 2) input.bayes.est.data$amt[input.bayes.est.data$time %in% TIME2i] <- c(prev.dose[4],prev.dose[5],0)
-					if (interval > 3) input.bayes.est.data$amt[input.bayes.est.data$time %in% TIME3i] <- c(prev.dose[6],prev.dose[7],prev.dose[8],0)
+					if (interval > 2) input.bayes.data$amt[input.bayes.data$time %in% TIME2i] <- c(prev.dose[4],prev.dose[5],0)
+					if (interval > 3) input.bayes.data$amt[input.bayes.data$time %in% TIME3i] <- c(prev.dose[6],prev.dose[7],prev.dose[8],0)
 				# Make the amt given in the last time-point == 0 - only sampling here, not dosing straight away
 				# Change evid and rate accordingly
-					input.bayes.est.data$amt[input.bayes.est.data$time == max(prev.TIMEXi)] <- 0
-					input.bayes.est.data$evid[input.bayes.est.data$time == max(prev.TIMEXi)] <- 0
-					input.bayes.est.data$rate[input.bayes.est.data$time == max(prev.TIMEXi)] <- 0
+					input.bayes.data$amt[input.bayes.data$time >= max(prev.TIMEXi)] <- 0
+					input.bayes.data$evid[input.bayes.data$time >= max(prev.TIMEXi)] <- 0
+					input.bayes.data$rate[input.bayes.data$time >= max(prev.TIMEXi)] <- 0
+				# Only have infusion time-points to speed up Bayesian estimation process
+					input.bayes.est.data <- input.bayes.data[input.bayes.data$time %in% prev.TIMEXi,]
 
 			# Bayesian estimation
 				bayes.estimate <- function(par) {
@@ -168,12 +187,29 @@
 				par <- initial.bayes.par
 				bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e7))
 
-			# Input estimated individual parameter values and covariate values for simulation of previous interval
-				input.bayes.data <- input.bayes.est.data
+			# Convert new ETA values (estimated in the exp() domain)
 				new.ETA1 <- log(bayes.result$par[1])
 				new.ETA2 <- log(bayes.result$par[2])
 				new.ETA3 <- log(bayes.result$par[3])
 				new.ETA4 <- log(bayes.result$par[4])
+
+			# Set up a data frame to save Bayesian estimation results
+				new.bayes.eta.data <- data.frame(
+					ID = ID.number,
+					SIM = SIM.number,
+					interval,
+					ETA1 = new.ETA1,
+					ETA2 = new.ETA2,
+					ETA3 = new.ETA3,
+					ETA4 = new.ETA4
+				)
+			# Read in previous bayes_eta_data results
+				bayes.eta.data <- read.csv(bayes.eta.filename.import,stringsAsFactors = FALSE)
+			# Combine with news results and write to .csv
+				new.bayes.eta.data <- rbind(bayes.eta.data,new.bayes.eta.data)
+				write.csv(new.bayes.eta.data,file = bayes.eta.filename.import,na = ".",quote = F,row.names = F)
+
+			# Input estimated individual parameter values and covariate values for simulation of previous interval
 				input.bayes.data$ETA1 <- new.ETA1	# ETA for clearance
 				input.bayes.data$ETA2 <- new.ETA2	# ETA for V1
 				input.bayes.data$ETA3 <- new.ETA3	# ETA for Q
@@ -194,8 +230,8 @@
 					ID = ID.number,
 					SIM = SIM.number,
 					time = next.TIMEX,	# Time-points for Simulation
-					ALB = tail(prev.ALB,1),	# Carry forward last albumin concentration
-					ADA = tail(prev.ADA,1),	# Carry forward last ADA status
+					ALB = prev.ALB[length(prev.ALB)-1],	# Carry forward last albumin concentration
+					ADA = prev.ADA[length(prev.ADA)-1],	# Carry forward last ADA status
 					ETA1 = new.ETA1,
 					ETA2 = new.ETA2,
 					ETA3 = new.ETA3,
@@ -307,7 +343,7 @@
 				new.optimise.data <- as.data.frame(new.optimise.data)
 		}
 		# Simulate concentration-time profiles for individuals in ID.data
-			new.optimise.bayes.data <- ddply(ID.data, .(SIM,ID), population.bayes, .parallel = TRUE, .progress = "text")
+			new.optimise.bayes.data <- ddply(ID.data, .(SIM,ID), population.bayes, .parallel = FALSE, .progress = "text")
 			new.optimise.bayes.data
 	}
 
@@ -321,9 +357,9 @@
 # Simulate the fourth interval
 	optimise.bayes.data4 <- interval.bayes(4)
 
-# Combine bayes.dataX
-	optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3.x,optimise.bayes.data4)
-	optimise.bayes.data <- optimise.bayes.data[with(optimise.bayes.data, order(optimise.bayes.data$ID,optimise.bayes.data$SIM)), ]	# Sort by ID then SIM
+# # Combine bayes.dataX
+# 	optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3.x,optimise.bayes.data4)
+# 	optimise.bayes.data <- optimise.bayes.data[with(optimise.bayes.data, order(optimise.bayes.data$ID,optimise.bayes.data$SIM)), ]	# Sort by ID then SIM
 
 # # ------------------------------------------------------------------------------
 # # Test plot
