@@ -5,19 +5,6 @@
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
 	conc.data.x <- conc.data[conc.data$time < 98,]
-
-	bayes.eta.data <- data.frame(
-		ID = NA,
-		SIM = NA,
-		interval = NA,
-		ETA1 = NA,
-		ETA2 = NA,
-		ETA3 = NA,
-		ETA4 = NA
-	)
-	bayes.eta.filename <- paste0(method,covariate,"_bayes_eta_data.csv")
-	write.csv(bayes.eta.data,file = bayes.eta.filename,na = ".",quote = F,row.names = F)
-
 	interval.bayes <- function(interval) {
 		# Call simulated data for the previous interval
 			if (interval == 2) {
@@ -192,22 +179,6 @@
 				new.ETA2 <- log(bayes.result$par[2])
 				new.ETA3 <- log(bayes.result$par[3])
 				new.ETA4 <- log(bayes.result$par[4])
-
-			# Set up a data frame to save Bayesian estimation results
-				new.bayes.eta.data <- data.frame(
-					ID = ID.number,
-					SIM = SIM.number,
-					interval,
-					ETA1 = new.ETA1,
-					ETA2 = new.ETA2,
-					ETA3 = new.ETA3,
-					ETA4 = new.ETA4
-				)
-			# Read in previous bayes_eta_data results
-				bayes.eta.data <- read.csv(bayes.eta.filename.import,stringsAsFactors = FALSE)
-			# Combine with news results and write to .csv
-				new.bayes.eta.data <- rbind(bayes.eta.data,new.bayes.eta.data)
-				write.csv(new.bayes.eta.data,file = bayes.eta.filename.import,na = ".",quote = F,row.names = F)
 
 			# Input estimated individual parameter values and covariate values for simulation of previous interval
 				input.bayes.data$ETA1 <- new.ETA1	# ETA for clearance
