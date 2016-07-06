@@ -67,13 +67,6 @@
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions
-# Functions for calculating 95% prediction intervals
-	CI95lo <- function(x) quantile(x,probs = 0.025)
-	CI95hi <- function(x) quantile(x,probs = 0.975)
-
-# Function for taking the last row of a given factor (commonly use for taking the last row of each individual)
-	lastperID <- function(x) tail(x,1)
-
 # Function for calculating albumin concentrations for each individual for all time-points
 # A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
 	albumin.function <- function(input.data) {
