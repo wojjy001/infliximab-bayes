@@ -4,7 +4,6 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	conc.data.x <- conc.data[conc.data$time < 98,]
 	interval.bayes.optimise <- function(interval) {
 		print(paste0("Interval ",interval))
 		# Call simulated data for the previous interval
@@ -53,7 +52,7 @@
 			# 2. Covariate values measured at beginning and end of previous interval
 			# 3. Known doses that were administered during the previous interval
 
-		print("Running input.bayes")
+		# print("Running input.bayes")
 		# Create an input data frame for Bayesian estimation AND THEN simulation given the results of  Bayesian estimation
 			input.bayes <- function(ID.data) {
 				ID.number <- ID.data$ID[1]	# Individual ID
@@ -138,7 +137,7 @@
 				# Return desired data frame
 				input.bayes.data
 			}
-			input.bayes.data <- ddply(ID.data, .(SIM,ID), input.bayes, .parallel = TRUE, .inform = TRUE)
+			input.bayes.data <- ddply(ID.data, .(SIM,ID), input.bayes, .parallel = TRUE)
 		# Write results to .csv
 			filename1 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_input_bayes.csv")
 			write.csv(input.bayes.data,file = filename1,na = ".",quote = FALSE,row.names = FALSE)
@@ -184,9 +183,9 @@
 							# Posterior log-likelihood
 							# Error model: Y = IPRE*exp(ERRPRO), log(Y) = log(IPRE) + ERRPRO
 								TIMET <- max(new.bayes.data$time) - new.bayes.data$time	# Time since last observation
-								if (method.scenario == "NTimeWeight") loglikpost.sd = ERRPRO	# No time-weighting
-								if (method.scenario == "Peck1.005") loglikpost.sd = ERRPRO*1.005^TIMET  # Peck method, Q = 1.005
-								if (method.scenario == "Peck1.01")	loglikpost.sd = ERRPRO*1.01^TIMET	# Peck method, Q = 1.01
+								if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	# No time-weighting
+								if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  # Peck method, Q = 1.005
+								if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	# Peck method, Q = 1.01
 								loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)
 							# Prior log-likelihood
 								ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)
@@ -215,7 +214,7 @@
 						ETA4 = new.ETA4
 					)
 			}
-			bayes.eta.data <- ddply(ID.data, .(SIM,ID), bayes.eta, .parallel = TRUE, .inform = TRUE)
+			bayes.eta.data <- ddply(ID.data, .(SIM,ID), bayes.eta, .parallel = TRUE)
 		# Write results to .csv
 			filename2 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_bayes_eta.csv")
 			write.csv(bayes.eta.data,file = filename2,na = ".",quote = FALSE,row.names = FALSE)
@@ -236,7 +235,7 @@
 					input.bayes.data$ETA3 <- bayes.eta.data$ETA3[1]	# ETA for Q
 					input.bayes.data$ETA4 <- bayes.eta.data$ETA4[1]	# ETA for V2
 				# Simulate previous interval according to the individual parameter estimates and level of covariate information
-					sim.mod1 <- mod %>% carry.out(amt)
+					sim.mod1 <- mod %>% carry.out(amt,ERRPRO)
 					bayes.sim.data <- sim.mod1 %>% data_set(input.bayes.data) %>% mrgsim()
 					bayes.sim.data <- as.data.frame(bayes.sim.data)
 			}
@@ -281,7 +280,7 @@
 					input.optimise.data <- data.frame(
 						ID = ID.number,
 						SIM = SIM.number,
-						time = next.TIMEXi,	# Time-points for Simulation (set for every 14 days)
+						time = next.TIMEX,	# Time-points for Simulation (set for every 14 days)
 						ALB = last.ALB[1],	# Carry forward last albumin concentration
 						ADA = last.ADA[1],	# Carry forward last ADA status
 						ETA1 = bayes.ETA1,
@@ -321,12 +320,11 @@
 				# Initial parameter estimates
 					# Initial dose is what the "clinical" dose would have been - somewhere in the ballpark
 					# Based on last sample and last dose
-						last.err <- optimise.bayes.data$ERRPRO[optimise.bayes.data$time == sample.time]
-						last.DV <- optimise.bayes.data$IPRE[optimise.bayes.data$time == sample.time]*exp(last.err)
+						last.IPRE <- bayes.sim.data$IPRE[bayes.sim.data$time == sample.time]
 						last.dose <- optimise.bayes.data$amt[optimise.bayes.data$time == max(prev.TIMEXi[prev.TIMEXi != max(prev.TIMEXi)])]
 					# Calculate the new dose for the next interval based on "sample" and "dose"
-						if (last.DV < trough.target | last.DV >= trough.upper) {
-							initial.dose <- trough.target/last.DV*last.dose	# Adjust the dose if out of range
+						if (last.IPRE < trough.target | last.IPRE >= trough.upper) {
+							initial.dose <- trough.target/last.IPRE*last.dose	# Adjust the dose if out of range
 						} else {
 							initial.dose <- last.dose	# Continue with previous dose if within range
 						}
@@ -338,12 +336,12 @@
 						# Limits of parameters
 							if (interval == 2) {
 								initial.par <- c(initial.dose,initial.dose,0.001)
-								lower.limit <- c(initial.dose*0.1,initial.dose*0.1,0.0001)
-								upper.limit <- c(initial.dose*10,initial.dose*10,10)
+								lower.limit <- c(0.0001,0.0001,0.0001)
+								upper.limit <- c(1000000,1000000,1000)
 							} else {
 								initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
-								lower.limit <- c(initial.dose*0.1,initial.dose*0.1,initial.dose*0.1,0.0001)
-								upper.limit <- c(initial.dose*10,initial.dose*10,initial.dose*10,10)
+								lower.limit <- c(0.0001,0.0001,0.0001,0.0001)
+								upper.limit <- c(1000000,1000000,1000000,1000)
 							}
 							par <- initial.par
 
@@ -375,7 +373,7 @@
 								objective <- -1*sum(res)
 								objective
 							}
-							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit)
+							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))
 						} else {
 							optimised.doses <- NA
 						}
@@ -384,9 +382,13 @@
 					if (is.na(initial.dose) == FALSE) {
 						DOSE1 <- optimised.doses$par[1]
 						DOSE2 <- optimised.doses$par[2]
-						DOSE3 <- NA
+						if (interval == 2) {
+							DOSE3 <- NA
+							ERR <- optimised.doses$par[3]
+						}
 						if (interval != 2) {	# Other intervals contain three doses
 							DOSE3 <- optimised.doses$par[3]
+							ERR <- optimised.doses$par[4]
 						}
 					} else {
 						DOSE1 <- 1000000
@@ -395,6 +397,7 @@
 						if (interval != 2) {	# Other intervals contain three doses
 							DOSE3 <- 1000000
 						}
+						ERR <- 0
 					}
 
 				# Create a data frame of results
@@ -404,10 +407,11 @@
 						interval,
 						DOSE1,
 						DOSE2,
-						DOSE3
+						DOSE3,
+						ERR
 					)
 			}
-			bayes.optim.data <- ddply(ID.data, .(SIM,ID), bayes.optim, .parallel = TRUE, .inform = TRUE)
+			bayes.optim.data <- ddply(ID.data, .(SIM,ID), bayes.optim, .parallel = TRUE)
 		# Write to .csv
 			filename4 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_bayes_optim.csv")
 			write.csv(bayes.optim.data,file = filename4,na = ".",quote = FALSE,row.names = FALSE)
@@ -420,23 +424,23 @@
 				SIM.number <- ID.data$SIM[1]	# Individual simulation number
 
 				# Subset optimise.bayes.data for ID and SIM
-					optimise.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
+					prev.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
 				# Call on previous amounts in the compartments, doses and samples
 					# Sampled concentration from the individual's simulated concentration profile
-						last.IPRE  <- optimise.bayes.data$IPRE[optimise.bayes.data$time == sample.time]
+						last.IPRE  <- prev.bayes.data$IPRE[prev.bayes.data$time == sample.time]
 					# First dose from the previous interval
-						last.dose <- optimise.bayes.data$amt[optimise.bayes.data$time == prev.TIMEXi[1]]
+						last.dose <- prev.bayes.data$amt[prev.bayes.data$time == prev.TIMEXi[1]]
 					# Amount in the compartments at the end of the previous interval
-						last.cent <- optimise.bayes.data$CENT[optimise.bayes.data$time == sample.time]
-						last.peri <- optimise.bayes.data$PERI[optimise.bayes.data$time == sample.time]
-						last.aut <- optimise.bayes.data$AUT[optimise.bayes.data$time == sample.time]
+						last.cent <- prev.bayes.data$CENT[prev.bayes.data$time == sample.time]
+						last.peri <- prev.bayes.data$PERI[prev.bayes.data$time == sample.time]
+						last.aut <- prev.bayes.data$AUT[prev.bayes.data$time == sample.time]
 					# Modify model code ready for simulation
 						initial.compartment <- list(CENT = last.cent,PERI = last.peri,AUT = last.aut)
 						optim.mod2 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)
 
 				# Call on individual's true covariate and random effect values from pop.data.import
 					# Subset "pop.data.import" for ID and SIM
-						ind.data <- pop.data.import[pop.data.import$ID == ID.number & pop.data.import$SIM == SIM.number & pop.data.import$TIME %in% TIMEX,]
+						ind.data <- pop.data.import[pop.data.import$ID == ID.number & pop.data.import$SIM == SIM.number & pop.data.import$TIME %in% next.TIMEX,]
 					# Covariate values
 						ALB <- ind.data$ALB	# Individual albumin
 						ADA <- ind.data$ADA	# Individual ADA status
@@ -451,7 +455,7 @@
 					input.optimise.data <- data.frame(
 						ID = ID.number,
 						SIM = SIM.number,
-						time = TIMEX,	# Time points for simulation
+						time = next.TIMEX,	# Time points for simulation
 						ALB,	# Albumin
 						ADA,	# Anti-drug antibodies
 						ETA1,
@@ -494,12 +498,12 @@
 					# Limits of parameters
 						if (interval == 2) {
 							initial.par <- c(initial.dose,initial.dose,0.001)
-							lower.limit <- c(initial.dose*0.1,initial.dose*0.1,0.0001)
-							upper.limit <- c(initial.dose*10,initial.dose*10,10)
+							lower.limit <- c(0.0001,0.0001,0.0001)
+							upper.limit <- c(1000000,1000000,1000)
 						} else {
 							initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
-							lower.limit <- c(initial.dose*0.1,initial.dose*0.1,initial.dose*0.1,0.0001)
-							upper.limit <- c(initial.dose*10,initial.dose*10,initial.dose*10,10)
+							lower.limit <- c(0.0001,0.0001,0.0001,0.0001)
+							upper.limit <- c(1000000,1000000,1000000,1000)
 						}
 						par <- initial.par
 
@@ -531,7 +535,7 @@
 							objective <- -1*sum(res)
 							objective
 						}
-						optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit)
+						optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))
 					} else {
 						optimised.doses <- NA
 					}
@@ -540,9 +544,13 @@
 					if (is.na(initial.dose) == FALSE) {
 						DOSE1 <- optimised.doses$par[1]
 						DOSE2 <- optimised.doses$par[2]
-						DOSE3 <- NA
+						if (interval == 2) {
+							DOSE3 <- NA
+							ERR <- optimised.doses$par[3]
+						}
 						if (interval != 2) {	# Other intervals contain three doses
 							DOSE3 <- optimised.doses$par[3]
+							ERR <- optimised.doses$par[4]
 						}
 					} else {
 						DOSE1 <- 1000000
@@ -551,6 +559,7 @@
 						if (interval != 2) {	# Other intervals contain three doses
 							DOSE3 <- 1000000
 						}
+						ERR <- 0
 					}
 
 				# Create a data frame of results
@@ -560,7 +569,8 @@
 						interval,
 						DOSE1,
 						DOSE2,
-						DOSE3
+						DOSE3,
+						ERR
 					)
 			}
 			sim.optim.data <- ddply(ID.data, .(SIM,ID), sim.optim, .parallel = TRUE)
@@ -641,6 +651,12 @@
 					real.sim.data <- as.data.frame(real.sim.data)
 			}
 			real.sim.data <- ddply(ID.data, .(SIM,ID), real.sim, .parallel = TRUE)
+			# Write results to .csv
+				filename6 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_real_sim.csv")
+				write.csv(real.sim.data,file = filename6,na = ".",quote = FALSE,row.names = FALSE)
+
+		# Return real.sim.data (this will become optimise.bayes.data)
+		real.sim.data
 	}
 
 # Simulate intervals separately

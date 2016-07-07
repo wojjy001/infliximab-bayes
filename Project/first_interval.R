@@ -51,6 +51,7 @@
 
 # Simulate concentration-time profiles for individuals in input.conc.data
 	conc.data <- ddply(input.conc.data, .(SIM), conc.per.simulation)
+	conc.data.x <- conc.data[conc.data$time < 98,]
 
 # # ------------------------------------------------------------------------------
 # # Test plot
