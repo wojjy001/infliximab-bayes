@@ -34,8 +34,6 @@
 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
 # Clinical simulation
 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
-# # Optimise simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"optimise.R"))))
 
 # ------------------------------------------------------------------------------
 # Run the various Bayes estimation scenarios sequentially

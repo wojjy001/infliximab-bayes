@@ -15,10 +15,6 @@
 	write.csv(optimise.bayes.data,file = optimise.bayes.data.filename,na = ".",quote = F,row.names = F)
 
 # ------------------------------------------------------------------------------
-# Remove optimise.bayes.data from the workspace
-	rm(optimise.bayes.data)
-
-# ------------------------------------------------------------------------------
 # Print completed message
 	print(paste0("Scenario (",method," ",covariate,") has finished."))
 	setwd(sim.output.dir)	# Set working directory back to global directory
