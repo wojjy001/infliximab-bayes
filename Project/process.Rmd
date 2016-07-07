@@ -1,0 +1,79 @@
+---
+title: "Infliximab: Time-Weighted Bayesian Estimation"
+author: "Jessica Wojciechowski"
+date: "7 July 2016"
+output: html_document
+---
+
+```{r setup,echo = FALSE}
+# Set working directory
+  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
+  n <- 12  # Number of seed individuals that were simulated
+  nsim <- 1 # Number of simulations of seed individuals
+  sim.output.dir <- paste0("SIM",nsim,"_IND",n)
+  work.dir <- paste0(project.dir,sim.output.dir,"/")
+  setwd(work.dir)
+  
+# Load package libraries
+  library(ggplot2)  # Plotting
+  library(grid)  # Plotting
+  
+# Pre-specified functions
+  CI95lo <- function(x) quantile(x,probs = 0.025)  # Calculate 2.5th percentile
+  CI95hi <- function(x) quantile(x,probs = 0.975)  # Calculate 97.5th percentile
+  
+# Pre-specified objects
+  trough.target <- 3  # Don't want to be below the trough
+  trough.upper <- 5  # Don't want concentrations to be too high - waste of drug
+  infusion.times <- c(0,14,42,98,154,210,266,322,378,434,490)
+  scale.log10.labels <- c(0.01,0.1,1,10,100,1000)
+```
+
+## Introduction: Time-Weighted Bayesian Estimation
+
+### Infliximab Pharmacokinetic Model
+
+## Population specifications
+
+All patients weigh 70 kg.
+
+There are 12 seed individuals:
+
+## Dosing and Sampling Specifications
+
+1. Simulations run from time = 0 to time = 546 days (approximately 18 months)
+2. There are 4 sampling intervals:
+    + Sampling interval 1; 0 to 98 days
+    + Sampling interval 2; 98 to 210 days
+    + Sampling interval 3; 210 to 378 days
+    + Sampling interval 4; 378 to 546 days
+3. Trough concentrations are sampled at the end of each sampling interval, i.e., time = 98, 210, 378 and 546 days since first dose
+4. There are 2 or 3 2-hour infliximab infusions administered in each sampling interval
+    + Sampling interval 1; 0, 14 and 42 days
+    + Sampling interval 2; 98 and 154 days
+    + Sampling interval 3; 210, 266 and 322 days
+    + Sampling interval 4; 378, 434 and 490 days
+
+## Label Scenario
+
+Every patient receives a 5 mg/kg dose of infliximab at every infusion time (i.e., 350 mg infused over 2 hours)
+
+```{r Label Scenario Output,echo = FALSE}
+# Source the results of label_simulation
+  label.data <- read.csv("label_simulation.csv")
+  label.data <- label.data[label.data$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
+
+# Plot the median and 95% prediction intervals for individual predicted concentrations (IPRE) over time
+  plotobj1 <- NULL
+  plotobj1 <- ggplot2(label.data)
+  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
+  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+  plotobj1 <- plotobj1 + geom_hline(aes(yintercept = c(trough.target,trough.upper)),linetype = "dashed")
+  plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)",breaks = infusion.times)
+  plotobj1 <- plotobj1 + scale_x_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels)
+  print(plotobj1)
+```
+
+## Clinical Scenario
+
+## Time-Weighted Bayesian Estimation and Dose Optimisation Scenario

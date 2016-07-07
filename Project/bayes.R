@@ -6,6 +6,7 @@
 # Optimise doses using maximum likelihood estimation
 	conc.data.x <- conc.data[conc.data$time < 98,]
 	interval.bayes.optimise <- function(interval) {
+		print(paste0("Interval ",interval))
 		# Call simulated data for the previous interval
 			if (interval == 2) {
 				optimise.bayes.data <- conc.data	# From the first interval
@@ -52,6 +53,7 @@
 			# 2. Covariate values measured at beginning and end of previous interval
 			# 3. Known doses that were administered during the previous interval
 
+		print("Running input.bayes")
 		# Create an input data frame for Bayesian estimation AND THEN simulation given the results of  Bayesian estimation
 			input.bayes <- function(ID.data) {
 				ID.number <- ID.data$ID[1]	# Individual ID
@@ -132,13 +134,16 @@
 					input.bayes.data$amt[!c(input.bayes.data$time %in% prev.TIMEXi) | input.bayes.data$time >= max(prev.TIMEXi)] <- 0
 					input.bayes.data$evid[!c(input.bayes.data$time %in% prev.TIMEXi) | input.bayes.data$time >= max(prev.TIMEXi)] <- 0
 					input.bayes.data$rate[!c(input.bayes.data$time %in% prev.TIMEXi) | input.bayes.data$time >= max(prev.TIMEXi)] <- 0
+
+				# Return desired data frame
 				input.bayes.data
 			}
-			input.bayes.data <- ddply(ID.data, .(SIM,ID), input.bayes, .parallel = TRUE, .progress = "text")
+			input.bayes.data <- ddply(ID.data, .(SIM,ID), input.bayes, .parallel = TRUE, .inform = TRUE)
 		# Write results to .csv
 			filename1 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_input_bayes.csv")
 			write.csv(input.bayes.data,file = filename1,na = ".",quote = FALSE,row.names = FALSE)
 
+		print("Running bayes.eta")
 		# Estimate individual parameter values using "input.bayes.data"
 		# Note: It does not contain the previous samples
 		# Should have the previous doses
@@ -210,11 +215,12 @@
 						ETA4 = new.ETA4
 					)
 			}
-			bayes.eta.data <- ddply(ID.data, .(SIM,ID), bayes.eta, .parallel = TRUE, .progress = "text")
+			bayes.eta.data <- ddply(ID.data, .(SIM,ID), bayes.eta, .parallel = TRUE, .inform = TRUE)
 		# Write results to .csv
 			filename2 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_bayes_eta.csv")
 			write.csv(bayes.eta.data,file = filename2,na = ".",quote = FALSE,row.names = FALSE)
 
+		print("Running bayes.sim")
 		# Simulate the Bayesian estimated profile given results in "bayes.eta.data" and using "input.bayes.data" as a template
 			bayes.sim <- function(ID.data) {
 				ID.number <- ID.data$ID[1]	# Individual ID
@@ -230,10 +236,11 @@
 					input.bayes.data$ETA3 <- bayes.eta.data$ETA3[1]	# ETA for Q
 					input.bayes.data$ETA4 <- bayes.eta.data$ETA4[1]	# ETA for V2
 				# Simulate previous interval according to the individual parameter estimates and level of covariate information
-					bayes.sim.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()
+					sim.mod1 <- mod %>% carry.out(amt)
+					bayes.sim.data <- sim.mod1 %>% data_set(input.bayes.data) %>% mrgsim()
 					bayes.sim.data <- as.data.frame(bayes.sim.data)
 			}
-			bayes.sim.data <- ddply(ID.data, .(SIM,ID), bayes.sim, .parallel = TRUE, .progress = "text")
+			bayes.sim.data <- ddply(ID.data, .(SIM,ID), bayes.sim, .parallel = TRUE)
 		# Write results to .csv
 			filename3 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_bayes_sim.csv")
 			write.csv(bayes.sim.data,file = filename3,na = ".",quote = FALSE,row.names = FALSE)
@@ -248,6 +255,7 @@
 			# 1. Individual IPRE predicted concentration
 			# 2. Actual covariate information
 
+		print("Running bayes.optim")
 		# Optimise dose for the next interval given the estimated Bayes parameters and carried forward covariate values
 		# Begins from end of bayes.sim.data
 			bayes.optim <- function(ID.data) {
@@ -306,7 +314,7 @@
 					prev.bayes.aut <- bayes.sim.data$AUT[bayes.sim.data$time == sample.time]
 				# Modify model code ready for simulation
 					initial.bayes.compartment <- list(CENT = prev.bayes.cent,PERI = prev.bayes.peri,AUT = prev.bayes.aut)
-					optim.mod1 <- mod %>% init(initial.bayes.compartment) %>% carry.out(SIM,amt,ERRPRO)
+					optim.mod1 <- mod %>% init(initial.bayes.compartment) %>% carry.out(amt,ERRPRO)
 
 				# Subset optimise.bayes.data for ID and SIM
 					optimise.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
@@ -322,67 +330,89 @@
 						} else {
 							initial.dose <- last.dose	# Continue with previous dose if within range
 						}
-					# Limits of parameters
-						if (interval == 2) {
-							initial.par <- c(initial.dose,initial.dose,0.001)
-							lower.limit <- c(initial.dose*0.5,initial.dose*0.5,0.0001)
-							upper.limit <- c(initial.dose*2,initial.dose*2,10)
-						} else {
-							initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
-							lower.limit <- c(initial.dose*0.5,initial.dose*0.5,initial.dose*0.5,0.0001)
-							upper.limit <- c(initial.dose*2,initial.dose*2,initial.dose*2,10)
+						if (initial.dose > 1000000) {
+							initial.dose <- NA
 						}
-						par <- initial.par
 
-				# Reduce input data frame to only infusion and trough times
-				# This will be the data frame that will be used for dose optimisation - as few time-points as possible
-				# optim function is a bit of a bottleneck
-					trough.times <- next.TIMEXi+56	# Infusion time + 56 days
-					optimise.times <- unique(sort(c(next.TIMEXi,trough.times)))
-					input.optimise.data <- input.optimise.data[input.optimise.data$time %in% optimise.times,]
-
-				# Find the doses that maximum the likelihood of trough concentrations being the target
-					optimise.dose <- function(par) {
-						# Add fitted parameters to the input data frame
-							input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[1]] <- par[1]
-							input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[2]] <- par[2]
+					if (is.na(initial.dose) == FALSE) {
+						# Limits of parameters
 							if (interval == 2) {
-								err <- par[3]
+								initial.par <- c(initial.dose,initial.dose,0.001)
+								lower.limit <- c(initial.dose*0.1,initial.dose*0.1,0.0001)
+								upper.limit <- c(initial.dose*10,initial.dose*10,10)
 							} else {
-								input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[3]] <- par[3]
-								err <- par[4]
+								initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
+								lower.limit <- c(initial.dose*0.1,initial.dose*0.1,initial.dose*0.1,0.0001)
+								upper.limit <- c(initial.dose*10,initial.dose*10,initial.dose*10,10)
 							}
-						# Simulate concentration-time profiles with fitted doses
-							new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
-							new.optimise.data <- as.data.frame(new.optimise.data)
-						# Pull out the predicted trough concentrations with the fitted doses for the interval
-							yhat <- new.optimise.data$IPRE
-							res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
-						# Objective function value and minimise the value
-							objective <- -1*sum(res)
-							objective
+							par <- initial.par
+
+						# Reduce input data frame to only infusion and trough times
+						# This will be the data frame that will be used for dose optimisation - as few time-points as possible
+						# optim function is a bit of a bottleneck
+							trough.times <- next.TIMEXi+56	# Infusion time + 56 days
+							optimise.times <- unique(sort(c(next.TIMEXi,trough.times)))
+							input.optimise.data <- input.optimise.data[input.optimise.data$time %in% optimise.times,]
+
+						# Find the doses that maximum the likelihood of trough concentrations being the target
+							optimise.dose <- function(par) {
+							# Add fitted parameters to the input data frame
+								input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[1]] <- par[1]
+								input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[2]] <- par[2]
+								if (interval == 2) {
+									err <- par[3]
+								} else {
+									input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[3]] <- par[3]
+									err <- par[4]
+								}
+							# Simulate concentration-time profiles with fitted doses
+								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
+								new.optimise.data <- as.data.frame(new.optimise.data)
+							# Pull out the predicted trough concentrations with the fitted doses for the interval
+								yhat <- new.optimise.data$IPRE
+								res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
+							# Objective function value and minimise the value
+								objective <- -1*sum(res)
+								objective
+							}
+							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit)
+						} else {
+							optimised.doses <- NA
+						}
+
+				# Extract doses from "optimised.doses"
+					if (is.na(initial.dose) == FALSE) {
+						DOSE1 <- optimised.doses$par[1]
+						DOSE2 <- optimised.doses$par[2]
+						DOSE3 <- NA
+						if (interval != 2) {	# Other intervals contain three doses
+							DOSE3 <- optimised.doses$par[3]
+						}
+					} else {
+						DOSE1 <- 1000000
+						DOSE2 <- 1000000
+						DOSE3 <- NA
+						if (interval != 2) {	# Other intervals contain three doses
+							DOSE3 <- 1000000
+						}
 					}
-					optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit)
 
 				# Create a data frame of results
 					bayes.optim.data <- data.frame(
 						ID = ID.number,
 						SIM = SIM.number,
 						interval,
-						DOSE1 = optimised.doses$par[1],
-						DOSE2 = optimised.doses$par[2],
-						DOSE3 = NA
+						DOSE1,
+						DOSE2,
+						DOSE3
 					)
-					if (interval != 2) {	# Other intervals contain three doses
-						bayes.optim.data$DOSE3 = optimised.doses$par[3]
-					}
-					bayes.optim.data
 			}
-			bayes.optim.data <- ddply(ID.data, .(SIM,ID), bayes.optim, .parallel = TRUE, .progress = "text")
+			bayes.optim.data <- ddply(ID.data, .(SIM,ID), bayes.optim, .parallel = TRUE, .inform = TRUE)
 		# Write to .csv
 			filename4 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_bayes_optim.csv")
 			write.csv(bayes.optim.data,file = filename4,na = ".",quote = FALSE,row.names = FALSE)
 
+		print("Running sim.optim")
 		# Optimise dose for the next interval given the true individual parameters and true covariate values
 		# Begins from end of optimise.bayes.data
 			sim.optim <- function(ID.data) {
@@ -393,8 +423,7 @@
 					optimise.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
 				# Call on previous amounts in the compartments, doses and samples
 					# Sampled concentration from the individual's simulated concentration profile
-						last.err <- optimise.bayes.data$ERRPRO[optimise.bayes.data$time == sample.time]	# Individual's residual error
-						sample <- optimise.bayes.data$IPRE[optimise.bayes.data$time == sample.time]*exp(last.err)
+						last.IPRE  <- optimise.bayes.data$IPRE[optimise.bayes.data$time == sample.time]
 					# First dose from the previous interval
 						last.dose <- optimise.bayes.data$amt[optimise.bayes.data$time == prev.TIMEXi[1]]
 					# Amount in the compartments at the end of the previous interval
@@ -403,7 +432,7 @@
 						last.aut <- optimise.bayes.data$AUT[optimise.bayes.data$time == sample.time]
 					# Modify model code ready for simulation
 						initial.compartment <- list(CENT = last.cent,PERI = last.peri,AUT = last.aut)
-						optim.mod2 <- mod %>% init(initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
+						optim.mod2 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)
 
 				# Call on individual's true covariate and random effect values from pop.data.import
 					# Subset "pop.data.import" for ID and SIM
@@ -449,74 +478,97 @@
 						input.optimise.data$rate[!c(input.optimise.data$time %in% TIMEXi)] <- 0
 					}
 
-					# Initial parameter estimates
-						# Initial dose is what the "clinical" dose would have been - somewhere in the ballpark
-						# Calculate the new dose for the next interval based on "sample" and "dose"
-							if (sample < trough.target | sample >= trough.upper) {
-								initial.dose <- trough.target/sample*last.dose	# Adjust the dose if out of range
-							} else {
-								initial.dose <- last.dose	# Continue with previous dose if within range
-							}
-						# Limits of parameters
-							if (interval == 2) {
-								initial.par <- c(initial.dose,initial.dose,0.001)
-								lower.limit <- c(initial.dose*0.5,initial.dose*0.5,0.0001)
-								upper.limit <- c(initial.dose*2,initial.dose*2,10)
-							} else {
-								initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
-								lower.limit <- c(initial.dose*0.5,initial.dose*0.5,initial.dose*0.5,0.0001)
-								upper.limit <- c(initial.dose*2,initial.dose*2,initial.dose*2,10)
-							}
-							par <- initial.par
+				# Initial parameter estimates
+					# Initial dose is what the "clinical" dose would have been - somewhere in the ballpark
+					# Calculate the new dose for the next interval based on "sample" and "dose"
+						if (last.IPRE < trough.target | last.IPRE  >= trough.upper) {
+							initial.dose <- trough.target/last.IPRE *last.dose	# Adjust the dose if out of range
+						} else {
+							initial.dose <- last.dose	# Continue with previous dose if within range
+						}
+						if (initial.dose > 1000000) {
+							initial.dose <- NA
+						}
+
+				if (is.na(initial.dose) == FALSE) {
+					# Limits of parameters
+						if (interval == 2) {
+							initial.par <- c(initial.dose,initial.dose,0.001)
+							lower.limit <- c(initial.dose*0.1,initial.dose*0.1,0.0001)
+							upper.limit <- c(initial.dose*10,initial.dose*10,10)
+						} else {
+							initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
+							lower.limit <- c(initial.dose*0.1,initial.dose*0.1,initial.dose*0.1,0.0001)
+							upper.limit <- c(initial.dose*10,initial.dose*10,initial.dose*10,10)
+						}
+						par <- initial.par
 
 					# Reduce input data frame to only infusion and trough times
 					# This will be the data frame that will be used for dose optimisation - as few time-points as possible
+					# optim function is a bit of a bottleneck
 						trough.times <- next.TIMEXi+56	# Infusion time + 56 days
 						optimise.times <- unique(sort(c(next.TIMEXi,trough.times)))
 						input.optimise.data <- input.optimise.data[input.optimise.data$time %in% optimise.times,]
 
 					# Find the doses that maximum the likelihood of trough concentrations being the target
 						optimise.dose <- function(par) {
-							# Add fitted parameters to the input data frame
-								input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[1]] <- par[1]
-								input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[2]] <- par[2]
-								if (interval == 2) {
-									err <- par[3]
-								} else {
-									input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[3]] <- par[3]
-									err <- par[4]
-								}
-							# Simulate concentration-time profiles with fitted doses
-								new.optimise.data <- optim.mod2 %>% data_set(input.optimise.data) %>% mrgsim()
-								new.optimise.data <- as.data.frame(new.optimise.data)
-							# Pull out the predicted trough concentrations with the fitted doses for the interval
-								yhat <- new.optimise.data$IPRE
-								res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
-							# Objective function value and minimise the value
-								objective <- -1*sum(res)
-								objective
+						# Add fitted parameters to the input data frame
+							input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[1]] <- par[1]
+							input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[2]] <- par[2]
+							if (interval == 2) {
+								err <- par[3]
+							} else {
+								input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[3]] <- par[3]
+								err <- par[4]
+							}
+						# Simulate concentration-time profiles with fitted doses
+							new.optimise.data <- optim.mod2 %>% data_set(input.optimise.data) %>% mrgsim()
+							new.optimise.data <- as.data.frame(new.optimise.data)
+						# Pull out the predicted trough concentrations with the fitted doses for the interval
+							yhat <- new.optimise.data$IPRE
+							res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
+						# Objective function value and minimise the value
+							objective <- -1*sum(res)
+							objective
 						}
 						optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit)
+					} else {
+						optimised.doses <- NA
+					}
+
+				# Extract doses from "optimised.doses"
+					if (is.na(initial.dose) == FALSE) {
+						DOSE1 <- optimised.doses$par[1]
+						DOSE2 <- optimised.doses$par[2]
+						DOSE3 <- NA
+						if (interval != 2) {	# Other intervals contain three doses
+							DOSE3 <- optimised.doses$par[3]
+						}
+					} else {
+						DOSE1 <- 1000000
+						DOSE2 <- 1000000
+						DOSE3 <- NA
+						if (interval != 2) {	# Other intervals contain three doses
+							DOSE3 <- 1000000
+						}
+					}
 
 				# Create a data frame of results
 					sim.optim.data <- data.frame(
 						ID = ID.number,
 						SIM = SIM.number,
 						interval,
-						DOSE1 = optimised.doses$par[1],
-						DOSE2 = optimised.doses$par[2],
-						DOSE3 = NA
+						DOSE1,
+						DOSE2,
+						DOSE3
 					)
-					if (interval != 2) {
-						sim.optim.data$DOSE3 = optimised.doses$par[3]
-					}
-					sim.optim.data
 			}
-			sim.optim.data <- ddply(ID.data, .(SIM,ID), sim.optim, .parallel = TRUE, .progress = "text")
+			sim.optim.data <- ddply(ID.data, .(SIM,ID), sim.optim, .parallel = TRUE)
 		# Write to .csv
 			filename5 <- paste0(method.scenario,covariate.scenario,"_interval",interval,"_sim_optim.csv")
 			write.csv(sim.optim.data,file = filename5,na = ".",quote = FALSE,row.names = FALSE)
 
+		print("Running real.sim")
 		# Simulate the real concentration profile for the individual given the bayes optimised doses for the  next interval
 		# Begins from end of optimise.bayes.data
 			real.sim <- function(ID.data) {
@@ -531,7 +583,7 @@
 						last.aut <- optimise.bayes.data$AUT[optimise.bayes.data$time == sample.time]
 					# Modify model code ready for simulation
 						initial.compartment <- list(CENT = last.cent,PERI = last.peri,AUT = last.aut)
-						optim.mod3 <- mod %>% init(initial.compartment) %>% carry.out(SIM,amt,ERRPRO)
+						optim.mod3 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)
 
 				# Call on individual's true covariate and random effect values from pop.data.import
 					# Subset "pop.data.import" for ID and SIM
@@ -588,7 +640,7 @@
 					real.sim.data <- optim.mod3 %>% data_set(input.sim.data) %>% mrgsim()
 					real.sim.data <- as.data.frame(real.sim.data)
 			}
-			real.sim.data <- ddply(ID.data, .(SIM,ID), real.sim, .parallel = TRUE, .progress = "text")
+			real.sim.data <- ddply(ID.data, .(SIM,ID), real.sim, .parallel = TRUE)
 	}
 
 # Simulate intervals separately
