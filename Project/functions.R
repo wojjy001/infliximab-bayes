@@ -3,8 +3,8 @@
 # -------------------------------------------------------------------------------
 # Create and set working directory
 # Specific for the simulation
-	n <- 12	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 10	# Number of simulations of the seed individuals to perform
+	n <- 1	# Number of seed individuals (where each seed individual has a different set of covariate values)
+	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
 	sim.output.dir <- paste0(work.dir,sim.name,"/")	# Simulation directory
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
@@ -67,13 +67,6 @@
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions
-# Functions for calculating 95% prediction intervals
-	CI95lo <- function(x) quantile(x,probs = 0.025)
-	CI95hi <- function(x) quantile(x,probs = 0.975)
-
-# Function for taking the last row of a given factor (commonly use for taking the last row of each individual)
-	lastperID <- function(x) tail(x,1)
-
 # Function for calculating albumin concentrations for each individual for all time-points
 # A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
 	albumin.function <- function(input.data) {
