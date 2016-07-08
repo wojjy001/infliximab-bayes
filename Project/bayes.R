@@ -195,7 +195,7 @@
 							objective <- -1*sum(loglikpost,loglikprior)
 					}
 				# Run bayes.estimate function
-					bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e7))
+					bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e12))
 
 				# Convert new ETA values (estimated in the exp() domain)
 					new.ETA1 <- log(bayes.result$par[1])
@@ -367,13 +367,13 @@
 								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
 								new.optimise.data <- as.data.frame(new.optimise.data)
 							# Pull out the predicted trough concentrations with the fitted doses for the interval
-								yhat <- new.optimise.data$IPRE
+								yhat <- new.optimise.data$IPRE[new.optimise.data$time > next.TIMEXi[1]]
 								res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
 							# Objective function value and minimise the value
 								objective <- -1*sum(res)
 								objective
 							}
-							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))
+							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))
 						} else {
 							optimised.doses <- NA
 						}
@@ -529,13 +529,13 @@
 							new.optimise.data <- optim.mod2 %>% data_set(input.optimise.data) %>% mrgsim()
 							new.optimise.data <- as.data.frame(new.optimise.data)
 						# Pull out the predicted trough concentrations with the fitted doses for the interval
-							yhat <- new.optimise.data$IPRE
+							yhat <- new.optimise.data$IPRE[new.optimise.data$time > next.TIMEXi[1]]
 							res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
 						# Objective function value and minimise the value
 							objective <- -1*sum(res)
 							objective
 						}
-						optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))
+						optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))
 					} else {
 						optimised.doses <- NA
 					}
