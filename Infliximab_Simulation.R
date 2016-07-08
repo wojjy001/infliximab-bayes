@@ -1,33 +1,33 @@
-#Simulating Population
-#R Script for simulating infliximab concentrations for a population
-#------------------------------------------------------------------------------------------
-#Remove all current objects in the workspace
-rm(list=ls(all=TRUE))
+# Simulating Population
+# R Script for simulating infliximab concentrations for a population
+# ------------------------------------------------------------------------------
+# Remove all current objects in the workspace
+	rm(list=ls(all=TRUE))
 
-#Load package libraries
-library(deSolve)	#Differential equation solver
-library(ggplot2)	#Plotting
-library(plyr)	#Split and rearrange data, ddply function
-library(grid)	#Plotting
-library(compiler)	#Compile repeatedly-called functions
-library(mrgsolve)	#Metrum Research Group differential equation solver
+# Load package libraries
+	library(deSolve)	# Differential equation solver
+	library(ggplot2)	# Plotting
+	library(plyr)	# Split and rearrange data, ddply function
+	library(grid)	# Plotting
+	library(compiler)	# Compile repeatedly-called functions
+	library(mrgsolve)	# Metrum Research Group differential equation solver
 
-#------------------------------------------------------------------------------------------
-#Set a directory for where plots can be saved (best where this R script is saved)
-setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")
+# ------------------------------------------------------------------------------
+# Set a directory for where plots can be saved (best where this R script is saved)
+	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")
 
-#Define a custom ggplot2 theme
-theme_bw2 <- theme_set(theme_bw(base_size = 16))
+# Define a custom ggplot2 theme
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))
 
-#Function for calculating the median, and 2.5th and 97.5th percentiles for plotting simulation results
-sumfuncx <- function(x) {
-	stat1 <- median(x)
-	stat2 <- quantile(x, probs=0.025, names=F)
-	stat3 <- quantile(x, probs=0.975, names=F)
-	stat4 <- length(x)
-	result <- c("median"=stat1, "low"=stat2, "hi"=stat3, "n"=stat4)
-	result
-}
+# Function for calculating the median, and 2.5th and 97.5th percentiles for plotting simulation results
+	sumfuncx <- function(x) {
+		stat1 <- median(x)
+		stat2 <- quantile(x,probs = 0.025,names = F)
+		stat3 <- quantile(x,probs = 0.975,names = F)
+		stat4 <- length(x)
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)
+		result
+	}
 
 # Set seed for reproducible results
 	set.seed(123456)
