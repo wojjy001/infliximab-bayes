@@ -335,13 +335,13 @@
 					if (is.na(initial.dose) == FALSE) {
 						# Limits of parameters
 							if (interval == 2) {
-								initial.par <- c(initial.dose,initial.dose,0.001)
+								initial.par <- c(initial.dose,initial.dose,0.01)
 								lower.limit <- c(0.0001,0.0001,0.0001)
-								upper.limit <- c(1000000,1000000,1000)
+								upper.limit <- c(Inf,Inf,Inf)
 							} else {
-								initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
+								initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)
 								lower.limit <- c(0.0001,0.0001,0.0001,0.0001)
-								upper.limit <- c(1000000,1000000,1000000,1000)
+								upper.limit <- c(Inf,Inf,Inf,Inf)
 							}
 							par <- initial.par
 
@@ -497,13 +497,13 @@
 				if (is.na(initial.dose) == FALSE) {
 					# Limits of parameters
 						if (interval == 2) {
-							initial.par <- c(initial.dose,initial.dose,0.001)
+							initial.par <- c(initial.dose,initial.dose,0.01)
 							lower.limit <- c(0.0001,0.0001,0.0001)
-							upper.limit <- c(1000000,1000000,1000)
+							upper.limit <- c(Inf,Inf,Inf)
 						} else {
-							initial.par <- c(initial.dose,initial.dose,initial.dose,0.001)
+							initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)
 							lower.limit <- c(0.0001,0.0001,0.0001,0.0001)
-							upper.limit <- c(1000000,1000000,1000000,1000)
+							upper.limit <- c(Inf,Inf,Inf,Inf)
 						}
 						par <- initial.par
 
