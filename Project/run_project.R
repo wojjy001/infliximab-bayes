@@ -12,7 +12,7 @@
 	library(doParallel)	# Parallel processing
 	# Set up cores to run parallel processes, thus increasing speed
 	# Set up a cluster of cores to run the job Overall
-		cl <- makePSOCKcluster(3)
+		cl <- makePSOCKcluster(2)
 		# detectCores() searches for the number of cores that the local machine has
 	# List packages required to be sent to each core for the parallel process
 	# The foreach package always needs to be included

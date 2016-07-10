@@ -19,6 +19,7 @@
 				sample.time <- sample.time1	# Most recent sample time
 			} else if (interval == 3) {
 				optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2)	# From the first two intervals
+				prev.bayes.data <- prev.bayes.data2	# Estimated etas from the previous interval (used as initial estimates)
 				TIMEX <- unique(c(TIME1,TIME2,TIME3))
 				prev.TIMEX <- unique(c(TIME1,TIME2))
 				next.TIMEX <- TIME3
@@ -29,6 +30,7 @@
 				sample.time <- sample.time2
 			} else {
 				optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3)	# From the first three intervals
+				prev.bayes.data <- prev.bayes.data3
 				TIMEX <- unique(c(TIME1,TIME2,TIME3,TIME4))
 				prev.TIMEX <- unique(c(TIME1,TIME2,TIME3))
 				next.TIMEX <- TIME4
@@ -135,7 +137,7 @@
 					input.bayes.data$rate[!c(input.bayes.data$time %in% prev.TIMEXi) | input.bayes.data$time >= max(prev.TIMEXi)] <- 0
 
 				# Return desired data frame
-				input.bayes.data
+					input.bayes.data
 			}
 			input.bayes.data <- ddply(ID.data, .(SIM,ID), input.bayes, .parallel = TRUE)
 		# Write results to .csv
@@ -161,7 +163,16 @@
 					input.bayes.data <- input.bayes.data[input.bayes.data$ID == ID.number & input.bayes.data$SIM == SIM.number & input.bayes.data$time %in% prev.TIMEXi,]
 
 				# Initial parameter estimates
-					initial.bayes.par <- exp(c(0,0,0,0))
+					if (interval == 2) {
+						initial.bayes.par <- exp(c(0,0,0,0))
+					} else {
+						ind.prev.bayes.data <- prev.bayes.data[prev.bayes.data$ID == ID.number & prev.bayes.data$SIM == SIM.number,]
+						prev.ETA1 <- ind.prev.bayes.data$ETA1
+						prev.ETA2 <- ind.prev.bayes.data$ETA2
+						prev.ETA3 <- ind.prev.bayes.data$ETA3
+						prev.ETA4 <- ind.prev.bayes.data$ETA4
+						initial.bayes.par <- exp(c(prev.ETA1,prev.ETA2,prev.ETA3,prev.ETA4))
+					}
 					par <- initial.bayes.par
 				# Bayesian estimation
 					bayes.estimate <- function(par) {
@@ -656,18 +667,23 @@
 				write.csv(real.sim.data,file = filename6,na = ".",quote = FALSE,row.names = FALSE)
 
 		# Return real.sim.data (this will become optimise.bayes.data)
-		real.sim.data
+			final <- list(real.sim.data,bayes.eta.data)
 	}
 
 # Simulate intervals separately
 # Simulate the second interval
-	optimise.bayes.data2 <- interval.bayes.optimise(2)
+	final.data2 <- interval.bayes.optimise(2)
+	optimise.bayes.data2 <- final.data2[[1]]
 	optimise.bayes.data2.x <- optimise.bayes.data2[optimise.bayes.data2$time < 210,]
+	prev.bayes.data2 <- final.data2[[2]]
 # Simulate the third interval
-	optimise.bayes.data3 <- interval.bayes.optimise(3)
+	final.data3 <- interval.bayes.optimise(3)
+	optimise.bayes.data3 <- final.data3[[1]]
 	optimise.bayes.data3.x <- optimise.bayes.data3[optimise.bayes.data3$time < 378,]
+	prev.bayes.data3 <- final.data3[[2]]
 # Simulate the fourth interval
-	optimise.bayes.data4 <- interval.bayes.optimise(4)
+	final.data4 <- interval.bayes.optimise(4)
+	optimise.bayes.data4 <- final.data4[[1]]
 
 # Combine bayes.dataX
 	optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3.x,optimise.bayes.data4)
