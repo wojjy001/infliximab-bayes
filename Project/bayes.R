@@ -4,6 +4,8 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
+	conc.data <- conc.data[conc.data$SIM == 4 & conc.data$ID == 12,]
+	ID.data <- ID.data[ID.data$SIM == 4 & ID.data$ID == 12,]
 	interval.bayes.optimise <- function(interval) {
 		print(paste0("Interval ",interval))
 		# Call simulated data for the previous interval
@@ -153,10 +155,10 @@
 				SIM.number <- ID.data$SIM[1]	# Individual simulation number
 
 				# optimise.bayes.data = simulated concentration data from the previous interval
-					prev.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
+					prev.optimise.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
 				# Pull out the sampled concentration from the individual's simulated concentration profile
-					prev.err <- prev.bayes.data$ERRPRO[prev.bayes.data$time %in% sample.times]
-					prev.DV <- prev.bayes.data$IPRE[prev.bayes.data$time %in% sample.times]*exp(prev.err)
+					prev.err <- prev.optimise.bayes.data$ERRPRO[prev.optimise.bayes.data$time %in% sample.times]
+					prev.DV <- prev.optimise.bayes.data$IPRE[prev.optimise.bayes.data$time %in% sample.times]*exp(prev.err)
 
 				# Subset input.bayes.data for ID and SIM
 				# Only collect the previous infusion times - speed up estimation process
@@ -167,10 +169,10 @@
 						initial.bayes.par <- exp(c(0,0,0,0))
 					} else {
 						ind.prev.bayes.data <- prev.bayes.data[prev.bayes.data$ID == ID.number & prev.bayes.data$SIM == SIM.number,]
-						prev.ETA1 <- ind.prev.bayes.data$ETA1
-						prev.ETA2 <- ind.prev.bayes.data$ETA2
-						prev.ETA3 <- ind.prev.bayes.data$ETA3
-						prev.ETA4 <- ind.prev.bayes.data$ETA4
+						prev.ETA1 <- ind.prev.bayes.data$ETA1[1]
+						prev.ETA2 <- ind.prev.bayes.data$ETA2[1]
+						prev.ETA3 <- ind.prev.bayes.data$ETA3[1]
+						prev.ETA4 <- ind.prev.bayes.data$ETA4[1]
 						initial.bayes.par <- exp(c(prev.ETA1,prev.ETA2,prev.ETA3,prev.ETA4))
 					}
 					par <- initial.bayes.par
@@ -688,17 +690,3 @@
 # Combine bayes.dataX
 	optimise.bayes.data <- rbind(conc.data.x,optimise.bayes.data2.x,optimise.bayes.data3.x,optimise.bayes.data4)
 	optimise.bayes.data <- optimise.bayes.data[with(optimise.bayes.data, order(optimise.bayes.data$ID,optimise.bayes.data$SIM)), ]	# Sort by ID then SIM
-
-# # ------------------------------------------------------------------------------
-# # Test plot
-# 	plotobj5 <- NULL
-# 	plotobj5 <- ggplot()
-# 	plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.bayes.data,geom = "line",fun.y = median,colour = "red")
-# 	plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.bayes.data,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
-# 	# plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.data,geom = "line",fun.y = median,colour = "blue")
-# 	# plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = optimise.data,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "blue",alpha = 0.3)
-# 	plotobj5 <- plotobj5 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-# 	plotobj5 <- plotobj5 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
-# 	plotobj5 <- plotobj5 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
-# 	plotobj5 <- plotobj5 + scale_x_continuous("\nTime (days)")
-# 	plotobj5
