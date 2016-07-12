@@ -53,11 +53,11 @@
 	# Clearance stays as one value for ETA as it has a few time-dependent covariates on it
 		cov.data$ETA1 <- rnorm(n*(nsim+1),mean = 0,sd = PPVCL)	# ETA for clearance
 		cov.data$BASE_ETA2 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV1)	# Baseline ETA for V1
-		cov.data$FINAL_ETA2 <- log(exp(cov.data$BASE_ETA2)*c(0.95,1.05))	# Final ETA for V1
+		cov.data$FINAL_ETA2 <- log(exp(cov.data$BASE_ETA2)*runif(n*(nsim+1),min = 0.95,max = 1.05))	# Final ETA for V1
 		cov.data$BASE_ETA3 <- rnorm(n*(nsim+1),mean = 0,sd = PPVQ)	# Baseline ETA for Q
-		cov.data$FINAL_ETA3 <- log(exp(cov.data$BASE_ETA3)*c(1.05,0.95))	# Final ETA for Q
+		cov.data$FINAL_ETA3 <- log(exp(cov.data$BASE_ETA3)*runif(n*(nsim+1),min = 0.95,max = 1.05))	# Final ETA for Q
 		cov.data$BASE_ETA4 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV2)	# Baseline ETA for V2
-		cov.data$FINAL_ETA4 <- log(exp(cov.data$BASE_ETA4)*c(0.95,1.05))	# Final ETA for V2
+		cov.data$FINAL_ETA4 <- log(exp(cov.data$BASE_ETA4)*runif(n*(nsim+1),min = 0.95,max = 1.05))	# Final ETA for V2
 
 # ------------------------------------------------------------------------------
 # Data frame of individual characteristics

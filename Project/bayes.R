@@ -4,8 +4,6 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	conc.data <- conc.data[conc.data$SIM == 4 & conc.data$ID == 12,]
-	ID.data <- ID.data[ID.data$SIM == 4 & ID.data$ID == 12,]
 	interval.bayes.optimise <- function(interval) {
 		print(paste0("Interval ",interval))
 		# Call simulated data for the previous interval
