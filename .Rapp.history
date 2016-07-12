@@ -3,230 +3,331 @@ rm(list=ls(all=TRUE))#
 	library(dplyr)	#
 	library(mrgsolve)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")
-rm(list=ls(all=TRUE))#
-	library(plyr) #
-	library(dplyr)	#
-	library(mrgsolve)	#
-	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
 	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.optimise.data <- data.frame(#
+	input.bayes.data <- data.frame(#
 		ID = 1,#
-		time = c(210,266,322),	#
-		ALB = 3,	#
-		ADA = 1,	#
-		ETA1 = 0.9,	#
+		time = c(0,14,42,98,154,210),	#
+		ALB = 4,	#
+		ADA = 0,	#
+		ETA1 = 0,	#
 		ETA2 = 0,	#
 		ETA3 = 0,	#
 		ETA4 = 0,	#
 		ERRPRO = 0,	#
-		amt = 0,	#
-		evid = 1,	#
+		amt = c(350,350,350,97802.66728,97789.57663,0),	#
+		evid = c(1,1,1,1,1,0),	#
 		cmt = 1,	#
-		rate = -2	#
+		rate = c(-2,-2,-2,-2,-2,0)	#
 	)
-initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)
-input.optimise.data <- data.frame(#
+input.bayes.data
+initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
+		par <- initial.bayes.par
+initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
+		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
+		upper.limit <- c(Inf,Inf,Inf,Inf)#
+		par <- initial.bayes.par
+method.scenario <- "NTimeWeight"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
+#
+			diagnosticflag <- T#
+#
+	    if (diagnosticflag == T) {#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
+	      iterationbuffer <- 1:length(bayes1buffer)#
+	      if (length(iterationbuffer) %% 5 == 0) { #
+          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
+          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
+					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
+					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+	    	}#
+			}#
+		objective#
+	}#
+  plot.new() #
+  bayes1buffer <<- NA  #
+  bayes2buffer <<- NA#
+	bayes3buffer <<- NA#
+	bayes4buffer <<- NA#
+#
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
+prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))
+prev.DV
+method.scenario <- "NTimeWeight"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
+#
+			diagnosticflag <- T#
+#
+	    if (diagnosticflag == T) {#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
+	      iterationbuffer <- 1:length(bayes1buffer)#
+	      if (length(iterationbuffer) %% 5 == 0) { #
+          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
+          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
+					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
+					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+	    	}#
+			}#
+		objective#
+	}#
+  plot.new() #
+  bayes1buffer <<- NA  #
+  bayes2buffer <<- NA#
+	bayes3buffer <<- NA#
+	bayes4buffer <<- NA#
+#
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
+ERRPRO <- 0.419#
+	method.scenario <- "NTimeWeight"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
+#
+			diagnosticflag <- T#
+#
+	    if (diagnosticflag == T) {#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
+	      iterationbuffer <- 1:length(bayes1buffer)#
+	      if (length(iterationbuffer) %% 5 == 0) { #
+          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
+          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
+					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
+					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+	    	}#
+			}#
+		objective#
+	}#
+  plot.new() #
+  bayes1buffer <<- NA  #
+  bayes2buffer <<- NA#
+	bayes3buffer <<- NA#
+	bayes4buffer <<- NA#
+#
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
+rm(list=ls(all=TRUE))#
+	library(plyr) #
+	library(dplyr)	#
+	library(mrgsolve)	#
+	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
+	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
+	input.bayes.data <- data.frame(#
 		ID = 1,#
-		time = c(210,266,322),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
+		time = c(0,14,42,98,154,210),	#
+		ALB = 4,	#
+		ADA = 0,	#
+		ETA1 = 0,	#
+		ETA2 = 0,	#
+		ETA3 = 0,	#
+		ETA4 = 0,	#
 		ERRPRO = 0,	#
-		amt = 0,	#
-		evid = 1,	#
+		amt = c(350,350,350,97802.66728,97789.57663,0),	#
+		evid = c(1,1,1,1,1,0),	#
 		cmt = 1,	#
-		rate = -2	#
+		rate = c(-2,-2,-2,-2,-2,0)	#
 	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)
-input.optimise.data <- data.frame(#
-		ID = 1,#
-		time = c(210,266,322),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
-		ERRPRO = -0.19761816,	#
-		amt = 0,	#
-		evid = 1,	#
-		cmt = 1,	#
-		rate = -2	#
-	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	prev.dose <- 381800.4946
-last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-	if (last.IPRE < 3 | last.IPRE >= 5) {#
-		initial.dose <- trough.target/last.IPRE*last.dose	#
-	} else {#
-		initial.dose <- last.dose	#
-	}
-last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-	if (last.IPRE < 3 | last.IPRE >= 5) {#
-		initial.dose <- 3/last.IPRE*last.dose	#
-	} else {#
-		initial.dose <- last.dose	#
-	}
+		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
+		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
+		upper.limit <- c(Inf,Inf,Inf,Inf)#
+		par <- initial.bayes.par#
+#
+	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
+	PPVCL <- 0.327#
+	PPVV1 <- 0.150#
+	PPVQ <- 1.10#
+	PPVV2 <- 0.799#
+#
+	ERRPRO <- 0.419#
+	method.scenario <- "NTimeWeight"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
+#
+			diagnosticflag <- T#
+#
+	    if (diagnosticflag == T) {#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
+	      iterationbuffer <- 1:length(bayes1buffer)#
+	      if (length(iterationbuffer) %% 5 == 0) { #
+          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
+          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
+					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
+					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+	    	}#
+			}#
+		objective#
+	}#
+  plot.new() #
+  bayes1buffer <<- NA  #
+  bayes2buffer <<- NA#
+	bayes3buffer <<- NA#
+	bayes4buffer <<- NA#
+#
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
 rm(list=ls(all=TRUE))#
 	library(plyr) #
 	library(dplyr)	#
 	library(mrgsolve)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
 	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.optimise.data <- data.frame(#
+	input.bayes.data <- data.frame(#
 		ID = 1,#
-		time = c(210,266,322),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
-		ERRPRO = -0.19761816,	#
-		amt = 0,	#
-		evid = 1,	#
+		time = c(0,14,42,98,154,210),	#
+		ALB = 4,	#
+		ADA = 0,	#
+		ETA1 = 0,	#
+		ETA2 = 0,	#
+		ETA3 = 0,	#
+		ETA4 = 0,	#
+		ERRPRO = 0,	#
+		amt = c(350,350,350,97802.66728,97789.57663,0),	#
+		evid = c(1,1,1,1,1,0),	#
 		cmt = 1,	#
-		rate = -2	#
+		rate = c(-2,-2,-2,-2,-2,0)	#
 	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-		if (last.IPRE < 3 | last.IPRE >= 5) {#
-			initial.dose <- 3/last.IPRE*last.dose	#
-		} else {#
-			initial.dose <- last.dose	#
-		}#
-		initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)#
+		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
 		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
 		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.par#
-	optimise.dose <- function(par) {#
-		input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[1]] <- par[1]#
-		input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[2]] <- par[2]#
-		input.optimise.data$amt[input.optimise.data$time == next.TIMEXi[3]] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(trough.target,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-		objective#
-	}#
+		par <- initial.bayes.par#
 #
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-		if (last.IPRE < 3 | last.IPRE >= 5) {#
-			initial.dose <- 3/last.IPRE*last.dose	#
-		} else {#
-			initial.dose <- last.dose	#
-		}#
-		initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.par#
-	optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(trough.target,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-		objective#
-	}#
+	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
+	PPVCL <- 0.327#
+	PPVV1 <- 0.150#
+	PPVQ <- 1.10#
+	PPVV2 <- 0.799#
 #
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-		objective#
-	}#
+	ERRPRO <- 0.419#
+	method.scenario <- "NTimeWeight"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
 #
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
+			diagnosticflag <- T#
 #
 	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      print(bayes1buffer)#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.bayes.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.bayes.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.bayes.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.bayes.par[4]))#
 	      iterationbuffer <- 1:length(bayes1buffer)#
 	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-2,2),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
+          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
           points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
 					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
 					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-#
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      print(bayes1buffer)#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-2,2),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
 	    	}#
 			}#
 		objective#
@@ -235,71 +336,80 @@ optimise.dose <- function(par) {#
   bayes1buffer <<- NA  #
   bayes2buffer <<- NA#
 	bayes3buffer <<- NA#
-	bayes4buffer <<- NA
-optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-initial.par
-log10(80000000/initial.par[1])
+	bayes4buffer <<- NA#
+#
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
 rm(list=ls(all=TRUE))#
 	library(plyr) #
 	library(dplyr)	#
 	library(mrgsolve)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
 	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.optimise.data <- data.frame(#
+	input.bayes.data <- data.frame(#
 		ID = 1,#
-		time = c(210,266,322),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
-		ERRPRO = -0.19761816,	#
-		amt = 0,	#
-		evid = 1,	#
+		time = c(0,14,42,98,154,210),	#
+		ALB = 4,	#
+		ADA = 0,	#
+		ETA1 = 0,	#
+		ETA2 = 0,	#
+		ETA3 = 0,	#
+		ETA4 = 0,	#
+		ERRPRO = 0,	#
+		amt = c(350,350,350,97802.66728,97789.57663,0),	#
+		evid = c(1,1,1,1,1,0),	#
 		cmt = 1,	#
-		rate = -2	#
+		rate = c(-2,-2,-2,-2,-2,0)	#
 	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-		if (last.IPRE < 3 | last.IPRE >= 5) {#
-			initial.dose <- 3/last.IPRE*last.dose	#
-		} else {#
-			initial.dose <- last.dose	#
-		}#
-		initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)#
+		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
 		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
 		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.par#
-	optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
+		par <- initial.bayes.par#
 #
-		diagnosticflag <- T#
+	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
+	PPVCL <- 0.327#
+	PPVV1 <- 0.150#
+	PPVQ <- 1.10#
+	PPVV2 <- 0.799#
+#
+	ERRPRO <- 0.419#
+	method.scenario <- "Peck1.005"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
+#
+			diagnosticflag <- T#
 #
 	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      print(bayes1buffer)#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.bayes.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.bayes.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.bayes.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.bayes.par[4]))#
 	      iterationbuffer <- 1:length(bayes1buffer)#
 	      if (length(iterationbuffer) %% 5 == 0) { #
           plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
           points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
 					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
 					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
 	    	}#
 			}#
 		objective#
@@ -310,216 +420,78 @@ rm(list=ls(all=TRUE))#
 	bayes3buffer <<- NA#
 	bayes4buffer <<- NA#
 #
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-upper.limit
-lower.limit
-last.IPRE
-input.optimise.data <- data.frame(#
-		ID = 1,#
-		time = c(210,266,322,378),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
-		ERRPRO = -0.19761816,	#
-		amt = 0,	#
-		evid = c(1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,0)	#
-	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-		if (last.IPRE < 3 | last.IPRE >= 5) {#
-			initial.dose <- 3/last.IPRE*last.dose	#
-		} else {#
-			initial.dose <- last.dose	#
-		}#
-		initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.par#
-	optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      print(bayes1buffer)#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-initial.dose
-input.optimise.data
-optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE[new.optimise.data$time > 210]#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE[new.optimise.data$time > 210]#
-		print(yhat)#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e7))#
-	optimised.doses
-optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	optimised.doses
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
 rm(list=ls(all=TRUE))#
 	library(plyr) #
 	library(dplyr)	#
 	library(mrgsolve)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
 	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.optimise.data <- data.frame(#
+	input.bayes.data <- data.frame(#
 		ID = 1,#
-		time = c(210,266,322,378),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
-		ERRPRO = -0.19761816,	#
-		amt = 0,	#
-		evid = c(1,1,1,0),	#
+		time = c(0,14,42,98,154,210),	#
+		ALB = 4,	#
+		ADA = 0,	#
+		ETA1 = 0,	#
+		ETA2 = 0,	#
+		ETA3 = 0,	#
+		ETA4 = 0,	#
+		ERRPRO = 0,	#
+		amt = c(350,350,350,97802.66728,97789.57663,0),	#
+		evid = c(1,1,1,1,1,0),	#
 		cmt = 1,	#
-		rate = c(-2,-2,-2,0)	#
+		rate = c(-2,-2,-2,-2,-2,0)	#
 	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-		if (last.IPRE < 3 | last.IPRE >= 5) {#
-			initial.dose <- 3/last.IPRE*last.dose	#
-		} else {#
-			initial.dose <- last.dose	#
-		}#
-		initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)#
+		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
 		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
 		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.par#
-	optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE[new.optimise.data$time > 210]#
-		print(yhat)#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
+		par <- initial.bayes.par#
 #
-		diagnosticflag <- T#
+	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
+	PPVCL <- 0.327#
+	PPVV1 <- 0.150#
+	PPVQ <- 1.10#
+	PPVV2 <- 0.799#
+#
+	ERRPRO <- 0.419#
+	method.scenario <- "Peck1.01"#
+	bayes.estimate <- function(par) {#
+			ETA1fit <- log(par[1])	#
+			ETA2fit <- log(par[2])#
+			ETA3fit <- log(par[3])#
+			ETA4fit <- log(par[4])#
+			input.bayes.data$ETA1 <- ETA1fit#
+			input.bayes.data$ETA2 <- ETA2fit#
+			input.bayes.data$ETA3 <- ETA3fit#
+			input.bayes.data$ETA4 <- ETA4fit#
+			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
+			new.bayes.data <- as.data.frame(new.bayes.data)#
+			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
+				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
+				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
+				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
+				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
+				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
+				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
+				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
+				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
+			objective <- -1*sum(loglikpost,loglikprior)#
+#
+			diagnosticflag <- T#
 #
 	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
+	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.bayes.par[1]))#
+	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.bayes.par[2]))#
+				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.bayes.par[3]))#
+				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.bayes.par[4]))#
 	      iterationbuffer <- 1:length(bayes1buffer)#
 	      if (length(iterationbuffer) %% 5 == 0) { #
           plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
           points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
 					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
 					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
+          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
 	    	}#
 			}#
 		objective#
@@ -530,110 +502,7 @@ rm(list=ls(all=TRUE))#
 	bayes3buffer <<- NA#
 	bayes4buffer <<- NA#
 #
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	optimised.doses
-378+56
-input.optimise.data <- data.frame(#
-		ID = 1,#
-		time = c(378,434,490,546),	#
-		ALB = 3.622388235,	#
-		ADA = 1,	#
-		ETA1 = 0.818365048,	#
-		ETA2 = 0.0442064,	#
-		ETA3 = -0.409030708,	#
-		ETA4 = -1.805818079,	#
-		ERRPRO = -0.19761816,	#
-		amt = 0,	#
-		evid = c(1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,0)	#
-	)#
-	initial.compartment <- list(CENT = 0.56326075,PERI = 0.171279153,AUT = 76.28227723)#
-	optim.mod1 <- mod %>% init(initial.compartment) %>% carry.out(amt,ERRPRO)#
-	last.dose <- 381800.4946#
-	last.IPRE <- 0.161832842#
-		if (last.IPRE < 3 | last.IPRE >= 5) {#
-			initial.dose <- 3/last.IPRE*last.dose	#
-		} else {#
-			initial.dose <- last.dose	#
-		}#
-		initial.par <- c(initial.dose,initial.dose,initial.dose,0.01)#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.par#
-	optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE[new.optimise.data$time > 210]#
-		print(yhat)#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	optimised.doses
-optimise.dose <- function(par) {#
-		input.optimise.data$amt[1] <- par[1]#
-		input.optimise.data$amt[2] <- par[2]#
-		input.optimise.data$amt[3] <- par[3]#
-		err <- par[4]#
-		new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()#
-		new.optimise.data <- as.data.frame(new.optimise.data)#
-		yhat <- new.optimise.data$IPRE[new.optimise.data$time > 378]#
-		print(yhat)#
-		res <- dnorm(3,yhat,yhat*err,log = T)	#
-		objective <- -1*sum(res)#
-#
-		diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("DOSE1","DOSE2","DOSE3","ERR"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	optimised.doses
+	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
+	bayes.eta
+initial.bayes.par
+log(bayes.eta$par)
