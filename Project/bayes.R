@@ -497,7 +497,7 @@
 					# Initial dose is what the "clinical" dose would have been - somewhere in the ballpark
 					# Calculate the new dose for the next interval based on "sample" and "dose"
 						if (last.IPRE < trough.target | last.IPRE  >= trough.upper) {
-							initial.dose <- trough.target/last.IPRE *last.dose	# Adjust the dose if out of range
+							initial.dose <- trough.target/last.IPRE*last.dose	# Adjust the dose if out of range
 						} else {
 							initial.dose <- last.dose	# Continue with previous dose if within range
 						}
@@ -505,7 +505,7 @@
 							initial.dose <- NA
 						}
 
-				if (is.na(initial.dose) == FALSE) {
+				if (is.na(initial.dose) == FALSE & initial.dose != last.dose) {
 					# Limits of parameters
 						if (interval == 2) {
 							initial.par <- c(initial.dose,initial.dose,0.01)
@@ -552,7 +552,7 @@
 					}
 
 				# Extract doses from "optimised.doses"
-					if (is.na(initial.dose) == FALSE) {
+					if (is.na(initial.dose) == FALSE & initial.dose != last.dose) {
 						DOSE1 <- optimised.doses$par[1]
 						DOSE2 <- optimised.doses$par[2]
 						if (interval == 2) {
@@ -563,6 +563,14 @@
 							DOSE3 <- optimised.doses$par[3]
 							ERR <- optimised.doses$par[4]
 						}
+					} else if (initial.dose == last.dose) {
+						DOSE1 <- last.dose
+						DOSE2 <- last.dose
+						DOSE3 <- NA
+						if (interval != 2) {	# Other intervals contain three doses
+							DOSE3 <- last.dose
+						}
+						ERR <- 0
 					} else {
 						DOSE1 <- 1000000
 						DOSE2 <- 1000000
