@@ -52,15 +52,3 @@
 # Simulate concentration-time profiles for individuals in input.conc.data
 	conc.data <- ddply(input.conc.data, .(SIM), conc.per.simulation)
 	conc.data.x <- conc.data[conc.data$time < 98,]
-
-# # ------------------------------------------------------------------------------
-# # Test plot
-# 	plotobj1 <- NULL
-# 	plotobj1 <- ggplot(conc.data)
-# 	plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
-# 	plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
-# 	plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-# 	plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
-# 	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
-# 	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
-# 	plotobj1

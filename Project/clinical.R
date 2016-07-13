@@ -116,15 +116,3 @@
 # Write clinical.data to a .csv file
 	clinical.data.filename <- "clinical_simulation.csv"
 	write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)
-
-# # ------------------------------------------------------------------------------
-# # Test plot
-# 	plotobj3 <- NULL
-# 	plotobj3 <- ggplot(clinical.data)
-# 	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
-# 	plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
-# 	plotobj3 <- plotobj3 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-# 	plotobj3 <- plotobj3 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
-# 	plotobj3 <- plotobj3 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
-# 	plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)")
-# 	plotobj3
