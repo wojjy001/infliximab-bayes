@@ -343,7 +343,7 @@
 							initial.dose <- NA
 						}
 
-					if (is.na(initial.dose) == FALSE & initial.dose != last.dose) {
+					if (is.na(initial.dose) == FALSE) {
 						# Limits of parameters
 							if (interval == 2) {
 								initial.par <- c(initial.dose,initial.dose,0.01)
@@ -390,7 +390,7 @@
 						}
 
 				# Extract doses from "optimised.doses"
-					if (is.na(initial.dose) == FALSE & initial.dose != last.dose) {
+					if (is.na(initial.dose) == FALSE) {
 						DOSE1 <- optimised.doses$par[1]
 						DOSE2 <- optimised.doses$par[2]
 						if (interval == 2) {
@@ -401,14 +401,6 @@
 							DOSE3 <- optimised.doses$par[3]
 							ERR <- optimised.doses$par[4]
 						}
-					} else if (initial.dose == last.dose) {
-						DOSE1 <- last.dose
-						DOSE2 <- last.dose
-						DOSE3 <- NA
-						if (interval != 2) {	# Other intervals contain three doses
-							DOSE3 <- last.dose
-						}
-						ERR <- 0
 					} else {
 						DOSE1 <- 1000000
 						DOSE2 <- 1000000
