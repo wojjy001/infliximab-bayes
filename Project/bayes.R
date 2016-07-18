@@ -401,7 +401,7 @@
 								DOSE3 <- optimised.doses$par[3]
 								ERR <- optimised.doses$par[4]
 							}
-						} else if (initial.dose == last.dose) {
+						} else if (is.na(initial.dose) == FALSE & initial.dose == last.dose) {
 							DOSE1 <- last.dose
 							DOSE2 <- last.dose
 							DOSE3 <- NA
@@ -571,7 +571,7 @@
 							DOSE3 <- optimised.doses$par[3]
 							ERR <- optimised.doses$par[4]
 						}
-					} else if (initial.dose == last.dose) {
+					} else if (is.na(initial.dose) == FALSE & initial.dose == last.dose) {
 						DOSE1 <- last.dose
 						DOSE2 <- last.dose
 						DOSE3 <- NA
