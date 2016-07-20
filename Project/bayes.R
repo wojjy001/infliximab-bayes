@@ -156,7 +156,7 @@
 					prev.optimise.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
 				# Pull out the sampled concentration from the individual's simulated concentration profile
 					prev.err <- prev.optimise.bayes.data$ERRPRO[prev.optimise.bayes.data$time %in% sample.times]
-					prev.DV <- prev.optimise.bayes.data$IPRE[prev.optimise.bayes.data$time %in% sample.times]*exp(prev.err)
+					prev.DV <- prev.optimise.bayes.data$IPRE[prev.optimise.bayes.data$time %in% sample.times]*(1+prev.err)
 
 				# Subset input.bayes.data for ID and SIM
 				# Only collect the previous infusion times - speed up estimation process
@@ -192,12 +192,12 @@
 						# Pull out the predicted trough concentrations with the fitted doses for the interval
 							yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times]
 							# Posterior log-likelihood
-							# Error model: Y = IPRE*exp(ERRPRO), log(Y) = log(IPRE) + ERRPRO
+							# Error model: Y = IPRE*(1+ERRPRO), Y = IPRE + IPRE*ERRPRO
 								TIMET <- max(new.bayes.data$time) - new.bayes.data$time	# Time since last observation
 								if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	# No time-weighting
 								if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  # Peck method, Q = 1.005
 								if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	# Peck method, Q = 1.01
-								loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)
+								loglikpost <- dnorm(prev.DV,mean = yhat,sd = yhat*loglikpost.sd,log = T)
 							# Prior log-likelihood
 								ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)
 								ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)

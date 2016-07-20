@@ -30,10 +30,10 @@
 			source(paste0(work.dir,"first_interval.R"))
 		)
 	)
-# # Label simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
-# # Clinical simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
+# Label simulation
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
+# Clinical simulation
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
 
 # ------------------------------------------------------------------------------
 # Run the various Bayes estimation scenarios sequentially
