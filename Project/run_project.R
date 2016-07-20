@@ -70,6 +70,6 @@
 	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
 	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
 
-# -----------------------------------------------------------------------------
-# Quit R once all completed
-	q("no")
+# # -----------------------------------------------------------------------------
+# # Quit R once all completed
+# 	q("no")
