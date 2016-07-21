@@ -174,7 +174,7 @@
 						prev.ETA4 <- ind.prev.bayes.data$ETA4[1]
 						initial.bayes.par <- exp(c(prev.ETA1,prev.ETA2,prev.ETA3,prev.ETA4))
 					}
-					par <- initial.bayes.par
+					par <- initial.bayes.par*runif(4,min = 0.8,max = 1.2)
 				# Bayesian estimation
 					bayes.estimate <- function(par) {
 						# Describe parameters to be optimised
@@ -207,7 +207,7 @@
 							objective <- -1*sum(loglikpost,loglikprior)
 					}
 				# Run bayes.estimate function
-					bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001,0.0001,0.0001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e5))
+					bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.00001,0.00001,0.00001,0.00001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e12))
 
 				# Convert new ETA values (estimated in the exp() domain)
 					new.ETA1 <- log(bayes.result$par[1])
