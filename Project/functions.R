@@ -6,7 +6,7 @@
 	n <- 12	# Number of seed individuals (where each seed individual has a different set of covariate values)
 	nsim <- 100	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
-	sim.output.dir <- paste0(work.dir,sim.name,"/")	# Simulation directory
+	sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
 	setwd(file.path(sim.output.dir))	#Set the working directory
 
@@ -20,7 +20,7 @@
 # Custom ggplot2 theme
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
 # Set seed for reproducible results
-	set.seed(123456)
+	set.seed(230289)
 
 #-------------------------------------------------------------------------------
 # Pre-defined universal objects

@@ -41,34 +41,34 @@
 	method <- "NTimeWeight"
 	covariate <- "AllCov"	# AllCov = All covariates
 	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoCov"	# NoCov = No covariates, assume population typical
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
 
 # Scenarios using Peck, Q = 1.005
 	method <- "Peck1.005"
 	covariate <- "AllCov"	# AllCov = All covariates
 	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoCov"	# NoCov = No covariates, assume population typical
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
 
 # Scenarios using Peck, Q = 1.01
 	method <- "Peck1.01"
 	covariate <- "AllCov"	# AllCov = All covariates
 	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
+	# covariate <- "NoCov"	# NoCov = No covariates, assume population typical
+	# suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
 
 # # -----------------------------------------------------------------------------
 # # Quit R once all completed
