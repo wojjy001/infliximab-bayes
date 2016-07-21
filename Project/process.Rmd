@@ -2,14 +2,14 @@
 title: 'Infliximab: Time-Weighted Bayesian Estimation'
 author: "Jessica Wojciechowski"
 date: "7 July 2016"
-output: pdf_document
+output: html_document
 ---
 
-```{r setup,echo = FALSE,warning = FALSE}
+```{r setup,echo = TRUE,warning = FALSE}
 # Set working directory
   project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
   n <- 12  # Number of seed individuals that were simulated
-  nsim <- 100 # Number of simulations of seed individuals
+  nsim <- 200 # Number of simulations of seed individuals
   sim.output.dir <- paste0("SIM",nsim,"_IND",n)
   work.dir <- paste0(project.dir,sim.output.dir,"/")
   setwd(project.dir)
@@ -35,6 +35,18 @@ output: pdf_document
       names(result)[c(1,2,3)] <- c("median","stat.95lo","stat.95hi")
       result
     }
+    
+  # Calculate the number of individuals below the target trough concentration at day 546 
+    below.target.546 <- function(x) {
+      below.target.data <- subset(x,time == 546)
+      below.target.data$BTT[below.target.data$IPRE < 3] <- 1
+      below.target.data$BTT[below.target.data$IPRE >= 3] <- 0
+      result <- data.frame(
+                  BTT = sum(below.target.data$BTT),
+                  n = length(below.target.data$BTT)
+      )
+      result
+    }    
   
 # Pre-specified objects
   trough.target <- 3  # Don't want to be below the trough
@@ -48,53 +60,37 @@ output: pdf_document
   sample.times <- c(sample.time1,sample.time2,sample.time3,sample.time4)
 ```
 
-## Introduction: Time-Weighted Bayesian Estimation
+## Time-Weighting
 
-### Infliximab Pharmacokinetic Model
-
-## Population specifications
-
-All patients weigh 70 kg.  All patients have a baseline albumin of 4 g/dL.
-
-There are 12 seed individuals:
-
-1. ADA onset = 154 days, final albumin = 3 g/dL
-2. ADA onset = 154 days, final albumin = 4 g/dL
-3. ADA onset = 154 days, final albumin = 5 g/dL
-4. ADA onset = 294 days, final albumin = 3 g/dL
-5. ADA onset = 294 days, final albumin = 4 g/dL
-6. ADA onset = 294 days, final albumin = 5 g/dL
-7. ADA onset = 462 days, final albumin = 3 g/dL
-8. ADA onset = 462 days, final albumin = 4 g/dL
-9. ADA onset = 462 days, final albumin = 5 g/dL
-10. ADA onset = 646 days, final albumin = 3 g/dL
-11. ADA onset = 646 days, final albumin = 4 g/dL
-12. ADA onset = 646 days, final albumin = 5 g/dL
-
-Between time = 0 (baseline) and time = 546 (final), patient albumin changes in a linear sine wave fashion (amplitude = 0.1, frequency = 60 days, phase = 0)
-
-Random effect values for V1, Q and V2 change linearly between time = 0 and time = 546.  CL random effect does not change as this parameter holds ADA and albumin covariate effects.
-
-## Dosing and Sampling Specifications
-
-1. Simulations run from time = 0 to time = 546 days (approximately 18 months)
-2. There are 4 sampling intervals:
-    + Sampling interval 1; 0 to 98 days
-    + Sampling interval 2; 98 to 210 days
-    + Sampling interval 3; 210 to 378 days
-    + Sampling interval 4; 378 to 546 days
-3. Trough concentrations are sampled at the end of each sampling interval, i.e., time = 98, 210, 378 and 546 days since first dose
-4. There are 2 or 3 2-hour infliximab infusions administered in each sampling interval
-    + Sampling interval 1; 0, 14 and 42 days
-    + Sampling interval 2; 98 and 154 days
-    + Sampling interval 3; 210, 266 and 322 days
-    + Sampling interval 4; 378, 434 and 490 days
+```{r,echo = FALSE,warning = FALSE}
+# Plot relative contribution to Bayes OFV
+  ERRPRO <- 0.419  # Model RUV standard deviation
+  TIME.seq <- seq(from = 0,to = 546,by = 1)  # Time sequence
+  
+  NTimeWeight <- ERRPRO  # Posterior SD for no time-weighting
+  Peck1005 <- ERRPRO*1.005^(546-TIME.seq)  # Posterior SD for time-weighting using Q = 1.005
+  Peck101 <- ERRPRO*1.01^(546-TIME.seq)  # Posterior SD for time-weighting using Q = 1.01
+  Peck1015 <- ERRPRO*1.015^(546-TIME.seq)
+  
+  NTimeWeight.rel <- ERRPRO/NTimeWeight
+  Peck1005.rel <- ERRPRO/Peck1005
+  Peck101.rel <- ERRPRO/Peck101
+  Peck1015.rel <- ERRPRO/Peck1015
+  
+  plotobj <- NULL
+  plotobj <- ggplot()
+  plotobj <- plotobj + geom_line(aes(x = TIME.seq,y = NTimeWeight.rel))
+  plotobj <- plotobj + geom_line(aes(x = TIME.seq,y = Peck1005.rel),colour = "red")
+  plotobj <- plotobj + geom_line(aes(x = TIME.seq,y = Peck101.rel),colour = "blue")
+  plotobj <- plotobj + geom_line(aes(x = TIME.seq,y = Peck1015.rel),colour = "darkgreen")
+  plotobj <- plotobj + scale_x_continuous("\nTime (days) since most recent observation")
+  plotobj <- plotobj + scale_y_continuous("Relative contribution to objective function value\n")
+  plotobj
+```
 
 ## Label Scenario
 
-Every patient receives a 5 mg/kg dose of infliximab at every infusion time (i.e., 350 mg infused over 2 hours)
-
-```{r Label Scenario Plot Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Source the results of label_simulation
   label.data <- read.csv(paste0(work.dir,"label_simulation.csv"))
   label.data <- label.data[label.data$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
@@ -113,24 +109,23 @@ Every patient receives a 5 mg/kg dose of infliximab at every infusion time (i.e.
 
 For each individual, the time spent under the target trough concentration (3 mg/L) for the entire 546 day period was calculated.
 
-```{r Label Scenario AUT Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Calculate the time spent under the target trough at the end of each sampling interval
   label.data.AUT <- label.data[label.data$time %in% sample.times,]
   label.AUT.summary <- ddply(label.data.AUT, .(time), function(label.data.AUT) summary.function(label.data.AUT$AUT))
   print(label.AUT.summary[label.AUT.summary$time == 546,])
 ```
 
+Number of individuals below the target trough concentration at day 546:
+
+```{r,echo = TRUE,warning = FALSE}
+# Label data
+  print(below.target.546(label.data))
+```
+
 ## Clinical Scenario
 
-Scenario where every patient receives a 5 mg/kg dose of infliximab for every infusion time in the first sampling interval (i.e., at 0, 14 and 42 days). Then:
-
-* Trough concentration at time = 98 days is sampled (DV)
-* Dose for the next sampling interval is determined as:
-    + If a sample < trough target OR sample >= trough upper (5 mg/L) then the new dose will be equal to (trough target/sample)*previous dose
-    + If a sample is within the pre-specified range, then the patient continues with the previous dose
-* Cycle is repeated at sampling times = 210 and 378 days
-
-```{r Clinical Scenario Plot Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Source the results of clinical_simulation
   clinical.data <- read.csv(paste0(work.dir,"clinical_simulation.csv"))
   clinical.data <- clinical.data[clinical.data$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
@@ -151,7 +146,7 @@ We can see a significant improvement in the proportion of people who are achievi
 
 Calculate time spent under the target trough:
 
-```{r Clinical Scenario AUT Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Calculate the time spent under the target trough at the end of each sampling interval
   clinical.data.AUT <- clinical.data[clinical.data$time %in% sample.times,]
   clinical.AUT.summary <- ddply(clinical.data.AUT, .(time), function(clinical.data.AUT) summary.function(clinical.data.AUT$AUT))
@@ -160,26 +155,20 @@ Calculate time spent under the target trough:
 
 The median time spent under the target trough at time = 546 days in the clinical scenario is half compared to the label scenario.
 
+Number of individuals below the target trough concentration at day 546:
+
+```{r,echo = TRUE,warning = FALSE}
+# Clinical data
+  print(below.target.546(clinical.data))
+```
+
 ## Bayesian Estimation and Dose Optimisation Scenarios
-
-Scenario where every patient receives a 5 mg/kg dose of infliximab for every infusion time in the first sampling interval (i.e., at 0, 14 and 42 days). Then:
-
-* Trough concentration at time = 98 days is sampled (DV)
-* Individual values for pharmacokinetic parameters are obtained from empirical Bayes estimates using known administered doses, the sample, and covariate information at time = 0 and the sampling time
-* Doses for the next sampling interval are determined by maximum likelihood estimation (minimise the error between trough concentration given optimised doses and the target trough concentration)
-    + Optimised doses for the next sampling interval are allowed to be different
-    + Initial estimates for doses are obtained by using the method described earlier in "Clinical Scenario"
-    + If an initial estimate for a dose was greater than 1,000,000 mg - then doses were not optimised for the patient and they were just administered 1,000,000 mg
-* Cycle is repeated at sampling times = 210 and 378 days
-    + Bayes estimates obtained from subsequent sampling intervals are based on all previous samples, not just the most recent one
-* When simulating the next interval given the individual parameters estimated from the previous interval, covariate values from the last sample are carried forward
-    + We can predict the concentrations, however we cannot predict changes in their covariate profile
 
 ### No Time-Weighting, All Covariate Information is available
 
 All observations are weighted equally when maximising the posterior likelihood.  Covariate information at the time of sampling as available.
 
-```{r Bayes Scenario NTimeWeightAllCov Plot Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Source the results of bayes_simulation
   method1 <- "NTimeWeight"
   covariate1 <- "AllCov"
@@ -200,116 +189,99 @@ All observations are weighted equally when maximising the posterior likelihood. 
 
 Calculate time spent under the target trough:
 
-```{r Bayes Scenario NTimeWeightAllCov AUT Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Calculate the time spent under the target trough at the end of each sampling interval
-  bayes.data.AUT1 <- bayes.data1[bayes.data1$time %in% sample.times,]
+  bayes.data.AUT1 <- bayes.data1[bayes.data1$time == 546,]
   bayes.AUT.summary1 <- ddply(bayes.data.AUT1, .(time), function(bayes.data.AUT1) summary.function(bayes.data.AUT1$AUT))
-  print(bayes.AUT.summary1[bayes.AUT.summary1$time == 546,])
+  print(bayes.AUT.summary1)
 ```
 
-### Peck 1.005 Time-Weighting, All Covariate Information is available
+## No Time-Weighting versus Time-Weight (Peck, Q = 1.005 and 1.01), All Covariate Information Available
 
-All observations are time-weighted using the Peck method with Q = 1.005 when maximising the posterior likelihood.  Covariate information at the time of sampling as available.
+### Number of people below target trough concentration
 
-```{r Bayes Scenario Peck1.005AllCov Plot Output,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Source the results of bayes_simulation
   method2 <- "Peck1.005"
   covariate2 <- "AllCov"
   bayes.method2 <- paste0(method2,covariate2)
   bayes.data2 <- read.csv(paste0(work.dir,"/",bayes.method2,"/",bayes.method2,"_optimise_bayes_simulation.csv"))
   bayes.data2 <- bayes.data2[bayes.data2$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
+  bayes.data.AUT2 <- bayes.data2[bayes.data2$time == 546,]
 
-# Plot the median and 95% prediction intervals for individual predicted concentrations (IPRE) over time
-  plotobj4 <- NULL
-  plotobj4 <- ggplot()
-  plotobj4 <- plotobj4 + stat_summary(aes(x = time,y = IPRE),data = bayes.data2,geom = "line",fun.y = median,colour = "darkgreen")
-  plotobj4 <- plotobj4 + stat_summary(aes(x = time,y = IPRE),data = bayes.data2,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "darkgreen",alpha = 0.3)
-  plotobj4 <- plotobj4 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-  plotobj4 <- plotobj4 + scale_x_continuous("\nTime (days)",breaks = infusion.times)
-  plotobj4 <- plotobj4 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels)
-  print(plotobj4)
-```
-
-Calculate time spent under the target trough:
-
-```{r Bayes Scenario Peck1.005AllCov AUT Output,echo = FALSE,warning = FALSE}
-# Calculate the time spent under the target trough at the end of each sampling interval
-  bayes.data.AUT2 <- bayes.data2[bayes.data2$time %in% sample.times,]
-  bayes.AUT.summary2 <- ddply(bayes.data.AUT2, .(time), function(bayes.data.AUT2) summary.function(bayes.data.AUT2$AUT))
-  print(bayes.AUT.summary2[bayes.AUT.summary2$time == 546,])
-```
-
-### Peck 1.01 Time-Weighting, All Covariate Information is available
-
-All observations are time-weighted using the Peck method with Q = 1.01 when maximising the posterior likelihood.  Covariate information at the time of sampling as available.
-
-```{r Bayes Scenario Peck1.01AllCov Plot Output,echo = FALSE,warning = FALSE}
 # Source the results of bayes_simulation
   method3 <- "Peck1.01"
   covariate3 <- "AllCov"
   bayes.method3 <- paste0(method3,covariate3)
   bayes.data3 <- read.csv(paste0(work.dir,"/",bayes.method3,"/",bayes.method3,"_optimise_bayes_simulation.csv"))
   bayes.data3 <- bayes.data3[bayes.data3$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
+  bayes.data.AUT3 <- bayes.data3[bayes.data3$time == 546,]  
 
-# Plot the median and 95% prediction intervals for individual predicted concentrations (IPRE) over time
-  plotobj5 <- NULL
-  plotobj5 <- ggplot()
-  plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = bayes.data3,geom = "line",fun.y = median,colour = "darkgreen")
-  plotobj5 <- plotobj5 + stat_summary(aes(x = time,y = IPRE),data = bayes.data3,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "darkgreen",alpha = 0.3)
-  plotobj5 <- plotobj5 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-  plotobj5 <- plotobj5 + scale_x_continuous("\nTime (days)",breaks = infusion.times)
-  plotobj5 <- plotobj5 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels)
-  print(plotobj5)
-```
+  # Bayes data - no time-weighting 
+  print(below.target.546(bayes.data1))
+# Bayes data - Peck, 1.005 
+  print(below.target.546(bayes.data2))
+# Bayes data - Peck, 1.01 
+  print(below.target.546(bayes.data3))
+```  
 
-Calculate time spent under the target trough:
+### Time under target trough concentration
 
-```{r Bayes Scenario Peck1.01AllCov AUT Output,echo = FALSE,warning = FALSE}
-# Calculate the time spent under the target trough at the end of each sampling interval
-  bayes.data.AUT3 <- bayes.data3[bayes.data3$time %in% sample.times,]
-  bayes.AUT.summary3 <- ddply(bayes.data.AUT3, .(time), function(bayes.data.AUT3) summary.function(bayes.data.AUT3$AUT))
-  print(bayes.AUT.summary3[bayes.AUT.summary3$time == 546,])
-```
-
-## No Time-Weighting versus Time-Weight (Peck, Q = 1.005 and 1.01), All Covariate Information Available
-
-# Time under target trough concentration
-
-```{r,echo = FALSE,warning = FALSE}
-  label.data.AUT$SCEN <- 1
-  clinical.data.AUT$SCEN <- 2
-  bayes.data.AUT1$SCEN <- 3
-  bayes.data.AUT2$SCEN <- 4
-  bayes.data.AUT3$SCEN <- 5
-  
+```{r,echo = TRUE,warning = FALSE}
+# Assign some labels and combine the data frames 
+  label.data.AUT$SCEN <- 1  # Label data
+  clinical.data.AUT$SCEN <- 2 # Clinical data
+  bayes.data.AUT1$SCEN <- 3 # Bayes data - no time-weighting
+  bayes.data.AUT2$SCEN <- 4 # Bayes data - Peck, 1.005 
+  bayes.data.AUT3$SCEN <- 5 # Bayes data - Peck, 1.01
   AUT.data1 <- rbind(label.data.AUT,clinical.data.AUT[,-5],bayes.data.AUT1[,-5],bayes.data.AUT2[,-5],bayes.data.AUT3[,-5])
   
+# Plot
   plotobj6 <- NULL
   plotobj6 <- ggplot(AUT.data1[AUT.data1$time == 546,])
   plotobj6 <- plotobj6 + geom_boxplot(aes(x = SCEN,y = AUT,group = SCEN),outlier.shape = NA)
-  # plotobj6 <- plotobj6 + scale_y_log10("Time under target trough (days)\n",labels = scale.log10.labels,breaks = scale.log10.labels)
   plotobj6 <- plotobj6 + scale_y_continuous("Time under target trough (days)\n",lim = c(NA,NA))
   plotobj6 <- plotobj6 + scale_x_continuous("\nBayesian-Guided Dosing Study")
   print(plotobj6)
 ```
 
-# Proportion of individuals below target trough concentration
+### Summary of amount of drug used in scenarios
 
-```{r,echo = FALSE,warning = TRUE}
-  below.target.546 <- function(x) {
-    below.target.data <- subset(x,time == 546)
-    below.target.data$BTT[below.target.data$IPRE < 3] <- 1
-    below.target.data$BTT[below.target.data$IPRE >= 3] <- 0
-    result <- data.frame(
-                BTT = sum(below.target.data$BTT),
-                n = length(below.target.data$BTT)
-    )
-    result
-  }
-  below.target.546.label.data <- below.target.546(label.data)
-  below.target.546.label.data
-  below.target.546.clinical.data <- below.target.546(clinical.data)
-  below.target.546.bayes.data1 <- below.target.546(bayes.data1)  
-  below.target.546.bayes.data2 <- below.target.546(bayes.data2)  
-  below.target.546.bayes.data3 <- below.target.546(bayes.data3)  
+```{r,echo = TRUE,warning = FALSE}
+# Label data
+  label.data.amt <- ddply(label.data, .(SIM,ID), function(label.data) sum(label.data$amt))
+  print(summary.function(label.data.amt$V1))
+# Clinical data
+  clinical.data.amt <- ddply(clinical.data, .(SIM,ID), function(clinical.data) sum(clinical.data$amt))
+  print(summary.function(clinical.data.amt$V1))  
+# Bayes data - no time-weighting
+  bayes.data.amt1 <- ddply(bayes.data1, .(SIM,ID), function(bayes.data1) sum(bayes.data1$amt))
+  print(summary.function(bayes.data.amt1$V1))
+# Bayes data - Peck 1.005
+  bayes.data.amt2 <- ddply(bayes.data2, .(SIM,ID), function(bayes.data2) sum(bayes.data2$amt))
+  print(summary.function(bayes.data.amt2$V1))
+# Bayes data - Peck 1.01
+  bayes.data.amt3 <- ddply(bayes.data3, .(SIM,ID), function(bayes.data3) sum(bayes.data3$amt))
+  print(summary.function(bayes.data.amt3$V1))
 ```
+
+## Explore Seed Individuals
+
+### All Covariates
+
+```{r,echo = TRUE,warning = FALSE}
+# Time spent below target trough concentration
+  plotobj7 <- NULL
+  plotobj7 <- ggplot()
+  plotobj7 <- plotobj7 + geom_boxplot(aes(x = ID,y = AUT,group = ID),data = bayes.data.AUT1,outlier.shape = NA,colour = "black",fill = NA)
+  plotobj7 <- plotobj7 + geom_boxplot(aes(x = ID,y = AUT,group = ID),data = bayes.data.AUT2,outlier.shape = NA,colour = "blue",fill = NA)  
+  # plotobj7 <- plotobj7 + geom_boxplot(aes(x = ID,y = AUT,group = ID),data = bayes.data.AUT3,outlier.shape = NA,colour = "red",fill = NA)  
+  plotobj7 <- plotobj7 + scale_y_continuous("Time under target trough (days)\n",lim = c(NA,NA))
+  plotobj7 <- plotobj7 + scale_x_continuous("\nSeed Individual ID",breaks = c(1:12))
+  print(plotobj7)
+```
+
+
+
+
+
