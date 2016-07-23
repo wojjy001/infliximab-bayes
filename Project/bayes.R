@@ -156,8 +156,8 @@
 					prev.optimise.bayes.data <- optimise.bayes.data[optimise.bayes.data$ID == ID.number & optimise.bayes.data$SIM == SIM.number,]
 				# Pull out the sampled concentration from the individual's simulated concentration profile
 					prev.err <- prev.optimise.bayes.data$ERRPRO[prev.optimise.bayes.data$time %in% sample.times]
-					prev.DV <- prev.optimise.bayes.data$IPRE[prev.optimise.bayes.data$time %in% sample.times]*(1+prev.err)
-					prev.DV[prev.DV < 0] <- 0.001
+					prev.DV <- prev.optimise.bayes.data$IPRE[prev.optimise.bayes.data$time %in% sample.times]*exp(prev.err)
+					# prev.DV[prev.DV < 0] <- 0.001
 
 				# Subset input.bayes.data for ID and SIM
 				# Only collect the previous infusion times - speed up estimation process
@@ -174,7 +174,7 @@
 						prev.ETA4 <- ind.prev.bayes.data$ETA4[1]
 						initial.bayes.par <- exp(c(prev.ETA1,prev.ETA2,prev.ETA3,prev.ETA4))
 					}
-					par <- initial.bayes.par*runif(4,min = 0.8,max = 1.2)
+					par <- initial.bayes.par
 				# Bayesian estimation
 					bayes.estimate <- function(par) {
 						# Describe parameters to be optimised
@@ -198,7 +198,7 @@
 								if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	# No time-weighting
 								if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  # Peck method, Q = 1.005
 								if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	# Peck method, Q = 1.01
-								loglikpost <- dnorm(prev.DV,mean = yhat,sd = yhat*loglikpost.sd,log = T)
+								loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)
 							# Prior log-likelihood
 								ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)
 								ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)
@@ -207,7 +207,8 @@
 							objective <- -1*sum(loglikpost,loglikprior)
 					}
 				# Run bayes.estimate function
-					bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.00001,0.00001,0.00001,0.00001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,factr = 1e12))
+					# bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001,0.0001,0.0001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12))
+					bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
 
 				# Convert new ETA values (estimated in the exp() domain)
 					new.ETA1 <- log(bayes.result$par[1])

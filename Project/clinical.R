@@ -37,7 +37,7 @@
 				ind.clinical.data <- clinical.data[clinical.data$ID == ID.number & clinical.data$SIM == SIM.number,]
 			# Pull out the sampled concentration from the individual's simulated concentration profile
 				err <- ind.clinical.data$ERRPRO[ind.clinical.data$time == sample.time]	# Individual's residual error
-				sample <- ind.clinical.data$IPRE[ind.clinical.data$time == sample.time]*(1+err)
+				sample <- ind.clinical.data$IPRE[ind.clinical.data$time == sample.time]*exp(err)
 				sample[sample < 0] <- 0.001
 			# Pull out the dose that was given that resulted in that sampled concentration
 				prev.dose <- ind.clinical.data$amt[ind.clinical.data$time == prev.TIMEXi[1]]
