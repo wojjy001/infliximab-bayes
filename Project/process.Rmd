@@ -2,17 +2,24 @@
 title: 'Infliximab: Time-Weighted Bayesian Estimation'
 author: "Jessica Wojciechowski"
 date: "7 July 2016"
-output: pdf_document
+output: 
+  html_document: 
+    fig_width: 10
+    highlight: textmate
 ---
 
-```{r setup,echo = FALSE,warning = FALSE}
+```{r,echo = TRUE,warning = FALSE}
 # Set working directory
   project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
   n <- 12  # Number of seed individuals that were simulated
-  nsim <- 10 # Number of simulations of seed individuals
-  sim.output.dir <- paste0("SIM",nsim,"_IND",n)
-  work.dir <- paste0(project.dir,sim.output.dir,"/")
-  setwd(project.dir)
+  nsim <- 200 # Number of simulations of seed individuals
+  error.model <- "_log-normal-error"  # Residual error model (testing proportional and log-normal)
+  sim.output.dir <- paste0("SIM",nsim,"_IND",n,error.model)
+  output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-output/",sim.output.dir,"/")
+  
+# Set up folder to save the processed output
+  save.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes-plots/"
+  dir.create(file.path(paste0(save.dir,sim.output.dir,"/")),showWarnings = FALSE)
   
 # Load package libraries
   library(ggplot2)  # Plotting
@@ -48,213 +55,150 @@ output: pdf_document
   sample.times <- c(sample.time1,sample.time2,sample.time3,sample.time4)
 ```
 
-## Introduction: Time-Weighted Bayesian Estimation
+## Read in output
 
-### Infliximab Pharmacokinetic Model
+Exclude individuals that are in SIM = 0 (these were only added to see what would happen in the population typical for each seed individual).
 
-## Population specifications
+Add an identifier label for each study.
 
-All patients weigh 70 kg.  All patients have a baseline albumin of 4 g/dL.
+```{r,echo = TRUE,warning = FALSE}
+# Label simulation
+  label.data <- read.csv(file = paste0(output.dir,"label_simulation.csv"))
+  label.data <- label.data[label.data$SIM != 0,]
+  label.data$STUDY <- 1
+  # Append an ERRPRO column (because this data frame doesn't have it)
+    label.data$ERRPRO <- 0
+    label.data <- label.data[,c(1:4,21,5:20)]
+    label.data$STUDYf <- "Label"
+  
+# Clinical simulation
+  clinical.data <- read.csv(file = paste0(output.dir,"clinical_simulation.csv"))
+  clinical.data <- clinical.data[clinical.data$SIM != 0,]
+  clinical.data$STUDY <- 2
+  clinical.data$STUDYf <- "Clinical"
+  
+# Bayesian - No Time-Weighting
+  method1 <- "NTimeWeight"
+  covariate1 <- "AllCov"
+  bayes.data1 <- read.csv(file = paste0(output.dir,method1,covariate1,"/",method1,covariate1,"_optimise_bayes_simulation.csv"))
+  bayes.data1 <- bayes.data1[bayes.data1$SIM != 0,]    
+  bayes.data1$STUDY <- 3
+  bayes.data1$STUDYf <- paste0(method1,covariate1)
+  
+# Bayesian - Peck 1.005
+  method2 <- "Peck1.005"
+  bayes.data2 <- read.csv(file = paste0(output.dir,method2,covariate1,"/",method2,covariate1,"_optimise_bayes_simulation.csv"))
+  bayes.data2 <- bayes.data2[bayes.data2$SIM != 0,]
+  bayes.data2$STUDY <- 4
+  bayes.data2$STUDYf <- paste0(method2,covariate1)
+  
+# Bayesian - Peck 1.01
+  method3 <- "Peck1.01"
+  bayes.data3 <- read.csv(file = paste0(output.dir,method3,covariate1,"/",method3,covariate1,"_optimise_bayes_simulation.csv"))
+  bayes.data3 <- bayes.data3[bayes.data3$SIM != 0,]      
+  bayes.data3$STUDY <- 5
+  bayes.data3$STUDYf <- paste0(method3,covariate1)
+  
+# Combine all of the data frames
+  all.data <- rbind(label.data,clinical.data,bayes.data1,bayes.data2,bayes.data3)
+```
 
-There are 12 seed individuals:
+## Plot concentration-time for all studies
 
-1. ADA onset = 154 days, final albumin = 3 g/dL
-2. ADA onset = 154 days, final albumin = 4 g/dL
-3. ADA onset = 154 days, final albumin = 5 g/dL
-4. ADA onset = 294 days, final albumin = 3 g/dL
-5. ADA onset = 294 days, final albumin = 4 g/dL
-6. ADA onset = 294 days, final albumin = 5 g/dL
-7. ADA onset = 462 days, final albumin = 3 g/dL
-8. ADA onset = 462 days, final albumin = 4 g/dL
-9. ADA onset = 462 days, final albumin = 5 g/dL
-10. ADA onset = 646 days, final albumin = 3 g/dL
-11. ADA onset = 646 days, final albumin = 4 g/dL
-12. ADA onset = 646 days, final albumin = 5 g/dL
+Represented as median and 95% prediction intervals
 
-Between time = 0 (baseline) and time = 546 (final), patient albumin changes in a linear sine wave fashion (amplitude = 0.1, frequency = 60 days, phase = 0)
-
-Random effect values for V1, Q and V2 change linearly between time = 0 and time = 546.  CL random effect does not change as this parameter holds ADA and albumin covariate effects.
-
-## Dosing and Sampling Specifications
-
-1. Simulations run from time = 0 to time = 546 days (approximately 18 months)
-2. There are 4 sampling intervals:
-    + Sampling interval 1; 0 to 98 days
-    + Sampling interval 2; 98 to 210 days
-    + Sampling interval 3; 210 to 378 days
-    + Sampling interval 4; 378 to 546 days
-3. Trough concentrations are sampled at the end of each sampling interval, i.e., time = 98, 210, 378 and 546 days since first dose
-4. There are 2 or 3 2-hour infliximab infusions administered in each sampling interval
-    + Sampling interval 1; 0, 14 and 42 days
-    + Sampling interval 2; 98 and 154 days
-    + Sampling interval 3; 210, 266 and 322 days
-    + Sampling interval 4; 378, 434 and 490 days
-
-## Label Scenario
-
-Every patient receives a 5 mg/kg dose of infliximab at every infusion time (i.e., 350 mg infused over 2 hours)
-
-```{r Label Scenario Plot Output,echo = FALSE,warning = FALSE}
-# Source the results of label_simulation
-  label.data <- read.csv(paste0(work.dir,"label_simulation.csv"))
-  label.data <- label.data[label.data$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
-
-# Plot the median and 95% prediction intervals for individual predicted concentrations (IPRE) over time
+```{r,echo = TRUE,warning = FALSE}
+# Line (median) and ribbon (prediction intervals)
   plotobj1 <- NULL
-  plotobj1 <- ggplot(label.data)
-  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "red")
-  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "red",alpha = 0.3)
+  plotobj1 <- ggplot(all.data)
+  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE,colour = STUDYf),geom = "line",fun.y = median)
+  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE,fill = STUDYf),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",alpha = 0.3)
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-  plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)",breaks = infusion.times)
-  plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels)
+  plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
+  plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)")
+  plotobj1 <- plotobj1 + facet_wrap(~STUDYf)
+  plotobj1 <- plotobj1 + theme(legend.position = "none")
   print(plotobj1)
 ```
 
-For each individual, the time spent under the target trough concentration (3 mg/L) for the entire 546 day period was calculated.
+## Summarise AUT at time = 546 days for all studies
 
-```{r Label Scenario AUT Output,echo = FALSE,warning = FALSE}
-# Calculate the time spent under the target trough at the end of each sampling interval
-  label.data.AUT <- label.data[label.data$time %in% sample.times,]
-  label.AUT.summary <- ddply(label.data.AUT, .(time), function(label.data.AUT) summary.function(label.data.AUT$AUT))
-  print(label.AUT.summary)
-```
+AUT = Time spent under the target trough concentration (3 mg/L)
 
-## Clinical Scenario
-
-Scenario where every patient receives a 5 mg/kg dose of infliximab for every infusion time in the first sampling interval (i.e., at 0, 14 and 42 days). Then:
-
-* Trough concentration at time = 98 days is sampled (DV)
-* Dose for the next sampling interval is determined as:
-    + If a sample < trough target OR sample >= trough upper (5 mg/L) then the new dose will be equal to (trough target/sample)*previous dose
-    + If a sample is within the pre-specified range, then the patient continues with the previous dose
-* Cycle is repeated at sampling times = 210 and 378 days
-
-```{r Clinical Scenario Plot Output,echo = FALSE,warning = FALSE}
-# Source the results of clinical_simulation
-  clinical.data <- read.csv(paste0(work.dir,"clinical_simulation.csv"))
-  clinical.data <- clinical.data[clinical.data$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
-
-# Plot the median and 95% prediction intervals for individual predicted concentrations (IPRE) over time
+```{r,echo = TRUE,warning = FALSE}
+# Subset data frame for only time == 546
+  all.data.546 <- all.data[all.data$time == 546,]
+# Calculate median and percentiles for AUT at 546 for all studies
+  summary.AUT.546 <- ddply(all.data.546, .(STUDYf), function(all.data.546) summary.function(all.data.546$AUT))
+  print(summary.AUT.546)
+  
+# Plot boxplots
   plotobj2 <- NULL
-  plotobj2 <- ggplot(clinical.data)
-  plotobj2 <- plotobj2 + stat_summary(aes(x = time,y = IPRE),geom = "line",fun.y = median,colour = "blue")
-  plotobj2 <- plotobj2 + stat_summary(aes(x = time,y = IPRE),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "blue",alpha = 0.3)
-  plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-  plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)",breaks = infusion.times)
-  plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels)
+  plotobj2 <- ggplot(all.data.546)
+  plotobj2 <- plotobj2 + geom_boxplot(aes(x = STUDYf,y = AUT,group = STUDYf),outlier.shape = NA)
+  plotobj2 <- plotobj2 + scale_x_discrete("\nStudy")
+  plotobj2 <- plotobj2 + scale_y_continuous("Time under target trough (days)\n")
   print(plotobj2)
 ```
 
-We can see a significant improvement in the proportion of people who are achieving constant concentrations above the target trough (median line is predominantly above the line in the clinical scenario compared to the label scenario).
+## Proportion of individuals below target at time = 546 days
 
-Calculate time spent under the target trough:
-
-```{r Clinical Scenario AUT Output,echo = FALSE,warning = FALSE}
-# Calculate the time spent under the target trough at the end of each sampling interval
-  clinical.data.AUT <- clinical.data[clinical.data$time %in% sample.times,]
-  clinical.AUT.summary <- ddply(clinical.data.AUT, .(time), function(clinical.data.AUT) summary.function(clinical.data.AUT$AUT))
-  print(clinical.AUT.summary)
+```{r,echo = TRUE,warning = FALSE}
+# Use subsetted data for only time == 546 (all.data.546)
+  all.data.546$BTT <- 0
+  all.data.546$BTT[all.data.546$IPRE < trough.target] <- 1  # Below trough target (BTT) == 1 for IPRE < 3
+  summary.BTT.546 <- ddply(all.data.546, .(STUDYf), function(all.data.546) sum(all.data.546$BTT))
+# Add further information to summary.BTT.546
+  names(summary.BTT.546)[2] <- "nBTT"  # Number of individuals below trough target
+  summary.BTT.546$n <- n*nsim # Number of individuals in the study population
+  summary.BTT.546$pBTT <- round(summary.BTT.546$nBTT/summary.BTT.546$n,digits = 3)  # Proportion of individuals BTT
+  print(summary.BTT.546)
 ```
 
-The median time spent under the target trough at time = 546 days in the clinical scenario is half compared to the label scenario.
+## Which individuals are below the target at time = 546 days?
 
-Summarise the amount of drug administered over the 546 day period:
+```{r,echo = TRUE,warning = FALSE}
+# Subset all.data.546 for BTT == 1
+  all.data.546.BTT <- all.data.546[all.data.546$BTT == 1,]
+  summary.BTT.546.ID <- ddply(all.data.546.BTT, .(ID,STUDYf), function(all.data.546.BTT) sum(all.data.546.BTT$BTT))
+  # Add some descriptions to seeds (ID)
+    # Final albumin
+      summary.BTT.546.ID$FINAL_ALB <- "3 U/L"
+      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(2,4,8,11)] <- "4 U/L"
+      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(3,6,9,12)] <- "5 U/L"
+    # Onset of ADA
+      summary.BTT.546.ID$ADA_ONSET <- "Never"
+      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(1,2,3)] <- "154 days"
+      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(4,5,6)] <- "294 days"
+      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(7,8,9)] <- "462 days"
+  # Make an IDf column
+    summary.BTT.546.ID$IDf <- paste0(summary.BTT.546.ID$FINAL_ALB," ",summary.BTT.546.ID$ADA_ONSET)  
 
-```{r Clinical Scenario AMT Output,echo = FALSE,warning = FALSE}
-# Summarise the amount of drug administered over the 546 day period
-  # Subset times that only had doses administered
-    clinical.data.AMT <- clinical.data[clinical.data$amt != 0,]
-  # For each individual calculate how much drug was administered to them over the entire time-period
-    clinical.AMT.individual <- ddply(clinical.data.AMT, .(ID,SIM), function(clinical.data.AMT) sum(clinical.data.AMT$amt))
-  # Summarise in median and 95% prediction intervals
-    clinical.AMT.summary <- ddply(clinical.AMT.individual, .(), function(clinical.AMT.individual) summary.function(clinical.AMT.individual$V1))
-    print(clinical.AMT.summary)
-```
-
-## Bayesian Estimation and Dose Optimisation Scenarios
-
-Scenario where every patient receives a 5 mg/kg dose of infliximab for every infusion time in the first sampling interval (i.e., at 0, 14 and 42 days). Then:
-
-* Trough concentration at time = 98 days is sampled (DV)
-* Individual values for pharmacokinetic parameters are obtained from empirical Bayes estimates using known administered doses, the sample, and covariate information at time = 0 and the sampling time
-* Doses for the next sampling interval are determined by maximum likelihood estimation (minimise the error between trough concentration given optimised doses and the target trough concentration)
-    + Optimised doses for the next sampling interval are allowed to be different
-    + Initial estimates for doses are obtained by using the method described earlier in "Clinical Scenario"
-    + If an initial estimate for a dose was greater than 1,000,000 mg - then doses were not optimised for the patient and they were just administered 1,000,000 mg
-* Cycle is repeated at sampling times = 210 and 378 days
-    + Bayes estimates obtained from subsequent sampling intervals are based on all previous samples, not just the most recent one
-* When simulating the next interval given the individual parameters estimated from the previous interval, covariate values from the last sample are carried forward
-    + We can predict the concentrations, however we cannot predict changes in their covariate profile
-
-### No Time-Weighting, All Covariate Information is available
-
-All observations are weighted equally when maximising the posterior likelihood.  Covariate information at the time of sampling as available.
-
-```{r Bayes Scenario 1 Plot Output,echo = FALSE,warning = FALSE}
-# Source the results of bayes_simulation
-  method1 <- "NTimeWeight"
-  covariate1 <- "AllCov"
-  bayes.method1 <- paste0(method1,covariate1)
-  bayes.data1 <- read.csv(paste0(work.dir,"/",bayes.method1,"/",bayes.method1,"_optimise_bayes_simulation.csv"))
-  bayes.data1 <- bayes.data1[bayes.data1$SIM != 0,]  # Ignore the population typical individual simulation, i.e., SIM == 0
-
-# Plot the median and 95% prediction intervals for individual predicted concentrations (IPRE) over time
+# Plot 
   plotobj3 <- NULL
-  plotobj3 <- ggplot()
-  plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),data = bayes.data1,geom = "line",fun.y = median,colour = "darkgreen")
-  plotobj3 <- plotobj3 + stat_summary(aes(x = time,y = IPRE),data = bayes.data1,geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",fill = "darkgreen",alpha = 0.3)
-  plotobj3 <- plotobj3 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-  plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)",breaks = infusion.times)
-  plotobj3 <- plotobj3 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels)
+  plotobj3 <- ggplot(summary.BTT.546.ID)
+  plotobj3 <- plotobj3 + geom_point(aes(x = FINAL_ALB,y = V1,colour = ADA_ONSET),size = 4,alpha = 0.3)
+  plotobj3 <- plotobj3 + geom_point(aes(x = FINAL_ALB,y = V1,colour = ADA_ONSET),size = 4,shape = 1)  
+  plotobj3 <- plotobj3 + scale_x_discrete("\nSeed's Final Albumin")
+  plotobj3 <- plotobj3 + scale_y_continuous("Number below target trough (time = 546)\n")
+  plotobj3 <- plotobj3 + facet_wrap(~STUDYf,ncol = 5)
   print(plotobj3)
 ```
 
-Calculate time spent under the target trough:
+## Summary of findings
 
-```{r Bayes Scenario 1 AUT Output,echo = FALSE,warning = FALSE}
-# Calculate the time spent under the target trough at the end of each sampling interval
-  bayes.data.AUT1 <- bayes.data1[bayes.data1$time %in% sample.times,]
-  bayes.AUT.summary1 <- ddply(bayes.data.AUT1, .(time), function(bayes.data.AUT1) summary.function(bayes.data.AUT1$AUT))
-  print(bayes.AUT.summary1)
-```
+1.  Label-recommended dosing (5 mg/kg) is the regimen least likely to maintain trough concentrations above the target (3 mg/L)
+2.  Clinical dosing (adjusting doses on isolated, sampled concentrations) performs well compared to the Bayesian-guided dosing studies - in terms of time spent under the target trough concentration and number individuals below the target trough concentration at day 546
+3.  Of the Bayesian-guided dosing studies, time-weighting with a Q of 1.01 appears to have the lowest median time spent under the target trough and individuals below the target trough concentration at day 546
+    + However, I would argue that this is not signficantly different from Q = 1.005 or clinical dosing
+4.  Individuals who have onset of ADA in the last interval (i.e., at 462 days) are more likely to be below the target trough by day 546.  This is likely because the last dose was optimised/adjusted at day 378 and would not have accounted for the onset of ADA occurring in the next interval
+5.  Individuals with albumin progressing to 3 U/L by the end of the study are more likely to be under the target trough concentration by day 546 - low albumin increases infliximab's clearance.  After day 378 (last dose adjustment), albumin continues to decline for these individuals and is not accounted for when making dosing predictions
+6.  No dose-adjustment regimen here appears to be superior at maintaining trough concentrations above the target.  In all studies, there is wide variability in concentrations throughout the study-period despite somewhat individualised dose adjustments.  Perhaps a new method needs to be proposed?
 
-Bayesian guided dosing does not appear to be better compared to the "Clinical Scenario" in terms of maintaining trough concentrations above the target.  However, is an improvement on current label recommendations.
+### Ideas
 
-Summarise the amount of drug administered over the 546 day period:
-
-```{r Bayes Scenario 1 AMT Output,echo = FALSE,warning = FALSE}
-# Summarise the amount of drug administered over the 546 day period
-  # Subset times that only had doses administered
-    bayes.data.AMT1 <- bayes.data1[bayes.data1$amt != 0,]
-  # For each individual calculate how much drug was administered to them over the entire time-period
-    bayes.AMT.individual1 <- ddply(bayes.data.AMT1, .(ID,SIM), function(bayes.data.AMT1) sum(bayes.data.AMT1$amt))
-  # Summarise in median and 95% prediction intervals
-    bayes.AMT.summary1 <- ddply(bayes.AMT.individual1, .(), function(bayes.AMT.individual1) summary.function(bayes.AMT.individual1$V1))
-    print(bayes.AMT.summary1)
-```
-
-However, Bayesian guided dosing appears to use less drug than the "clinical scenario."
-
-Compare "what happened in the patient given Bayes guided dosing" compared to what "Bayesian estimation" thought was going on.
-
-```{r Bayes Scenario 1 Estimation Output,echo = FALSE,warning = FALSE}
-# Read in Bayesian simulated data for each interval
-  # Interval 1
-    bayes.data1.interval1 <- read.csv(paste0(work.dir,"/",bayes.method1,"/",bayes.method1,"_interval2_bayes_sim.csv"),stringsAsFactors = FALSE,na.strings = ".")
-    bayes.data1.interval1 <- bayes.data1.interval1[bayes.data1.interval1$SIM != 0,]
-  # Interval 2
-    bayes.data1.interval2 <- read.csv(paste0(work.dir,"/",bayes.method1,"/",bayes.method1,"_interval3_bayes_sim.csv"),stringsAsFactors = FALSE,na.strings = ".")
-    bayes.data1.interval2 <- bayes.data1.interval2[bayes.data1.interval2$SIM != 0,]    
-  # Interval 3
-    bayes.data1.interval3 <- read.csv(paste0(work.dir,"/",bayes.method1,"/",bayes.method1,"_interval4_bayes_sim.csv"),stringsAsFactors = FALSE,na.strings = ".")
-    bayes.data1.interval3 <- bayes.data1.interval3[bayes.data1.interval3$SIM != 0,]      
-    
-# Add to plotobj3
-  plotobj4 <- NULL
-  plotobj4 <- plotobj3
-  # Interval 1,2,3 
-    plotobj4 <- plotobj4 + stat_summary(aes(x = time,y = IPRE),data = bayes.data1.interval3,geom = "line",fun.y = median,linetype = "dashed")
-    plotobj4 <- plotobj4 + stat_summary(aes(x = time,y = IPRE),data = bayes.data1.interval3,geom = "line",fun.y = "CI95lo",linetype = "dashed")
-    plotobj4 <- plotobj4 + stat_summary(aes(x = time,y = IPRE),data = bayes.data1.interval3,geom = "line",fun.y = "CI95hi",linetype = "dashed")
-  print(plotobj4)
-```
+* Only 200 simulations per seed were performed.  I have data for 100 simulations and can try and see if there is a difference.  If there is a difference between 100 and 200 simulations, then I'll go for 500 simulations
+    + May need a large number of simulations owing to the time-dependent random effects in this population
+* Propose a time-weighting system that is based on the drug's half-life - i.e., gives much less-weighting for older samples when half-life for the individual is short, and gives equal weighting to older samples when the half-life for the individual is long
+* When making dosing predictions, always assume that onset of ADA may occur in the next interval
+* Optimise dosing from the beginning of the first interval (i.e., first dose) based on baseline albumin - rather than waiting 3 doses and more than 3 months to optimise the dose
