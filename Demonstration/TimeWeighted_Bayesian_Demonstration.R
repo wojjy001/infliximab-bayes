@@ -5,7 +5,7 @@
 	library(grid) # Plotting
 
 # Custom ggplot2 theme
-	theme_bw2 <- theme_set(theme_bw(base_size = 14))
+	theme_bw2 <- theme_set(theme_bw(base_size = 12))
 	theme_bw2 <- theme_update(plot.title = element_text(hjust = 0))
 
 # Set working directory
@@ -119,3 +119,40 @@
 		print(plotobj5,vp = vplayout(3,1))
 
 		dev.off()
+
+# ------------------------------------------------------------------------------
+# Individual's covariate values changing over time
+# Read in population data set
+	project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
+	n <- 12  # Number of seed individuals that were simulated
+	nsim <- 200 # Number of simulations of seed individuals
+	error.model <- "_proportional-error"  # Residual error model (testing proportional and log-normal)
+	sim.output.dir <- paste0("SIM",nsim,"_IND",n,error.model)
+	output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-output/",sim.output.dir,"/")
+	pop.data <- read.csv(file = paste0(output.dir,"population_characteristics.csv"))
+
+# Use SIM == 100
+	sim.data <- pop.data[pop.data$SIM == 100,]
+
+# Calculate PK parameters as a function of population values, covariates and random effects
+ 	sim.data$CL <- ((sim.data$ALB/4)^-1.17)*(1+sim.data$ADA*0.257)*exp(sim.data$ETA1)
+	sim.data$V1 <- exp(sim.data$ETA2)
+	sim.data$Q <- exp(sim.data$ETA3)
+	sim.data$V2 <- exp(sim.data$ETA4)
+
+# Plot ALB, ADA and ETAs over time
+	plotobj6 <- NULL
+	plotobj6 <- ggplot(sim.data)
+	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = ALB/4,colour = "Albumin (U/L) "))
+	plotobj6 <- plotobj6 + geom_step(aes(x = TIME,y = ADA,colour = "ADA Status (0 or 1)  "))
+	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = CL,colour = "CL (L/h/70 kg) "))
+	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = V1,colour = "V1 (L/70 kg) "))
+	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = Q,colour = "Q (L/h/70 kg) "))
+	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = V2,colour = "V2 (L/70 kg) "))
+	plotobj6 <- plotobj6 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,378,546))
+	plotobj6 <- plotobj6 + scale_y_continuous("Variable (Relative to Population Typical Value)\n",breaks = c(0,1,2,3,4,5),labels = c(0,1,2,3,4,5))
+	plotobj6 <- plotobj6 + theme(legend.title = element_blank(),legend.position = "bottom")
+	plotobj6 <- plotobj6 + facet_wrap(~ID,ncol = 3,scales = "free_y")
+	print(plotobj6)
+
+	ggsave(plot = plotobj6,file = paste0(plotoutput.dir,"seed_characteristics.png"),width = 20,height = 20,units = "cm")
