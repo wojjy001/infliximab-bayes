@@ -13,7 +13,7 @@ output:
   project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
   n <- 12  # Number of seed individuals that were simulated
   nsim <- 200 # Number of simulations of seed individuals
-  error.model <- "_log-normal-error"  # Residual error model (testing proportional and log-normal)
+  error.model <- "_proportional-error"  # Residual error model (testing proportional and log-normal)
   sim.output.dir <- paste0("SIM",nsim,"_IND",n,error.model)
   output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-output/",sim.output.dir,"/")
   
@@ -190,7 +190,6 @@ AUT = Time spent under the target trough concentration (3 mg/L)
 1.  Label-recommended dosing (5 mg/kg) is the regimen least likely to maintain trough concentrations above the target (3 mg/L)
 2.  Clinical dosing (adjusting doses on isolated, sampled concentrations) performs well compared to the Bayesian-guided dosing studies - in terms of time spent under the target trough concentration and number individuals below the target trough concentration at day 546
 3.  Of the Bayesian-guided dosing studies, time-weighting with a Q of 1.01 appears to have the lowest median time spent under the target trough and individuals below the target trough concentration at day 546
-    + However, I would argue that this is not signficantly different from Q = 1.005 or clinical dosing
 4.  Individuals who have onset of ADA in the last interval (i.e., at 462 days) are more likely to be below the target trough by day 546.  This is likely because the last dose was optimised/adjusted at day 378 and would not have accounted for the onset of ADA occurring in the next interval
 5.  Individuals with albumin progressing to 3 U/L by the end of the study are more likely to be under the target trough concentration by day 546 - low albumin increases infliximab's clearance.  After day 378 (last dose adjustment), albumin continues to decline for these individuals and is not accounted for when making dosing predictions
 6.  No dose-adjustment regimen here appears to be superior at maintaining trough concentrations above the target.  In all studies, there is wide variability in concentrations throughout the study-period despite somewhat individualised dose adjustments.  Perhaps a new method needs to be proposed?
