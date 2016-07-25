@@ -12,7 +12,7 @@ output:
 # Set working directory
   project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
   n <- 12  # Number of seed individuals that were simulated
-  nsim <- 200 # Number of simulations of seed individuals
+  nsim <- 500 # Number of simulations of seed individuals
   error.model <- "_proportional-error"  # Residual error model (testing proportional and log-normal)
   sim.output.dir <- paste0("SIM",nsim,"_IND",n,error.model)
   output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-output/",sim.output.dir,"/")
@@ -27,7 +27,7 @@ output:
   library(plyr)  # ddply function
   
 # Custom ggplot2 theme
-	theme_bw2 <- theme_set(theme_bw(base_size = 14))  
+  theme_bw2 <- theme_set(theme_bw(base_size = 14))  
   
 # Pre-specified functions
   CI95lo <- function(x) quantile(x,probs = 0.025)  # Calculate 2.5th percentile
