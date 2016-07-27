@@ -23,10 +23,10 @@
 
 # Assign ID values to specific groups of covariate values
 # ADA_TIME
-	ADA_TIME2	<- seq(from = 1,to = 3,by = 1)	# IDs with ADA present in the second sampling interval
-	ADA_TIME3	<- seq(from = 4,to = 6,by = 1)	# IDs with ADA present in the third sampling interval
-	ADA_TIME4	<- seq(from = 7,to = 9,by = 1)	# IDs with ADA present in the fourth sampling interval
-	ADA_TIME0	<- seq(from = 10,to = 12,by = 1)	# IDs with ADA never present
+	ADA_TIME2	<- seq(from = 1,to = 5,by = 1)	# IDs with ADA present in the second sampling interval
+	ADA_TIME3	<- seq(from = 6,to = 10,by = 1)	# IDs with ADA present in the third sampling interval
+	ADA_TIME4	<- seq(from = 11,to = 15,by = 1)	# IDs with ADA present in the fourth sampling interval
+	ADA_TIME0	<- seq(from = 16,to = 20,by = 1)	# IDs with ADA never present
 	# Fill in ADA_TIME based on ID
 		cov.data$ADA_TIME <- NA	# Add a ADA_TIME column
 		cov.data$ADA_TIME[cov.data$ID %in% ADA_TIME2] <- 154	# ADA in the second sampling interval
