@@ -73,7 +73,7 @@
 		TIMEalb <- c(min(input.data$TIME),max(input.data$TIME))
 		RATEalb <- c(head(input.data$BASE_ALB,1),head(input.data$FINAL_ALB,1))
 		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
-		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB*sin(2*pi*FREQ_ALB*input.data$TIME+PHASE_ALB))	# Apply function to every time-point
+		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*input.data$TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*input.data$TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*input.data$TIME+PHASE_ALB3))	# Apply function to every time-point
 		as.data.frame(input.data)
 	}
 

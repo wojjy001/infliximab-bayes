@@ -12,9 +12,19 @@
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs
 	SIM <- sort(c(rep(seq(from = 0,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
 	WT <- 70 # Weight, kg
-	AMP_ALB <-	0.1	# Amplitude for albumin sine wave
-	FREQ_ALB <- 1/60	# Frequency for albumin sine wave, number of oscillations per unit of time
-	PHASE_ALB <- 0	# Phase for albumin sine wave, where in its cycle the oscillation is a time = 0
+
+	# First sine wave
+		AMP_ALB1 <-	0.05	# Amplitude for albumin sine wave
+		FREQ_ALB1 <- 1/100	# Frequency for albumin sine wave, number of oscillations per unit of time
+		PHASE_ALB1 <- 0	# Phase for albumin sine wave, where in its cycle the oscillation is a time = 0
+	# Second sine wave
+		AMP_ALB2 <- 0.05
+		FREQ_ALB2 <- 1/60
+		PHASE_ALB2 <- 7
+	# Third sine wave
+		AMP_ALB3 <- 0.05
+		FREQ_ALB3 <- 1/5
+		PHASE_ALB3 <- 0
 
 # Create a data frame - one row per individual of covariate and random effects
 	ID.data <- data.frame(SIM,ID)

@@ -62,7 +62,7 @@
 
 # Add a third sine wave
 	AMP_ALB3 <- 0.05
-	FREQ_ALB3 <- 1/7
+	FREQ_ALB3 <- 1/5
 	PHASE_ALB3 <- 0
 	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))
 
