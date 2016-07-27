@@ -1,508 +1,582 @@
 rm(list=ls(all=TRUE))#
-	library(plyr) #
-	library(dplyr)	#
-	library(mrgsolve)	#
+	library(ggplot2)	#
+	library(grid)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.bayes.data <- data.frame(#
-		ID = 1,#
-		time = c(0,14,42,98,154,210),	#
-		ALB = 4,	#
-		ADA = 0,	#
-		ETA1 = 0,	#
-		ETA2 = 0,	#
-		ETA3 = 0,	#
-		ETA4 = 0,	#
-		ERRPRO = 0,	#
-		amt = c(350,350,350,97802.66728,97789.57663,0),	#
-		evid = c(1,1,1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,-2,-2,0)	#
-	)
-input.bayes.data
-initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
-		par <- initial.bayes.par
-initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.bayes.par
-method.scenario <- "NTimeWeight"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
 	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
-prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))
-prev.DV
-method.scenario <- "NTimeWeight"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
-ERRPRO <- 0.419#
-	method.scenario <- "NTimeWeight"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
-	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 1#
+	AMP_ALB1 <- 0.1#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1
+AMP_ALB2 <- 0.05#
+	FREQ_ALB2 <- 1/40#
+	PHASE_ALB2 <- 14#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_lien(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)
+AMP_ALB2 <- 0.05#
+	FREQ_ALB2 <- 1/40#
+	PHASE_ALB2 <- 14#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)
+plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	print(plotobj3)
+ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	print(plotobj3)
+plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	print(plotobj3)
+AMP_ALB2 <- 0.05#
+	FREQ_ALB2 <- 1/40#
+	PHASE_ALB2 <- 0#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	print(plotobj3)
 rm(list=ls(all=TRUE))#
-	library(plyr) #
-	library(dplyr)	#
-	library(mrgsolve)	#
+	library(ggplot2)	#
+	library(grid)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.bayes.data <- data.frame(#
-		ID = 1,#
-		time = c(0,14,42,98,154,210),	#
-		ALB = 4,	#
-		ADA = 0,	#
-		ETA1 = 0,	#
-		ETA2 = 0,	#
-		ETA3 = 0,	#
-		ETA4 = 0,	#
-		ERRPRO = 0,	#
-		amt = c(350,350,350,97802.66728,97789.57663,0),	#
-		evid = c(1,1,1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,-2,-2,0)	#
-	)#
-		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.bayes.par#
-#
-	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
-	PPVCL <- 0.327#
-	PPVV1 <- 0.150#
-	PPVQ <- 1.10#
-	PPVV2 <- 0.799#
-#
-	ERRPRO <- 0.419#
-	method.scenario <- "NTimeWeight"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
 	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 3#
+	AMP_ALB1 <- 0.1#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.05#
+	FREQ_ALB2 <- 1/40#
+	PHASE_ALB2 <- 0#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	print(plotobj3)
+plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,5))	#
+	print(plotobj3)
+ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,5))	#
+	print(plotobj3)
+ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,5))#
+	print(plotobj3)
+TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 3#
+	AMP_ALB1 <- 0.1#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,5))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.2#
+	FREQ_ALB2 <- 1/14#
+	PHASE_ALB2 <- 0#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,5))#
+	print(plotobj3)
+TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 3#
+	AMP_ALB1 <- 0.1#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,5))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.2#
+	FREQ_ALB2 <- 1/28#
+	PHASE_ALB2 <- 0#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,5))#
+	print(plotobj3)
+plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)
+AMP_ALB2 <- 0.2#
+	FREQ_ALB2 <- 1/35#
+	PHASE_ALB2 <- 0#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)
+plotobj3 <- NULL#
+	plotobj3 <- ggplot()#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_x_continuous(breaks = c(0,14,42,98,154,210,266,322,378,434,490,546))#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)
+AMP_ALB3 <- 0.05#
+	FREQ_ALB3 <- 1/14#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3)))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_x_continuous(breaks = plot.breaks)#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)
 rm(list=ls(all=TRUE))#
-	library(plyr) #
-	library(dplyr)	#
-	library(mrgsolve)	#
+	library(ggplot2)	#
+	library(grid)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.bayes.data <- data.frame(#
-		ID = 1,#
-		time = c(0,14,42,98,154,210),	#
-		ALB = 4,	#
-		ADA = 0,	#
-		ETA1 = 0,	#
-		ETA2 = 0,	#
-		ETA3 = 0,	#
-		ETA4 = 0,	#
-		ERRPRO = 0,	#
-		amt = c(350,350,350,97802.66728,97789.57663,0),	#
-		evid = c(1,1,1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,-2,-2,0)	#
-	)#
-		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.bayes.par#
-#
-	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
-	PPVCL <- 0.327#
-	PPVV1 <- 0.150#
-	PPVQ <- 1.10#
-	PPVV2 <- 0.799#
-#
-	ERRPRO <- 0.419#
-	method.scenario <- "NTimeWeight"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.bayes.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.bayes.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.bayes.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.bayes.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
 	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 3#
+	AMP_ALB1 <- 0.1#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.2#
+	FREQ_ALB2 <- 1/35#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.05#
+	FREQ_ALB3 <- 1/14#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3)))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_x_continuous(breaks = plot.breaks)#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)
+PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_x_continuous(breaks = plot.breaks)#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)
+ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	print(plotobj4)
+plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))	#
+	print(plotobj4)
 rm(list=ls(all=TRUE))#
-	library(plyr) #
-	library(dplyr)	#
-	library(mrgsolve)	#
+	library(ggplot2)	#
+	library(grid)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.bayes.data <- data.frame(#
-		ID = 1,#
-		time = c(0,14,42,98,154,210),	#
-		ALB = 4,	#
-		ADA = 0,	#
-		ETA1 = 0,	#
-		ETA2 = 0,	#
-		ETA3 = 0,	#
-		ETA4 = 0,	#
-		ERRPRO = 0,	#
-		amt = c(350,350,350,97802.66728,97789.57663,0),	#
-		evid = c(1,1,1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,-2,-2,0)	#
-	)#
-		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.bayes.par#
-#
-	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
-	PPVCL <- 0.327#
-	PPVV1 <- 0.150#
-	PPVQ <- 1.10#
-	PPVV2 <- 0.799#
-#
-	ERRPRO <- 0.419#
-	method.scenario <- "Peck1.005"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.bayes.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.bayes.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.bayes.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.bayes.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
 	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 3#
+	AMP_ALB1 <- 0.05#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.1#
+	FREQ_ALB2 <- 1/35#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.01#
+	FREQ_ALB3 <- 1/14#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)#
+	ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj4)
 rm(list=ls(all=TRUE))#
-	library(plyr) #
-	library(dplyr)	#
-	library(mrgsolve)	#
+	library(ggplot2)	#
+	library(grid)	#
 	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
-	source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/model.R")#
-	input.bayes.data <- data.frame(#
-		ID = 1,#
-		time = c(0,14,42,98,154,210),	#
-		ALB = 4,	#
-		ADA = 0,	#
-		ETA1 = 0,	#
-		ETA2 = 0,	#
-		ETA3 = 0,	#
-		ETA4 = 0,	#
-		ERRPRO = 0,	#
-		amt = c(350,350,350,97802.66728,97789.57663,0),	#
-		evid = c(1,1,1,1,1,0),	#
-		cmt = 1,	#
-		rate = c(-2,-2,-2,-2,-2,0)	#
-	)#
-		initial.bayes.par <- exp(c(0.668791497,-0.103271868,0.726685569,-1.019384554))#
-		lower.limit <- c(0.0001,0.0001,0.0001,0.0001)#
-		upper.limit <- c(Inf,Inf,Inf,Inf)#
-		par <- initial.bayes.par#
-#
-	prev.DV <- c(0.009834309*exp(0.01829042),4.343537334*exp(0.019383009))#
-	PPVCL <- 0.327#
-	PPVV1 <- 0.150#
-	PPVQ <- 1.10#
-	PPVV2 <- 0.799#
-#
-	ERRPRO <- 0.419#
-	method.scenario <- "Peck1.01"#
-	bayes.estimate <- function(par) {#
-			ETA1fit <- log(par[1])	#
-			ETA2fit <- log(par[2])#
-			ETA3fit <- log(par[3])#
-			ETA4fit <- log(par[4])#
-			input.bayes.data$ETA1 <- ETA1fit#
-			input.bayes.data$ETA2 <- ETA2fit#
-			input.bayes.data$ETA3 <- ETA3fit#
-			input.bayes.data$ETA4 <- ETA4fit#
-			new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()#
-			new.bayes.data <- as.data.frame(new.bayes.data)#
-			yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% c(98,210)]#
-				TIMET <- max(new.bayes.data$time) - new.bayes.data$time	#
-				if (method.scenario == "NTimeWeight") loglikpost.sd <- ERRPRO	#
-				if (method.scenario == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET  #
-				if (method.scenario == "Peck1.01")	loglikpost.sd <- ERRPRO*1.01^TIMET	#
-				loglikpost <- dnorm(log(prev.DV),mean = log(yhat),sd = loglikpost.sd,log = T)#
-				ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)#
-				ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)#
-				loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)#
-			objective <- -1*sum(loglikpost,loglikprior)#
-#
-			diagnosticflag <- T#
-#
-	    if (diagnosticflag == T) {#
-	      bayes1buffer <<- c(bayes1buffer,log10(par[1]/initial.bayes.par[1]))#
-	      bayes2buffer <<- c(bayes2buffer,log10(par[2]/initial.bayes.par[2]))#
-				bayes3buffer <<- c(bayes3buffer,log10(par[3]/initial.bayes.par[3]))#
-				bayes4buffer <<- c(bayes4buffer,log10(par[4]/initial.bayes.par[4]))#
-	      iterationbuffer <- 1:length(bayes1buffer)#
-	      if (length(iterationbuffer) %% 5 == 0) { #
-          plot(iterationbuffer,bayes1buffer,type = 'l',xlim = c(1,length(iterationbuffer)),ylim = c(-5,5),col = "red",xlab = "Iteration",ylab = "Normalised Parameter Value",main = "Estimating Bayes Parameters\n")#
-          points(iterationbuffer,bayes2buffer,type = 'l',col = "blue")#
-					points(iterationbuffer,bayes3buffer,type = 'l',col = "darkgreen")#
-					points(iterationbuffer,bayes4buffer,type = 'l',col = "orange")#
-          legend(1,-1,legend = c("ETA1","ETA2","ETA3","ETA4"),lty = c(1,1),col = c("red","blue","darkgreen","orange"))#
-	    	}#
-			}#
-		objective#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
 	}#
-  plot.new() #
-  bayes1buffer <<- NA  #
-  bayes2buffer <<- NA#
-	bayes3buffer <<- NA#
-	bayes4buffer <<- NA#
-#
-	bayes.eta <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = lower.limit,upper = upper.limit,control = list(parscale = par,factr = 1e12))#
-	bayes.eta
-initial.bayes.par
-log(bayes.eta$par)
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 1#
+	AMP_ALB1 <- 0.05#
+	FREQ_ALB1 <- 1/60#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.1#
+	FREQ_ALB2 <- 1/35#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.01#
+	FREQ_ALB3 <- 1/14#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)#
+	ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj4)
+rm(list=ls(all=TRUE))#
+	library(ggplot2)	#
+	library(grid)	#
+	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
+	}#
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 1#
+	AMP_ALB1 <- 0.05#
+	FREQ_ALB1 <- 1/100#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.1#
+	FREQ_ALB2 <- 1/60#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.01#
+	FREQ_ALB3 <- 1/7#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)#
+	ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj4)
+rm(list=ls(all=TRUE))#
+	library(ggplot2)	#
+	library(grid)	#
+	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
+	}#
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 1#
+	AMP_ALB1 <- 0.05#
+	FREQ_ALB1 <- 1/100#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.5#
+	FREQ_ALB2 <- 1/60#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.05#
+	FREQ_ALB3 <- 1/7#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)#
+	ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj4)
+rm(list=ls(all=TRUE))#
+	library(ggplot2)	#
+	library(grid)	#
+	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
+	}#
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 1#
+	AMP_ALB1 <- 0.05#
+	FREQ_ALB1 <- 1/100#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.05#
+	FREQ_ALB2 <- 1/60#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.05#
+	FREQ_ALB3 <- 1/7#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)#
+	ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj4)
+rm(list=ls(all=TRUE))#
+	library(ggplot2)	#
+	library(grid)	#
+	setwd("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/")#
+	theme_bw2 <- theme_set(theme_bw(base_size = 16))#
+	sumfuncx <- function(x) {#
+		stat1 <- median(x)#
+		stat2 <- quantile(x,probs = 0.025,names = F)#
+		stat3 <- quantile(x,probs = 0.975,names = F)#
+		stat4 <- length(x)#
+		result <- c("median" = stat1,"low" = stat2,"hi" = stat3,"n" = stat4)#
+		result#
+	}#
+	set.seed(123456)#
+	TIME <- seq(from = 0,to = 546,by = 1)#
+	BASE_ALB <- 4#
+	FINAL_ALB <- 3#
+	AMP_ALB1 <- 0.05#
+	FREQ_ALB1 <- 1/100#
+	PHASE_ALB1 <- 0#
+	TIMEalb <- c(0,546)#
+	RATEalb <- c(BASE_ALB,FINAL_ALB)#
+	step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")#
+	ALB1 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1))#
+	plotobj1 <- NULL#
+	plotobj1 <- ggplot()#
+	plotobj1 <- plotobj1 + geom_line(aes(x = TIME,y = ALB1),colour = "red")#
+	plotobj1 <- plotobj1 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj1)#
+	AMP_ALB2 <- 0.05#
+	FREQ_ALB2 <- 1/60#
+	PHASE_ALB2 <- 7#
+	ALB2 <- step.alb(TIME)*(1+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2))#
+	plotobj2 <- plotobj1#
+	plotobj2 <- plotobj2 + geom_line(aes(x = TIME,y = ALB2),colour = "blue")#
+	print(plotobj2)#
+	AMP_ALB3 <- 0.05#
+	FREQ_ALB3 <- 1/7#
+	PHASE_ALB3 <- 0#
+	ALB3 <- step.alb(TIME)*(1+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plot.breaks <- c(0,14,42,98,154,210,266,322,378,434,490,546)#
+	plotobj3 <- plotobj2#
+	plotobj3 <- plotobj3 + geom_line(aes(x = TIME,y = ALB3),colour = "darkgreen")#
+	plotobj3 <- plotobj3 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj3)#
+	ALB4 <- step.alb(TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*TIME+PHASE_ALB3))#
+	plotobj4 <- NULL#
+	plotobj4 <- ggplot()#
+	plotobj4 <- plotobj4 + geom_line(aes(x = TIME,y = ALB4))#
+	plotobj4 <- plotobj4 + scale_y_continuous(lim = c(0,6))#
+	print(plotobj4)
