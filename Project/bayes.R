@@ -424,7 +424,9 @@
 				# Cap DOSEs at 50 mg/kg (i.e., 3500 mg)
 					if (DOSE1 > 3500) DOSE1 <- 3500
 					if (DOSE2 > 3500) DOSE2 <- 3500
-					if (DOSE3 > 3500) DOSE3 <- 3500
+					if (interval != 2) {
+						if (DOSE3 > 3500) DOSE3 <- 3500
+					}
 
 				# Create a data frame of results
 					bayes.optim.data <- data.frame(
