@@ -49,6 +49,9 @@
 					new.dose <- prev.dose	# Continue with previous dose if within range
 				}
 
+			# Cap "new.dose" to 50 mg/kg (i.e., 3500 mg)
+				if (new.dose > 3500) new.dose <- 3500
+
 			# Pull the amount in the compartments at the end of the previous interval
 				prev.cent <- ind.clinical.data$CENT[ind.clinical.data$time == sample.time]
 				prev.peri <- ind.clinical.data$PERI[ind.clinical.data$time == sample.time]
