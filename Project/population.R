@@ -38,14 +38,18 @@
 # BASE_ALB == 4 for all individuals
 	cov.data$BASE_ALB <- 4	# BASE_ALB == 4
 # FINAL_ALB
-	FINAL_ALB3 <- c(1,4,7,10)	# ID's with FINAL_ALB == 3
-	FINAL_ALB4 <- c(2,5,8,11)	# ID's with FINAL_ALB == 4
-	FINAL_ALB5 <- c(3,6,9,12)	# ID's with FINAL_ALB == 5
+	FINAL_ALB1 <- c(1,6,11,16)	# ID's with FINAL_ALB == 1
+	FINAL_ALB3 <- c(2,7,12,17)	# ID's with FINAL_ALB == 3
+	FINAL_ALB4 <- c(3,8,13,18)	# ID's with FINAL_ALB == 4
+	FINAL_ALB5 <- c(4,9,14,19)	# ID's with FINAL_ALB == 5
+	FINAL_ALB7 <- c(5,10,15,20)	# ID's with FINAL_ALB == 7
 	# Fill in final albumin values based on ID
 		cov.data$FINAL_ALB <- NA	#Add a FINAL_ALB column
+		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB1] <- 1	# FINAL_ALB == 1
 		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB3] <- 3	# FINAL_ALB == 3
 		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB4] <- 4	# FINAL_ALB == 4
 		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB5] <- 5	# FINAL_ALB == 5
+		cov.data$FINAL_ALB[cov.data$ID %in% FINAL_ALB7] <- 7	# FINAL_ALB == 7
 
 # Simulate random effect parameters
 # Simulating a baseline ETA and a final ETA to accommodate random changes in the individual that cannot be explained by model covariates
