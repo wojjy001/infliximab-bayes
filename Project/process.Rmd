@@ -11,9 +11,9 @@ output:
 ```{r,echo = TRUE,warning = FALSE}
 # Set working directory
   project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
-  n <- 12  # Number of seed individuals that were simulated
+  n <- 20  # Number of seed individuals that were simulated
   nsim <- 500 # Number of simulations of seed individuals
-  error.model <- "_proportional-error"  # Residual error model (testing proportional and log-normal)
+  error.model <- "_fourier-extreme-albumin"  # Residual error model (testing proportional and log-normal)
   sim.output.dir <- paste0("SIM",nsim,"_IND",n,error.model)
   output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-output/",sim.output.dir,"/")
   
@@ -85,22 +85,8 @@ Add an identifier label for each study.
   bayes.data1$STUDY <- 3
   bayes.data1$STUDYf <- paste0(method1,covariate1)
   
-# Bayesian - Peck 1.005
-  method2 <- "Peck1.005"
-  bayes.data2 <- read.csv(file = paste0(output.dir,method2,covariate1,"/",method2,covariate1,"_optimise_bayes_simulation.csv"))
-  bayes.data2 <- bayes.data2[bayes.data2$SIM != 0,]
-  bayes.data2$STUDY <- 4
-  bayes.data2$STUDYf <- paste0(method2,covariate1)
-  
-# Bayesian - Peck 1.01
-  method3 <- "Peck1.01"
-  bayes.data3 <- read.csv(file = paste0(output.dir,method3,covariate1,"/",method3,covariate1,"_optimise_bayes_simulation.csv"))
-  bayes.data3 <- bayes.data3[bayes.data3$SIM != 0,]      
-  bayes.data3$STUDY <- 5
-  bayes.data3$STUDYf <- paste0(method3,covariate1)
-  
 # Combine all of the data frames
-  all.data <- rbind(label.data,clinical.data,bayes.data1,bayes.data2,bayes.data3)
+  all.data <- rbind(label.data,clinical.data,bayes.data1)
 ```
 
 ## Plot concentration-time for all studies
@@ -115,7 +101,7 @@ Represented as median and 95% prediction intervals
   plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE,fill = STUDYf),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",alpha = 0.3)
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
   plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
-  plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)")
+  plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)",breaks = scale.log10.labels,labels = scale.log10.labels)
   plotobj1 <- plotobj1 + facet_wrap(~STUDYf)
   plotobj1 <- plotobj1 + theme(legend.position = "none")
   print(plotobj1)
@@ -163,14 +149,16 @@ AUT = Time spent under the target trough concentration (3 mg/L)
   summary.BTT.546.ID <- ddply(all.data.546.BTT, .(ID,STUDYf), function(all.data.546.BTT) sum(all.data.546.BTT$BTT))
   # Add some descriptions to seeds (ID)
     # Final albumin
-      summary.BTT.546.ID$FINAL_ALB <- "3 U/L"
-      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(2,4,8,11)] <- "4 U/L"
-      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(3,6,9,12)] <- "5 U/L"
+      summary.BTT.546.ID$FINAL_ALB <- "1 U/L"
+      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(2,7,12,17)] <- "3 U/L"
+      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(3,8,13,18)] <- "4 U/L"
+      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(4,9,14,19)] <- "5 U/L"
+      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(5,10,15,20)] <- "7 U/L"      
     # Onset of ADA
       summary.BTT.546.ID$ADA_ONSET <- "Never"
-      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(1,2,3)] <- "154 days"
-      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(4,5,6)] <- "294 days"
-      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(7,8,9)] <- "462 days"
+      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(1,2,3,4,5)] <- "154 days"
+      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(6,7,8,9,10)] <- "294 days"
+      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(11,12,13,14,15)] <- "462 days"
   # Make an IDf column
     summary.BTT.546.ID$IDf <- paste0(summary.BTT.546.ID$FINAL_ALB," ",summary.BTT.546.ID$ADA_ONSET)  
 
@@ -189,15 +177,12 @@ AUT = Time spent under the target trough concentration (3 mg/L)
 
 1.  Label-recommended dosing (5 mg/kg) is the regimen least likely to maintain trough concentrations above the target (3 mg/L)
 2.  Clinical dosing (adjusting doses on isolated, sampled concentrations) performs well compared to the Bayesian-guided dosing studies - in terms of time spent under the target trough concentration and number individuals below the target trough concentration at day 546
-3.  Of the Bayesian-guided dosing studies, time-weighting with a Q of 1.01 appears to have the lowest median time spent under the target trough and individuals below the target trough concentration at day 546
-4.  Individuals who have onset of ADA in the last interval (i.e., at 462 days) are more likely to be below the target trough by day 546.  This is likely because the last dose was optimised/adjusted at day 378 and would not have accounted for the onset of ADA occurring in the next interval
-5.  Individuals with albumin progressing to 3 U/L by the end of the study are more likely to be under the target trough concentration by day 546 - low albumin increases infliximab's clearance.  After day 378 (last dose adjustment), albumin continues to decline for these individuals and is not accounted for when making dosing predictions
-6.  No dose-adjustment regimen here appears to be superior at maintaining trough concentrations above the target.  In all studies, there is wide variability in concentrations throughout the study-period despite somewhat individualised dose adjustments.  Perhaps a new method needs to be proposed?
+3.  Individuals who have onset of ADA in the last interval (i.e., at 462 days) are more likely to be below the target trough by day 546.  This is likely because the last dose was optimised/adjusted at day 378 and would not have accounted for the onset of ADA occurring in the next interval
+4.  Individuals with albumin progressing to 3 U/L by the end of the study are more likely to be under the target trough concentration by day 546 - low albumin increases infliximab's clearance.  After day 378 (last dose adjustment), albumin continues to decline for these individuals and is not accounted for when making dosing predictions
+    + Individuals who had final albumin of 1 U/L were all under the target trough at day 546
+5.  No dose-adjustment regimen here appears to be superior at maintaining trough concentrations above the target.  In all studies, there is wide variability in concentrations throughout the study-period despite somewhat individualised dose adjustments.
 
 ### Ideas
 
-* Only 200 simulations per seed were performed.  I have data for 100 simulations and can try and see if there is a difference.  If there is a difference between 100 and 200 simulations, then I'll go for 500 simulations
-    + May need a large number of simulations owing to the time-dependent random effects in this population
-* Propose a time-weighting system that is based on the drug's half-life - i.e., gives much less-weighting for older samples when half-life for the individual is short, and gives equal weighting to older samples when the half-life for the individual is long
-* When making dosing predictions, always assume that onset of ADA may occur in the next interval
-* Optimise dosing from the beginning of the first interval (i.e., first dose) based on baseline albumin - rather than waiting 3 doses and more than 3 months to optimise the dose
+* Should the Bayesian scenario begin with a model guided doses? Currently, it is just 5 mg/kg like the label and clinical scenarios.
+    + It will most likely to perform better than the clinical scenario then!
