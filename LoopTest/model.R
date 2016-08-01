@@ -8,7 +8,8 @@
 	$INIT			// Initial conditions for compartments
 						CENT = 0,	// Central
 						PERI = 0, // Peripheral
-						AUT = 0	//Time below target compartment
+						AUT = 0,	// Area under target trough compartment
+						TBT = 0	// Time below target trough compartment
 
 	$PARAM		// Population parameters
 						POPCL = 0.294,
@@ -67,10 +68,16 @@
 						dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;
 						dxdt_PERI = Q/V1*CENT -Q/V2*PERI;
 
-						// Time below target
+						// Plasma concentration
 						double CP = CENT/V1;	// Plasma concentration of the central compartment
+
+						// Area below target and time below target
 						dxdt_AUT = 0;
-						if (SOLVERTIME > 0.08333333 & CP < target) dxdt_AUT = 1;
+						dxdt_TBT = 0;
+						if (SOLVERTIME > 0.08333333 & CP < target) {
+							dxdt_AUT = target - CP;
+							dxdt_TBT = 1;
+						}
 
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*(1+ERRPRO);

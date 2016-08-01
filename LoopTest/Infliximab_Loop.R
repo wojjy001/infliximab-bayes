@@ -17,21 +17,23 @@
 # ------------------------------------------------------------------------------
 # Source the infliximab first_interval file
 	source(paste0(work.dir,"first_interval.R"))
-	# Output object is called "conc.data"
-	# Subset conc.data for only ID == 1 and SIM == 1
-		sample.ID <- sample(c(1,6,11,16),1)
+	# Output object is called "first.int.data"
+	# Sample a random individual from the simulated data
+		# sample.ID <- sample(c(1,6,11,16),1)
+		sample.ID <- 20
 		conc.data <- first.int.data[first.int.data$SIM == 1 & first.int.data$ID == sample.ID,] # First three doses for the individual have been simulated
 
 # ------------------------------------------------------------------------------
 # Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
-# After the first interval, the first sample will be collected at day 98
+# After the initiation phase, the first sample will be collected at day 98
 	sample.times <- c(0,98)	# days
-
-	# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
-		conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
-
+# Initial dosing interval for the maintenance phase
+	dose.int <- 56
+# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+	conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+# Define a variable telling the loop if previous bayes results are present
+	# If they are present, they will be used as initial estimates for the next dosing interval
 		previous.bayes.results.present <- FALSE
-		dose.int <- 56
 
 # If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
 	for (i in 1:length(conc.data)) {
@@ -166,8 +168,9 @@
 				# Modify model code ready for simulation
 					prev.bayes.CENT <- bayes.sim.data$CENT[bayes.sim.data$time == max(sample.times)]	# Last value for bayes predicted CENT
 					prev.bayes.PERI <- bayes.sim.data$PERI[bayes.sim.data$time == max(sample.times)]
+					prev.bayes.TBT <- bayes.sim.data$TBT[bayes.sim.data$time == max(sample.times)]
 					prev.bayes.AUT <- bayes.sim.data$AUT[bayes.sim.data$time == max(sample.times)]
-					initial.bayes.compartment <- list(CENT = prev.bayes.CENT,PERI = prev.bayes.PERI,AUT = prev.bayes.AUT)
+					initial.bayes.compartment <- list(CENT = prev.bayes.CENT,PERI = prev.bayes.PERI,TBT = prev.bayes.TBT,AUT = prev.bayes.AUT)
 					optim.mod1 <- mod %>% init(initial.bayes.compartment) %>% carry.out(amt,ERRPRO)
 
 				# Initial dose and error estimates
@@ -209,11 +212,12 @@
 						# Simulate concentration-time profiles with fitted doses
 							new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
 							new.optimise.data <- as.data.frame(new.optimise.data)
-
+						# The next trough is the last sample time plus dosing interval time
 							next.trough <- max(sample.times)+dose.int
-
+							# However, if it is predicted the individual will achieve the target trough earlier, calculate when this will be achieved using TBT (time spent under target trough)
+							# Round to the nearest 7 days
 								if (new.optimise.data$IPRE[new.optimise.data$time == next.trough] < 3) {
-									Ttarget <- ceiling(diff(new.optimise.data$AUT)/7)*7	# Time under target between dose and sample
+									Ttarget <- round(diff(new.optimise.data$TBT)/7)*7	# Time under target between dose and sample
 								} else if (new.optimise.data$IPRE[new.optimise.data$time == next.trough] >= 5) {
 									Ttarget <- -7	# If predicted trough is going to be too high, wait another 7 days for the next sample
 								} else {
@@ -241,7 +245,7 @@
 				# Simulate
 					conc.data <- mod %>% carry.out(amt,SIM,ERRPRO) %>% data_set(input.sim.data) %>% mrgsim()
 					conc.data <- as.data.frame(conc.data)
-
+				# Add the "next.sample" time to the list of sample.times
 					sample.times <- sort(c(unique(c(sample.times,next.sample))))
 
 				# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
@@ -273,7 +277,9 @@
 		)
 	)
 #	Cumulative time under target trough by time = 546
- 	print(conc.data$AUT[conc.data$time == 546])
+ 	print(conc.data$TBT[conc.data$time == 546])
 # Print cumulative time under target trough by time = 98
 	# See the effects of lame initiation phase dosing
-		print(conc.data$AUT[conc.data$time == 98])
+		print(conc.data$TBT[conc.data$time == 98])
+# Print cumulative area under target trough at time = 546
+	print(conc.data$AUT[conc.data$time == 546])
