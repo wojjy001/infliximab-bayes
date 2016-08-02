@@ -64,9 +64,17 @@
 						double Q = POPQ*pow(WT/70,WT_Q)*exp(ETA3);
 						double V2 = POPV2*pow(WT/70,WT_V2)*exp(ETA4);
 
+						// Micro-rate constants
+						double K10 = CL/V1;
+						double K12 = Q/V1;
+						double K21 = Q/V2;
+
+						// Half-life
+						double Thalf = log(2)/(0.5*((K10+K12+K21)-sqrt(pow(K10+K12+K21,2)-4*K10*K21)));
+
 	$ODE			// Differential equations
-						dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;
-						dxdt_PERI = Q/V1*CENT -Q/V2*PERI;
+						dxdt_CENT = -K12*CENT +K21*PERI -K10*CENT;
+						dxdt_PERI = K12*CENT -K21*PERI;
 
 						// Plasma concentration
 						double CP = CENT/V1;	// Plasma concentration of the central compartment
@@ -82,7 +90,7 @@
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*(1+ERRPRO);
 
-	$CAPTURE	WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4
+	$CAPTURE	WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 Thalf
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
