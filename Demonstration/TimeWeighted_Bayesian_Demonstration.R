@@ -132,25 +132,25 @@
 	pop.data <- read.csv(file = paste0(output.dir,"population_characteristics.csv"))
 
 # Use SIM == 100
-	sim.data <- pop.data[pop.data$SIM == 100,]
+	sim.data <- pop.data[pop.data$SIM == 0,]
 
 # Calculate PK parameters as a function of population values, covariates and random effects
- 	sim.data$CL <- ((sim.data$ALB/4)^-1.17)*(1+sim.data$ADA*0.257)*exp(sim.data$ETA1)
-	sim.data$V1 <- exp(sim.data$ETA2)
-	sim.data$Q <- exp(sim.data$ETA3)
-	sim.data$V2 <- exp(sim.data$ETA4)
+ 	sim.data$CL <- 0.294*((sim.data$ALB/4)^-1.17)*(1+sim.data$ADA*0.257)*exp(sim.data$ETA1)
+	sim.data$V1 <- 3.33*exp(sim.data$ETA2)
+	sim.data$Q <- 0.0719*exp(sim.data$ETA3)
+	sim.data$V2 <- 1.14*exp(sim.data$ETA4)
 
 # Plot ALB, ADA and ETAs over time
 	plotobj6 <- NULL
 	plotobj6 <- ggplot(sim.data)
-	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = ALB/4,colour = "Albumin (U/L) "))
+	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = ALB,colour = "Albumin (U/L) "))
 	plotobj6 <- plotobj6 + geom_step(aes(x = TIME,y = ADA,colour = "ADA Status (0 or 1)  "))
 	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = CL,colour = "CL (L/day/70 kg) "))
 	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = V1,colour = "V1 (L/70 kg) "))
 	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = Q,colour = "Q (L/day/70 kg) "))
 	plotobj6 <- plotobj6 + geom_line(aes(x = TIME,y = V2,colour = "V2 (L/70 kg) "))
 	plotobj6 <- plotobj6 + scale_x_continuous("\nTime (days)",breaks = seq(0,546,182))
-	plotobj6 <- plotobj6 + scale_y_continuous("Variable (Relative to Population Typical Value)\n",breaks = 0:8,labels = 0:8)
+	plotobj6 <- plotobj6 + scale_y_continuous("Variable\n",breaks = c(0,2,4,6,8),labels = c(0,2,4,6,8))
 	plotobj6 <- plotobj6 + theme(legend.title = element_blank(),legend.position = "bottom")
 	plotobj6 <- plotobj6 + facet_wrap(~ID,ncol = 5,scales = "free_y")
 	print(plotobj6)
