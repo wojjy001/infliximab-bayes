@@ -270,7 +270,7 @@
 				plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels,lim = c(0.01,10000))
 				plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)",breaks = c(0,14,42,98,154,210,266,322,378,434,490,546))
 				print(plotobj2)
-				ggsave(plot = plotobj2,file = paste0("infliximab_loop_",last.sample,".png"))
+				# ggsave(plot = plotobj2,file = paste0("infliximab_loop_",last.sample,".png"))
 
 		# Stop the loop if IPRE at the last time-point has been calculated
 			if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
