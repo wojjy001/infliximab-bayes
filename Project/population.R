@@ -10,7 +10,7 @@
 # Define population's characteristics
 # Only going to pre-specify weight as 70 kg and randomly generate ADA_TIME, BASE_ALB and FINAL_ALB
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs
-	SIM <- sort(c(rep(seq(from = 0,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
+	SIM <- sort(c(rep(seq(from = 1,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
 	WT <- 70 # Weight, kg
 
 	# First sine wave
@@ -28,7 +28,6 @@
 
 # Create a data frame - one row per individual of covariate and random effects
 	ID.data <- data.frame(SIM,ID)
-	ID.data2 <- ID.data[ID.data$SIM != 0,]	# SIM = 0 is reserved for population typical
 	cov.data <- ID.data	# Transfer to a data frame called "cov.data"
 
 # Assign ID values to specific groups of covariate values
@@ -65,13 +64,13 @@
 # Simulating a baseline ETA and a final ETA to accommodate random changes in the individual that cannot be explained by model covariates
 	cov.data <- cov.data[with(cov.data, order(cov.data$ID,cov.data$SIM)), ]	# Sort by ID then SIM
 	# Clearance stays as one value for ETA as it has a few time-dependent covariates on it
-		cov.data$ETA1 <- rnorm(n*(nsim+1),mean = 0,sd = PPVCL)	# ETA for clearance
-		cov.data$BASE_ETA2 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV1)	# Baseline ETA for V1
-		cov.data$FINAL_ETA2 <- log(exp(cov.data$BASE_ETA2)*runif(n*(nsim+1),min = 0.7,max = 1.3))	# Final ETA for V1
-		cov.data$BASE_ETA3 <- rnorm(n*(nsim+1),mean = 0,sd = PPVQ)	# Baseline ETA for Q
-		cov.data$FINAL_ETA3 <- log(exp(cov.data$BASE_ETA3)*runif(n*(nsim+1),min = 0.7,max = 1.3))	# Final ETA for Q
-		cov.data$BASE_ETA4 <- rnorm(n*(nsim+1),mean = 0,sd = PPVV2)	# Baseline ETA for V2
-		cov.data$FINAL_ETA4 <- log(exp(cov.data$BASE_ETA4)*runif(n*(nsim+1),min = 0.7,max = 1.3))	# Final ETA for V2
+		cov.data$ETA1 <- rnorm(n*nsim,mean = 0,sd = PPVCL)	# ETA for clearance
+		cov.data$BASE_ETA2 <- rnorm(n*nsim,mean = 0,sd = PPVV1)	# Baseline ETA for V1
+		cov.data$FINAL_ETA2 <- log(exp(cov.data$BASE_ETA2)*runif(n*nsim,min = 0.7,max = 1.3))	# Final ETA for V1
+		cov.data$BASE_ETA3 <- rnorm(n*nsim,mean = 0,sd = PPVQ)	# Baseline ETA for Q
+		cov.data$FINAL_ETA3 <- log(exp(cov.data$BASE_ETA3)*runif(n*nsim,min = 0.7,max = 1.3))	# Final ETA for Q
+		cov.data$BASE_ETA4 <- rnorm(n*nsim,mean = 0,sd = PPVV2)	# Baseline ETA for V2
+		cov.data$FINAL_ETA4 <- log(exp(cov.data$BASE_ETA4)*runif(n*nsim,min = 0.7,max = 1.3))	# Final ETA for V2
 
 # ------------------------------------------------------------------------------
 # Data frame of individual characteristics
