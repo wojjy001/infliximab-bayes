@@ -4,27 +4,28 @@
 # ------------------------------------------------------------------------------
 # Create a data frame ready for mrgsolve simulation
 	# Function for creating a data frame ready for mrgsolve simulation
-		label.function <- function(input.data) {
-			ID.number <- input.data$ID[1]	# Individual ID
-			SIM.number <- input.data$SIM[1]	# Individual simulation number
-			ALB <- input.data$ALB	# Individual albumin
-			ADA <- input.data$ADA	# Individual ADA status
-			ETA1 <- input.data$ETA1
-			ETA2 <- input.data$ETA2
-			ETA3 <- input.data$ETA3
-			ETA4 <- input.data$ETA4
-			ERRPRO <- input.data$ERRPRO
+		label.function <- function(pop.data) {
+			ID.number <- pop.data$ID[1]	# Individual ID
+			WT <- pop.data$WT	# Individual weight
+			ALB <- pop.data$ALB	# Individual albumin
+			ADA <- pop.data$ADA	# Individual ADA status
+			ETA1 <- pop.data$ETA1
+			ETA2 <- pop.data$ETA2
+			ETA3 <- pop.data$ETA3
+			ETA4 <- pop.data$ETA4
+			ERRPRO <- pop.data$ERRPRO
+
 			input.label.data <- data.frame(
 				ID = ID.number,
-				SIM = SIM.number,
 				time = TIME,	# Time points for simulation
+				WT, # Weight
 				ALB,	# Albumin
 				ADA,	# Anti-drug antibodies
 				ETA1,
 				ETA2,
 				ETA3,
 				ETA4,
-				amt = amt1*70,	# mg/kg dose
+				amt = amt1*WT,	# mg/kg dose
 				evid = 1,	# Dosing event
 				cmt = 1,	# Dose into the central compartment (compartment = 1)
 				rate = -2	# Infusion duration is specific in the model file

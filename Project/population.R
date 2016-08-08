@@ -11,7 +11,6 @@
 # Only going to pre-specify weight as 70 kg and randomly generate ADA_TIME, BASE_ALB and FINAL_ALB
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs
 	SIM <- sort(c(rep(seq(from = 1,to = nsim,by = 1),times = n)))	# Sequence of simulation identifiers
-	WT <- 70 # Weight, kg
 
 	# First sine wave
 		AMP_ALB1 <-	0.05	# Amplitude for albumin sine wave
@@ -31,6 +30,8 @@
 	cov.data <- ID.data	# Transfer to a data frame called "cov.data"
 
 # Assign ID values to specific groups of covariate values
+# WEIGHT
+	cov.data$WT <- 70 # kg
 # ADA_TIME
 	ADA_TIME2	<- seq(from = 1,to = 5,by = 1)	# IDs with ADA present in the second sampling interval
 	ADA_TIME3	<- seq(from = 6,to = 10,by = 1)	# IDs with ADA present in the third sampling interval

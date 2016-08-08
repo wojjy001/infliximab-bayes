@@ -5,11 +5,9 @@
 # Assuming linear kinetics - double the dose, double the trough concentration
 # ------------------------------------------------------------------------------
 # Set up a loop that will sample the individual's concentration optimise their dose and administer until time = 546 days
-	clinical.function <- function(ID.data) {
-		SIM.number <- ID.data$SIM[1]
-		ID.number <- ID.data$ID[1]
+	clinical.function <- function(first.int.data) {
 		# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
-			conc.data <- first.int.data[first.int.data$SIM == SIM.number & first.int.data$ID == ID.number,]
+			conc.data <- first.int.data
 			conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 
 		# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
@@ -19,6 +17,8 @@
 				# Previous DV
 					prev.DV <- conc.data$DV[conc.data$time == last.sample]
 					prev.DV[prev.DV < 0] <- 0.001
+				# Previous weight
+					prev.WT <- conc.data$WT[conc.data$time == last.sample]
 				# Previous dose
 					prev.dose.time <- head(tail(sample.times,2),1)
 					prev.dose <- conc.data$amt[conc.data$time == prev.dose.time]
@@ -28,8 +28,8 @@
 					} else {
 						new.dose <- prev.dose	# Continue with previous dose if within range
 					}
-				# Cap "new.dose" to 50 mg/kg (i.e., 3500 mg)
-					if (new.dose > 3500) new.dose <- 3500
+				# Cap "new.dose" to 50 mg/kg
+					if (new.dose > 50*prev.WT) new.dose <- 50*prev.WT
 
 				# Create input data frame for simulation
 					input.sim.data <- conc.data
@@ -53,7 +53,7 @@
 		conc.data
 	}	# Brackets closing "clinical.function"
 
-	clinical.data <- ddply(ID.data, .(SIM,ID), clinical.function, .parallel = TRUE)
+	clinical.data <- ddply(first.int.data, .(SIM,ID), clinical.function, .parallel = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file

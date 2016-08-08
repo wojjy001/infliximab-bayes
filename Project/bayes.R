@@ -4,12 +4,10 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	bayes.function <- function(ID.data) {
+	bayes.function <- function(first.int.data) {
 		# Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
-			SIM.number <- ID.data$SIM[1]
-			ID.number <- ID.data$ID[1]
 			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
-				conc.data <- first.int.data[first.int.data$SIM == SIM.number & first.int.data$ID == ID.number,]
+				conc.data <- first.int.data
 				conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 		# Define a variable telling the loop if previous bayes results are present
 			# If they are present, they will be used as initial estimates for the next dosing interval
@@ -31,6 +29,8 @@
 					# Previous time-interval
 						prev.TIME <- seq(from = 0,to = last.sample,by = 1)
 					# Pull covariate information from the beginning and end of the previous interval
+						# Weight
+							prev.WT <- conc.data$WT[conc.data$time == last.sample]
 						# Albumin
 							ALB1 <- conc.data$ALB[conc.data$time %in% sample.times]
 							TIMEalb <- c(sample.times)
@@ -51,6 +51,7 @@
 							prev.ADA <- extrap.ada(prev.TIME)
 					# Set up a new input data frame for Bayes estimation
 						input.bayes.data <- conc.data[conc.data$time %in% prev.TIME,]
+						input.bayes.data$WT <- prev.WT
 						input.bayes.data$ADA <- prev.ADA
 						input.bayes.data$ALB <- prev.ALB
 						# Reduce data frame to only include sample times and dosing times
@@ -142,6 +143,7 @@
 							next.TIME.int <- seq(from = next.TIME[1],to = next.TIME[2],by = 1)
 						# Set up a data frame to be input for dose optimisation based on Bayes parameters
 							input.optimise.data <- conc.data
+							input.optimise.data$WT <- prev.WT
 							input.optimise.data$ALB <- tail(prev.ALB,1)	# Carried forward last value of the previous interval
 							input.optimise.data$ADA <- tail(prev.ADA,1)
 							input.optimise.data$ETA1 <- new.ETA1
@@ -156,7 +158,7 @@
 							initial.bayes.compartment <- list(CENT = prev.bayes.CENT,PERI = prev.bayes.PERI,TBT = prev.bayes.TBT,AUT = prev.bayes.AUT)
 							optim.mod1 <- mod %>% init(initial.bayes.compartment) %>% carry.out(amt,ERRPRO)
 						# Initial dose and error estimates
-							initial.dose <- 350	# 5 mg/kg - label recommendation
+							initial.dose <- 5*prev.WT	# 5 mg/kg - label recommendation
 							initial.error <- 0.01
 							par <- c(initial.dose,initial.error)
 						# Re-add evid and rate columns
@@ -182,9 +184,9 @@
 								# Objective function value and minimise the value
 									objective <- -1*sum(res)
 							}
-							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001),upper = c(3500,Inf),control = list(parscale = par,factr = 1e12))
-						# If optimised dose is reaching 3500 mg (max) then individual is not going to stay above target trough
-						# Predict when they will hit target with the 3500 mg dose and then make that time the time of next dose
+							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001),upper = c(50*prev.WT,Inf),control = list(parscale = par,factr = 1e12))
+						# If optimised dose is reaching 50 mg/kg (max) then individual is not going to stay above target trough
+						# Predict when they will hit target with the 50 mg/kg dose and then make that time the time of next dose
 						# Based on Bayes parameters and carried forward covariate values!!!
 							input.optimise.data$amt[input.optimise.data$time == last.sample] <- optimised.doses$par[1]
 							# Simulate concentration-time profiles with fitted doses
@@ -230,12 +232,11 @@
 
 				# Stop the loop if IPRE at the last time-point has been calculated
 					if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
-
 			}	# Brackets closing "repeat"
 		conc.data
 	}	# Brackets closing "bayes.function"
 
-	optimise.bayes.data <- ddply(ID.data, .(SIM,ID), bayes.function, .parallel = TRUE)
+	optimise.bayes.data <- ddply(first.int.data, .(SIM,ID), bayes.function, .parallel = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
