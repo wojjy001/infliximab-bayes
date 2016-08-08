@@ -4,23 +4,23 @@
 # Remove all current objects in the workspace
 	rm(list = ls(all = TRUE))
 # Global directory (where R scripts are saved)
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"
+	work.dir <- "D:/infliximab-bayes/Project/"
 
-# -------------------------------------------------------------------------------
-# Parallelise jobs to increase speed
-	library(doParallel)	# Parallel processing
-	# Set up cores to run parallel processes, thus increasing speed
-	# Set up a cluster of cores to run the job Overall
-		cl <- makePSOCKcluster(2)
-		# detectCores() searches for the number of cores that the local machine has
-	# List packages required to be sent to each core for the parallel process
-	# The foreach package always needs to be included
-		clusterEvalQ(cl,list(
-			library(foreach),
-			source("E:/Wojciechowski/infliximab-bayes/Project/first_interval.R")
-		))
-	# Register the parallel backend with the foreach package
-		registerDoParallel(cl)
+# # -------------------------------------------------------------------------------
+# # Parallelise jobs to increase speed
+# 	library(doParallel)	# Parallel processing
+# 	# Set up cores to run parallel processes, thus increasing speed
+# 	# Set up a cluster of cores to run the job Overall
+# 		cl <- makePSOCKcluster(2)
+# 		# detectCores() searches for the number of cores that the local machine has
+# 	# List packages required to be sent to each core for the parallel process
+# 	# The foreach package always needs to be included
+# 		clusterEvalQ(cl,list(
+# 			library(foreach),
+# 			source("D:/infliximab-bayes/Project/first_interval.R")
+# 		))
+# 	# Register the parallel backend with the foreach package
+# 		registerDoParallel(cl)
 
 # ------------------------------------------------------------------------------
 # Run "single-run" simulation files

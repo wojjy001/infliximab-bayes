@@ -7,12 +7,13 @@
 		all.interval.label <- function(input.data) {
 			ID.number <- input.data$ID[1]	# Individual ID
 			SIM.number <- input.data$SIM[1]	# Individual simulation number
-			ALB <- input.data$ALB[input.data$TIME %in% TIME]	# Individual albumin
-			ADA <- input.data$ADA[input.data$TIME %in% TIME]	# Individual ADA status
-			ETA1 <- input.data$ETA1[input.data$TIME %in% TIME]
-			ETA2 <- input.data$ETA2[input.data$TIME %in% TIME]
-			ETA3 <- input.data$ETA3[input.data$TIME %in% TIME]
-			ETA4 <- input.data$ETA4[input.data$TIME %in% TIME]
+			ALB <- input.data$ALB	# Individual albumin
+			ADA <- input.data$ADA	# Individual ADA status
+			ETA1 <- input.data$ETA1
+			ETA2 <- input.data$ETA2
+			ETA3 <- input.data$ETA3
+			ETA4 <- input.data$ETA4
+			ERRPRO <- input.data$ERRPRO
 			input.label.data <- data.frame(
 				ID = ID.number,
 				SIM = SIM.number,

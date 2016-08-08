@@ -3,7 +3,7 @@
 # Everyone will receive 5 mg/kg doses for the first interval in all scenarios
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"
+	work.dir <- "D:/infliximab-bayes/Project/"
 	source(paste0(work.dir,"population.R"))
 	source(paste0(work.dir,"model.R"))
 
@@ -16,17 +16,17 @@
 		interval1.label <- function(input.data) {
 			ID.number <- input.data$ID[1]	# Individual ID
 			SIM.number <- input.data$SIM[1]	# Individual simulation number
-			ALB <- input.data$ALB[input.data$TIME %in% TIME1]	# Individual albumin
-			ADA <- input.data$ADA[input.data$TIME %in% TIME1]	# Individual ADA status
-			ETA1 <- input.data$ETA1[input.data$TIME %in% TIME1]
-			ETA2 <- input.data$ETA2[input.data$TIME %in% TIME1]
-			ETA3 <- input.data$ETA3[input.data$TIME %in% TIME1]
-			ETA4 <- input.data$ETA4[input.data$TIME %in% TIME1]
-			ERRPRO <- input.data$ERRPRO[input.data$TIME %in% TIME1]
+			ALB <- input.data$ALB	# Individual albumin
+			ADA <- input.data$ADA	# Individual ADA status
+			ETA1 <- input.data$ETA1
+			ETA2 <- input.data$ETA2
+			ETA3 <- input.data$ETA3
+			ETA4 <- input.data$ETA4
+			ERRPRO <- input.data$ERRPRO
 			input.first.int.data <- data.frame(
 				ID = ID.number,
 				SIM = SIM.number,
-				time = TIME1,	# Time points for simulation
+				time = TIME,	# Time points for simulation
 				ALB,	# Albumin
 				ADA,	# Anti-drug antibodies
 				ETA1,

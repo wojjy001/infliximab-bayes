@@ -3,7 +3,7 @@
 # Does not simulation concentrations
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"
+	work.dir <- "D:/infliximab-bayes/Project/"
 	source(paste0(work.dir,"functions.R"))
 
 # ------------------------------------------------------------------------------

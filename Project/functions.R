@@ -1,16 +1,16 @@
 # Time-weighted Bayes project
 # Script for containing universal functions
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Create and set working directory
 # Specific for the simulation
 	n <- 20	# Number of seed individuals (where each seed individual has a different set of covariate values)
 	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
-	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
+	sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
 	setwd(file.path(sim.output.dir))	#Set the working directory
 
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Load package libaries
 	library(ggplot2)	# Plotting package
 	library(grid)	# Plotting package
@@ -22,11 +22,13 @@
 # Set seed for reproducible results
 	set.seed(123456)
 
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Pre-defined universal objects
 # Target trough concentration definitions
 	trough.target <- 3	# Set the target trough concentration for dose optimisation
 	trough.upper <- 5	# Set upper bound for trough concentrations
+# Bayesian forecasting method
+	method <- "NTimeWeight"
 
 # Values for PPV (Population Parameter Variability), as SDs
 	PPVCL <- 0.327
@@ -38,32 +40,22 @@
 
 # Define time sequences
 	# Infusion times (0, 2, 6 weeks and then every 8 weeks) in days
-		TIMEi <- c(0,14,42,98,154,210,266,322,378,434,490)
+		TIME1i <- c(0,14,42)
+		TIMEi <- c(TIME1i,98,154,210,266,322,378,434,490,546)
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
-	# Time sequence for the different sampling intervals, days
-		TIME1 <- sort(c(seq(from = 0,to = 98,by = 14),seq(from = 0,to = 98,by = 14)+INFD))
-		# Times in TIME1 that are infusion times
-			TIME1i <- TIME1[TIME1 %in% TIMEi]
-		TIME2 <- sort(c(seq(from = 98,to = 210,by = 14),seq(from = 98,to = 210,by = 14)+INFD))
-		# Times in TIME2 that are infusion times
-			TIME2i <- TIME2[TIME2 %in% TIMEi]
-		TIME3 <- sort(c(seq(from = 210,to = 378,by = 14),seq(from = 210,to = 378,by = 14)+INFD))
-		# Times in TIME3 that are infusion times
-			TIME3i <- TIME3[TIME3 %in% TIMEi]
-		TIME4 <- sort(c(seq(from = 378,to = 546,by = 14),seq(from = 378,to = 546,by = 14)+INFD))
-		# Times in TIME4 that are infusion times
-			TIME4i <- TIME4[TIME4 %in% TIMEi]
-
 	# Overall time sequence
-		TIME <- unique(sort(c(TIME1,TIME2,TIME3,TIME4)))
+		TIME <- seq(from = 0,to = 600,by = 1)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
 
-#	Define sampling times
-	sample.time1 <- 98	# First interval
-	sample.time2 <- 210	# Second interval
-	sample.time3 <- 378	# Third interval
+# Define the last time-point to be simulated
+	last.time <- 546	# days
+# After the initiation phase, the first sample will be collected at day 98
+	sample.times <- c(0,98)	# days
+# Initial dosing interval for the maintenance phase
+	dose.int <- 56	# days
+	next.dose.int <- 56	# days
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions

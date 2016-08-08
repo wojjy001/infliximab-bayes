@@ -4,23 +4,16 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	bayes.function <- function(first.int.data) {
+	bayes.function <- function(ID.data) {
 		# Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
-		# Define the last time-point to be simulated
-			last.time <- 546	# days
-		# After the initiation phase, the first sample will be collected at day 98
-			sample.times <- c(0,98)	# days
-		# Initial dosing interval for the maintenance phase
-			dose.int <- 56	# days
-			next.dose.int <- 56	# days
-		# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
-			conc.data <- first.int.data
-			conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+			SIM.number <- ID.data$SIM[1]
+			ID.number <- ID.data$ID[1]
+			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+				conc.data <- first.int.data[first.int.data$SIM == SIM.number & first.int.data$ID == ID.number,]
+				conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 		# Define a variable telling the loop if previous bayes results are present
 			# If they are present, they will be used as initial estimates for the next dosing interval
 				previous.bayes.results.present <- FALSE
-		# Bayesian forecasting method
-			method <- "NTimeWeight"
 
 		# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
 			repeat {
@@ -245,14 +238,12 @@
 					if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
 
 			}	# Brackets closing "repeat"
-
-		return(conc.data)
-
+		conc.data
 	}	# Brackets closing "bayes.function"
 
-	optimise.bayes.data <- ddply(first.int.data, .(SIM,ID), bayes.function, .parallel = TRUE)
+	optimise.bayes.data <- ddply(ID.data, .(SIM,ID), bayes.function, .parallel = FALSE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
 	optimise.bayes.data.filename <- "optimise_bayes_data.csv"
-	write.csv(optimise.bayes.data,file = optimise.bayes.data.filename,na = ".",quote = F,row.names = F)	
+	write.csv(optimise.bayes.data,file = optimise.bayes.data.filename,na = ".",quote = F,row.names = F)
