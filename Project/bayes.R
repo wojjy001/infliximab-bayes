@@ -80,8 +80,7 @@
 								input.bayes.data$ETA3 <- ETA3fit
 								input.bayes.data$ETA4 <- ETA4fit
 							# Simulate concentration-time profiles with fitted parameters
-								new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()
-								new.bayes.data <- as.data.frame(new.bayes.data)
+								new.bayes.data <- mod %>% mrgsim(data = input.bayes.data) %>% as.tbl
 							# Pull out the predicted trough concentrations with the fitted doses for the interval
 								yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
 								# Posterior log-likelihood
@@ -119,9 +118,7 @@
 						input.bayes.data$ETA3 <- new.ETA3
 						input.bayes.data$ETA4 <- new.ETA4
 					# Simulate previous interval according to the individual parameter estimates and level of covariate information
-						sim.mod1 <- mod %>% carry.out(amt,SIM,ERRPRO)
-						bayes.sim.data <- sim.mod1 %>% data_set(input.bayes.data) %>% mrgsim()
-						bayes.sim.data <- as.data.frame(bayes.sim.data)
+						bayes.sim.data <- mod %>% mrgsim(data = input.bayes.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 
 				##############
 				##_OPTIMISE_##
@@ -178,8 +175,7 @@
 									input.optimise.data$amt[input.optimise.data$evid == 1] <- par[1]
 									err <- par[2]
 								# Simulate concentration-time profiles with fitted doses
-									new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
-									new.optimise.data <- as.data.frame(new.optimise.data)
+									new.optimise.data <- optim.mod1 %>% mrgsim(data = input.optimise.data) %>% as.tbl
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.optimise.data$IPRE[new.optimise.data$time == max(next.TIME)]
 									res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
@@ -192,8 +188,7 @@
 						# Based on Bayes parameters and carried forward covariate values!!!
 							input.optimise.data$amt[input.optimise.data$time == last.sample] <- optimised.doses$par[1]
 							# Simulate concentration-time profiles with fitted doses
-								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim()
-								new.optimise.data <- as.data.frame(new.optimise.data)
+								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim(data = input.optimise.data) %>% as.tbl
 								# However, if it is predicted the individual will achieve the target trough earlier, calculate when this will be achieved using TBT (time spent under target trough)
 								# Round to the nearest 7 days
 									if (new.optimise.data$IPRE[new.optimise.data$time == next.trough] < trough.target) {
@@ -227,8 +222,7 @@
 						input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
 					# Simulate
-						conc.data <- mod %>% carry.out(amt,SIM,ERRPRO) %>% data_set(input.sim.data) %>% mrgsim()
-						conc.data <- as.data.frame(conc.data)
+						conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 					# Add the "next.sample" time to the list of sample.times
 						sample.times <- sort(c(unique(c(sample.times,next.sample))))
 					# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
@@ -241,7 +235,7 @@
 		conc.data
 	}	# Brackets closing "bayes.function"
 
-	optimise.bayes.data <- ddply(ID.data, .(SIM,ID), bayes.function, .parallel = FALSE)
+	optimise.bayes.data <- ddply(ID.data, .(SIM,ID), bayes.function, .parallel = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file

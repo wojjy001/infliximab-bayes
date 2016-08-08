@@ -4,7 +4,7 @@
 # ------------------------------------------------------------------------------
 # Create a data frame ready for mrgsolve simulation
 	# Function for creating a data frame ready for mrgsolve simulation
-		all.interval.label <- function(input.data) {
+		label.function <- function(input.data) {
 			ID.number <- input.data$ID[1]	# Individual ID
 			SIM.number <- input.data$SIM[1]	# Individual simulation number
 			ALB <- input.data$ALB	# Individual albumin
@@ -33,15 +33,11 @@
 				input.label.data$amt[!c(input.label.data$time %in% TIMEi)] <- 0
 				input.label.data$evid[!c(input.label.data$time %in% TIMEi)] <- 0
 				input.label.data$rate[!c(input.label.data$time %in% TIMEi)] <- 0
-			# Return input.label.data
-				input.label.data
-		}
-	# Create population data frame ready for mrgsolve simulation
-		input.label.data <- ddply(pop.data, .(ID,SIM), all.interval.label)
-
-# Simulate concentration-time profiles for individuals in input.label.data
-	label.data <- ddply(input.label.data, .(SIM), conc.per.simulation)
-	label.data <- label.data[with(label.data, order(label.data$ID,label.data$SIM)), ]	# Sort by ID then SIM
+		# Simulate concentration-time profiles for individuals in input.label.data
+			label.data <- mod %>% mrgsim(data = input.label.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
+	}
+# Create population data frame ready for mrgsolve simulation
+	label.data <- ddply(pop.data, .(ID,SIM), label.function, .parallel = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write label.data to a .csv file

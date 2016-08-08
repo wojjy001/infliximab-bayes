@@ -41,8 +41,7 @@
 						input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
 				# Simulate
-					conc.data <- mod %>% mrgsim(data = input.sim.data, carry.out = c("amt","ERRPRO"))
-					conc.data <- as.data.frame(conc.data)
+					conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 				# Add the "next.sample" time to the list of sample.times
 					next.sample <- last.sample+dose.int
 					sample.times <- sort(c(unique(c(sample.times,next.sample))))
@@ -54,7 +53,7 @@
 		conc.data
 	}	# Brackets closing "clinical.function"
 
-	clinical.data <- ddply(ID.data, .(SIM,ID), clinical.function, .parallel = FALSE)
+	clinical.data <- ddply(ID.data, .(SIM,ID), clinical.function, .parallel = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file

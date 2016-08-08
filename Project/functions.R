@@ -6,7 +6,7 @@
 	n <- 20	# Number of seed individuals (where each seed individual has a different set of covariate values)
 	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
-	sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
+	sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
 	setwd(file.path(sim.output.dir))	#Set the working directory
 
@@ -15,6 +15,7 @@
 	library(ggplot2)	# Plotting package
 	library(grid)	# Plotting package
 	library(plyr)	# Split and rearrange data, ddply functions
+	library(dplyr)
 	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
 	library(compiler)	# Compile repeatedly called functions
 # Custom ggplot2 theme
@@ -56,6 +57,9 @@
 # Initial dosing interval for the maintenance phase
 	dose.int <- 56	# days
 	next.dose.int <- 56	# days
+
+# Set the dose for simulating the first intervals
+	amt1 <- 5	# 5 mg/kg
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions
@@ -106,13 +110,4 @@
 			}
 		# Return the resulting data frame
 		input.data
-	}
-
-# Function for simulating individual concentration time profiles
-# A single ID is present in all simulations (SIM) - which mrgsolve does not like
-# Run each "SIM" group through mrgsolve sequently
-# This could be parallelised if need be for speed!
-	conc.per.simulation <- function(input.data) {
-		conc.data <- mod %>% data_set(input.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
-		conc.data <- as.data.frame(conc.data)
 	}

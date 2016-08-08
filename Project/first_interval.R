@@ -3,17 +3,14 @@
 # Everyone will receive 5 mg/kg doses for the first interval in all scenarios
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
-	work.dir <- "D:/infliximab-bayes/Project/"
+	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
 	source(paste0(work.dir,"population.R"))
 	source(paste0(work.dir,"model.R"))
 
 # ------------------------------------------------------------------------------
-# Set the dose for simulating the first intervals
-	amt1 <- 5	# 5 mg/kg
-
 # Create a data frame ready for mrgsolve simulation
 	# Function for creating a data frame ready for mrgsolve simulation
-		interval1.label <- function(input.data) {
+		first.int.function <- function(input.data) {
 			ID.number <- input.data$ID[1]	# Individual ID
 			SIM.number <- input.data$SIM[1]	# Individual simulation number
 			ALB <- input.data$ALB	# Individual albumin
@@ -43,11 +40,8 @@
 				input.first.int.data$amt[!c(input.first.int.data$time %in% TIME1i)] <- 0
 				input.first.int.data$evid[!c(input.first.int.data$time %in% TIME1i)] <- 0
 				input.first.int.data$rate[!c(input.first.int.data$time %in% TIME1i)] <- 0
-			# Return input.conc.data
-				input.first.int.data
+			# Simulate concentration-time profiles for individuals in input.conc.data
+				first.int.data <- mod %>% mrgsim(data = input.first.int.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 		}
-	# Create population data frame ready for mrgsolve simulation
-		input.first.int.data <- ddply(pop.data, .(ID,SIM), interval1.label)
-
-# Simulate concentration-time profiles for individuals in input.conc.data
-	first.int.data <- ddply(input.first.int.data, .(SIM), conc.per.simulation)
+# Create population data frame ready for mrgsolve simulation
+	first.int.data <- ddply(pop.data, .(ID,SIM), first.int.function, .parallel = TRUE)
