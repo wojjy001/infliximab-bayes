@@ -23,7 +23,7 @@
 			ETA3 <- input.data$ETA3[input.data$TIME %in% TIME1]
 			ETA4 <- input.data$ETA4[input.data$TIME %in% TIME1]
 			ERRPRO <- input.data$ERRPRO[input.data$TIME %in% TIME1]
-			input.conc.data <- data.frame(
+			input.first.int.data <- data.frame(
 				ID = ID.number,
 				SIM = SIM.number,
 				time = TIME1,	# Time points for simulation
@@ -40,15 +40,14 @@
 				rate = -2	# Infusion duration is specific in the model file
 			)
 			# Make the amt given in the last time-point == 0
-				input.conc.data$amt[!c(input.conc.data$time %in% TIME1i) | input.conc.data$time == max(TIME1i)] <- 0
-				input.conc.data$evid[!c(input.conc.data$time %in% TIME1i) | input.conc.data$time == max(TIME1i)] <- 0
-				input.conc.data$rate[!c(input.conc.data$time %in% TIME1i) | input.conc.data$time == max(TIME1i)] <- 0
+				input.first.int.data$amt[!c(input.first.int.data$time %in% TIME1i)] <- 0
+				input.first.int.data$evid[!c(input.first.int.data$time %in% TIME1i)] <- 0
+				input.first.int.data$rate[!c(input.first.int.data$time %in% TIME1i)] <- 0
 			# Return input.conc.data
-				input.conc.data
+				input.first.int.data
 		}
 	# Create population data frame ready for mrgsolve simulation
-		input.conc.data <- ddply(pop.data, .(ID,SIM), interval1.label)
+		input.first.int.data <- ddply(pop.data, .(ID,SIM), interval1.label)
 
 # Simulate concentration-time profiles for individuals in input.conc.data
-	conc.data <- ddply(input.conc.data, .(SIM), conc.per.simulation)
-	conc.data.x <- conc.data[conc.data$time < 98,]
+	first.int.data <- ddply(input.first.int.data, .(SIM), conc.per.simulation)

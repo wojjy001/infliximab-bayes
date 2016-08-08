@@ -4,47 +4,35 @@
 # If trough target = 3 mg/L, and measured trough is 1.5 mg/L, then next dose will be doubled
 # Assuming linear kinetics - double the dose, double the trough concentration
 # ------------------------------------------------------------------------------
-# Simulate intervals separately
-# Change doses based on "standard clinical practice" methods
-	conc.data.x <- conc.data[conc.data$time < 98,]
-	interval.clinical <- function(interval) {
-		# Call simulated data for the previous interval
-			if (interval == 2) {
-				clinical.data <- conc.data	# From the first interval
-				prev.TIMEXi <- TIME1i
-				TIMEX <- TIME2
-				TIMEXi <- TIME2i
-				sample.time <- sample.time1
-			} else if (interval == 3) {
-				clinical.data <- clinical.data2	# From the second interval
-				prev.TIMEXi <- TIME2i
-				TIMEX <- TIME3
-				TIMEXi <- TIME3i
-				sample.time <- sample.time2
-			} else {
-				clinical.data <- clinical.data3	# From the third interval
-				prev.TIMEXi <- TIME3i
-				TIMEX <- TIME4
-				TIMEXi <- TIME4i
-				sample.time <- sample.time3
-			}
+clinical.function <- function(first.int.data) {
+	# Set up a loop that will sample the individual's concentration optimise their dose and administer until time = 546 days
+	# Define the last time-point to be simulated
+		last.time <- 546	# days
+	# After the initiation phase, the first sample will be collected at day 98
+		sample.times <- c(0,98)	# days
+	# Initial dosing interval for the maintenance phase
+		dose.int <- 56	# days
+	# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+		conc.data <- first.int.data
+		conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 
-		population.clinical <- function(input.data) {
-			ID.number <- input.data$ID[1]	# Individual ID
-			SIM.number <- input.data$SIM[1]	# Individual simulation number
+	# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
+		repeat {
 
-			# clinical.data = simulated concentration data from the previous interval
-				ind.clinical.data <- clinical.data[clinical.data$ID == ID.number & clinical.data$SIM == SIM.number,]
-			# Pull out the sampled concentration from the individual's simulated concentration profile
-				err <- ind.clinical.data$ERRPRO[ind.clinical.data$time == sample.time]	# Individual's residual error
-				sample <- ind.clinical.data$IPRE[ind.clinical.data$time == sample.time]*(1+err)
-				sample[sample < 0] <- 0.001
-			# Pull out the dose that was given that resulted in that sampled concentration
-				prev.dose <- ind.clinical.data$amt[ind.clinical.data$time == prev.TIMEXi[1]]
+			# Time of most recent sample
+				last.sample <- max(sample.times)
+
+			# Previous DV
+				prev.DV <- conc.data$DV[conc.data$time == last.sample]
+				prev.DV[prev.DV < 0] <- 0.001
+
+			# Previous dose
+				prev.dose.time <- head(tail(sample.times,2),1)
+				prev.dose <- conc.data$amt[conc.data$time == prev.dose.time]
 
 			# Calculate the new dose for the next interval based on "sample" and "dose"
-				if (sample < trough.target | sample >= trough.upper) {
-					new.dose <- trough.target/sample*prev.dose	# Adjust the dose if out of range
+				if (prev.DV < trough.target | prev.DV >= trough.upper) {
+					new.dose <- trough.target/prev.DV*prev.dose	# Adjust the dose if out of range
 				} else {
 					new.dose <- prev.dose	# Continue with previous dose if within range
 				}
@@ -52,69 +40,35 @@
 			# Cap "new.dose" to 50 mg/kg (i.e., 3500 mg)
 				if (new.dose > 3500) new.dose <- 3500
 
-			# Pull the amount in the compartments at the end of the previous interval
-				prev.cent <- ind.clinical.data$CENT[ind.clinical.data$time == sample.time]
-				prev.peri <- ind.clinical.data$PERI[ind.clinical.data$time == sample.time]
-				prev.aut <- ind.clinical.data$AUT[ind.clinical.data$time == sample.time]
+			# Create input data frame for simulation
+				input.sim.data <- conc.data
+				input.sim.data$amt[input.sim.data$time == last.sample] <- new.dose	# Add new dose to data frame at time of last sample
+				# Re-add evid and rate columns
+					input.sim.data$cmt <- 1	# Signifies which compartment the dose goes into
+					input.sim.data$evid <- 1	# Signifies dosing event
+					input.sim.data$evid[input.sim.data$amt == 0] <- 0
+					input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
+					input.sim.data$rate[input.sim.data$amt == 0] <- 0
 
-			# Set up the new input data frame for mrgsolve for the next interval
-				# Subset "pop.data" for the individual's data
-					ind.data <- pop.data[pop.data$ID == ID.number & pop.data$SIM == SIM.number,]
-				# Then call on parameter values and put into input.clinical.data
-					ALB <- ind.data$ALB[ind.data$TIME %in% TIMEX]	# Individual albumin
-					ADA <- ind.data$ADA[ind.data$TIME %in% TIMEX]	# Individual ADA status
-					ETA1 <- ind.data$ETA1[ind.data$TIME %in% TIMEX]
-					ETA2 <- ind.data$ETA2[ind.data$TIME %in% TIMEX]
-					ETA3 <- ind.data$ETA3[ind.data$TIME %in% TIMEX]
-					ETA4 <- ind.data$ETA4[ind.data$TIME %in% TIMEX]
-					ERRPRO <- ind.data$ERRPRO[ind.data$TIME %in% TIMEX]
-					input.clinical.data <- data.frame(
-						ID = ID.number,
-						SIM = SIM.number,
-						time = TIMEX,	# Time points for simulation
-						ALB,	# Albumin
-						ADA,	# Anti-drug antibodies
-						ETA1,
-						ETA2,
-						ETA3,
-						ETA4,
-						ERRPRO,
-						amt = new.dose,	# Clinically optimised dose
-						evid = 1,	# Dosing event
-						cmt = 1,	# Dose into the central compartment (compartment = 1)
-						rate = -2	# Infusion duration is specific in the model file
-					)
-				# Make the amt given in the last time-point == 0
-				# Change evid and rate accordingly
-					if (interval != 4) {
-						input.clinical.data$amt[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
-						input.clinical.data$evid[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
-						input.clinical.data$rate[!c(input.clinical.data$time %in% TIMEXi) | input.clinical.data$time == max(TIMEXi)] <- 0
-					} else {
-						input.clinical.data$amt[!c(input.clinical.data$time %in% TIMEXi)] <- 0
-						input.clinical.data$evid[!c(input.clinical.data$time %in% TIMEXi)] <- 0
-						input.clinical.data$rate[!c(input.clinical.data$time %in% TIMEXi)] <- 0
-					}
-			# Simulate concentration time profile
-				initial.compartment <- list(CENT = prev.cent,PERI = prev.peri,AUT = prev.aut)
-				new.clinical.data <- mod %>% init(initial.compartment) %>% data_set(input.clinical.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
-				new.clinical.data <- as.data.frame(new.clinical.data)
-		}
-		# Simulate concentration-time profiles for individuals in input.clinical.data
-			new.clinical.data <- ddply(ID.data, .(SIM,ID), population.clinical)
-	}
-# Simulate the second interval
-	clinical.data2 <- interval.clinical(2)
-	clinical.data2.x <- clinical.data2[clinical.data2$time < 210,]
-# Simulate the third interval
-	clinical.data3 <- interval.clinical(3)
-	clinical.data3.x <- clinical.data3[clinical.data3$time < 378,]
-# Simulate the fourth interval
-	clinical.data4 <- interval.clinical(4)
+			# Simulate
+				conc.data <- mod %>% carry.out(amt,SIM,ERRPRO) %>% data_set(input.sim.data) %>% mrgsim()
+				conc.data <- as.data.frame(conc.data)
+			# Add the "next.sample" time to the list of sample.times
+				next.sample <- last.sample+dose.int
+				sample.times <- sort(c(unique(c(sample.times,next.sample))))
 
-# Combine clinical.dataX
-	clinical.data <- rbind(conc.data.x,clinical.data2.x,clinical.data3.x,clinical.data4)
-	clinical.data <- clinical.data[with(clinical.data, order(clinical.data$ID,clinical.data$SIM)), ]	# Sort by ID then SIM
+			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+				conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+
+			if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
+
+		}	# Brackets closing "repeat"
+
+		return(conc.data)
+
+	}	# Brackets closing "clinical.function"
+
+	clinical.data <- ddply(first.int.data, .(SIM,ID), clinical.function, .parallel = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
