@@ -8,7 +8,8 @@
 	$INIT			// Initial conditions for compartments
 						CENT = 0,	// Central
 						PERI = 0, // Peripheral
-						AUT = 0	//Time below target compartment
+						AUT = 0,	// Area under target trough compartment
+						TBT = 0	// Time below target trough compartment
 
 	$PARAM		// Population parameters
 						POPCL = 0.294,
@@ -28,14 +29,15 @@
 						WT = 70,	// Weight (kg)
 						ALB = 4,	// Albumin
 						ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)
-						target = 3	// Target trough concentration (mg/L)
-						SIM = 0	// Simulation identifier
+						target = 3,	// Target trough concentration (mg/L)
+						SIM = 0,	// Simulation identifier
 
 						// Presimulated PPV values
 						ETA1 = 0,
 						ETA2 = 0,
 						ETA3 = 0,
-						ETA4 = 0
+						ETA4 = 0,
+						ERRPRO = 0
 
 	$OMEGA		name = "BSV"
 						block = FALSE
@@ -46,7 +48,7 @@
 						0.638401
 
 	$SIGMA		block = FALSE
-						labels = s(ERRPRO)
+						labels = s(ERR_PRO)
 						0.175561
 
 	$MAIN			// Infusion duration
@@ -62,18 +64,33 @@
 						double Q = POPQ*pow(WT/70,WT_Q)*exp(ETA3);
 						double V2 = POPV2*pow(WT/70,WT_V2)*exp(ETA4);
 
-	$ODE			// Differential equations
-						dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;
-						dxdt_PERI = Q/V1*CENT -Q/V2*PERI;
+						// Micro-rate constants
+						double K10 = CL/V1;
+						double K12 = Q/V1;
+						double K21 = Q/V2;
 
-						// Time below target
+						// Half-life
+						double Thalf = log(2)/(0.5*((K10+K12+K21)-sqrt(pow(K10+K12+K21,2)-4*K10*K21)));
+
+	$ODE			// Differential equations
+						dxdt_CENT = -K12*CENT +K21*PERI -K10*CENT;
+						dxdt_PERI = K12*CENT -K21*PERI;
+
+						// Plasma concentration
 						double CP = CENT/V1;	// Plasma concentration of the central compartment
+
+						// Area below target and time below target
 						dxdt_AUT = 0;
-						if (CP < target) dxdt_AUT = 1;
+						dxdt_TBT = 0;
+						if (SOLVERTIME > 0.08333333 & CP < target) {
+							dxdt_AUT = target - CP;
+							dxdt_TBT = 1;
+						}
 
 	$TABLE		table(IPRE) = CENT/V1;
+						table(DV) = table(IPRE)*(1+ERRPRO);
 
-	$CAPTURE	WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4
+	$CAPTURE	WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 Thalf
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
