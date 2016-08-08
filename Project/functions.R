@@ -4,9 +4,9 @@
 # Create and set working directory
 # Specific for the simulation
 	n <- 20	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 10	# Number of simulations of the seed individuals to perform
+	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
-	sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
+	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
 	setwd(file.path(sim.output.dir))	#Set the working directory
 

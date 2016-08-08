@@ -39,7 +39,8 @@
 						ETA4 = 0,
 						ERRPRO = 0
 
-	$OMEGA		name = "BSV"
+	$OMEGA		// Inter-individual variability
+						name = "BSV"
 						block = FALSE
 						labels = s(PPVCL,PPVV1,PPVQ,PPVV2)
 						0.106929
@@ -47,7 +48,8 @@
 						1.21
 						0.638401
 
-	$SIGMA		block = FALSE
+	$SIGMA		// Intra-individual variability
+						block = FALSE
 						labels = s(ERR_PRO)
 						0.175561
 
@@ -87,10 +89,12 @@
 							dxdt_TBT = 1;
 						}
 
-	$TABLE		table(IPRE) = CENT/V1;
+	$TABLE		// Predicted concentrations
+						table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*(1+ERRPRO);
 
-	$CAPTURE	WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 Thalf
+	$CAPTURE	// Variables to output
+						WT ADA ALB CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 Thalf
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
