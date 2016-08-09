@@ -1,4 +1,4 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for simulating concentrations for the first interval
 # Everyone will receive 5 mg/kg doses for the first interval in all scenarios
 # ------------------------------------------------------------------------------

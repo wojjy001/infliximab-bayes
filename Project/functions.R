@@ -1,4 +1,4 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for containing universal functions
 # ------------------------------------------------------------------------------
 # Create and set working directory
@@ -28,8 +28,6 @@
 # Target trough concentration definitions
 	trough.target <- 3	# Set the target trough concentration for dose optimisation
 	trough.upper <- 5	# Set upper bound for trough concentrations
-# Bayesian forecasting method
-	method <- "NTimeWeight"
 
 # Values for PPV (Population Parameter Variability), as SDs
 	PPVCL <- 0.327
@@ -49,14 +47,13 @@
 		TIME <- seq(from = 0,to = 600,by = 1)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
-
-# Define the last time-point to be simulated
-	last.time <- 546	# days
-# After the initiation phase, the first sample will be collected at day 98
-	sample.times <- c(0,98)	# days
-# Initial dosing interval for the maintenance phase
-	dose.int <- 56	# days
-	next.dose.int <- 56	# days
+	# Define the last time-point to be simulated
+		last.time <- 546	# days
+	# After the initiation phase, the first sample will be collected at day 98
+		sample.times <- c(0,98)	# days
+	# Initial dosing interval for the maintenance phase
+		dose.int <- 56	# days
+		next.dose.int <- 56	# days
 
 # Set the dose for simulating the first intervals
 	amt1 <- 5	# 5 mg/kg

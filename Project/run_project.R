@@ -1,4 +1,4 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for setting the working directory and executing other R scripts
 # ------------------------------------------------------------------------------
 # Remove all current objects in the workspace

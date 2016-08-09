@@ -1,4 +1,4 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for simulating characteristics of the study population
 # Does not simulation concentrations
 # ------------------------------------------------------------------------------

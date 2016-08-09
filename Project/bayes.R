@@ -1,4 +1,4 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for estimating individual parameter values and using them to guide dose optimisation
 # Subsequent doses are dependent on measured trough concentrations
 # Doses are optimised using maximum likelihood estimation
@@ -87,14 +87,7 @@
 								# Posterior log-likelihood
 								# Error model: Y = IPRE*(1+ERRPRO), Y = IPRE + IPRE*ERRPRO
 									TIMET <- max(new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]) - new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]
-									if (method == "NTimeWeight") loglikpost.sd <- ERRPRO	# No time-weighting
-									if (method == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET
-									if (method == "Peck1.01") loglikpost.sd <- ERRPRO*1.01^TIMET
-									if (method == "Half-life") {
-										Thalf <- new.bayes.data$Thalf[1]
-										weight.par <- log(2)/Thalf
-										loglikpost.sd <- ERRPRO*exp(weight.par*TIMET)
-									}
+									loglikpost.sd <- ERRPRO	# No time-weighting
 									loglikpost <- dnorm(prev.DV,mean = yhat,sd = yhat*loglikpost.sd,log = T)
 								# Prior log-likelihood
 									ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)
@@ -127,9 +120,6 @@
 				# Optimise dose for the individual using:
 					# 1. Individual BAYES predicted concentration (compartment amounts)
 					# 2. Carried forward covariate information from the end of the previous interval
-				# OR:
-					# 1. Individual IPRE predicted concentration
-					# 2. Actual covariate information
 
 				# Create an input data frame for simulation
 					input.sim.data <- conc.data

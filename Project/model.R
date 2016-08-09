@@ -1,4 +1,4 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Infliximab population model code
 #-------------------------------------------------------------------------------
 # Define the model parameters and equations
