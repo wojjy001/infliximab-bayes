@@ -82,6 +82,7 @@
 								input.bayes.data$ETA4 <- ETA4fit
 							# Simulate concentration-time profiles with fitted parameters
 								new.bayes.data <- mod %>% mrgsim(data = input.bayes.data) %>% as.tbl
+								new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F] <- .Machine$double.eps
 							# Pull out the predicted trough concentrations with the fitted doses for the interval
 								yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
 								# Posterior log-likelihood
@@ -96,8 +97,13 @@
 							# Objective function value and minimise the value
 								objective <- -1*sum(loglikpost,loglikprior)
 						}
+					# Gradient function for "bayes.estimate"
+					# Gradient function must have the same arguments as "bayes.estimate"
+						gradient.function <- function(par) {
+							grad(func = bayes.estimate,x = par)
+						}
 					# Run bayes.estimate function through optim
-						bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001,0.0001,0.0001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12))
+						bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001,0.0001,0.0001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12),gr = gradient.function)
 						# bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
 						previous.bayes.results.present <- TRUE
 					# Calculate concentrations according to new Bayes estimates
