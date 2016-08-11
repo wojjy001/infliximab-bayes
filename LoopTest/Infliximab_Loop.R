@@ -9,6 +9,7 @@
 	library(mrgsolve)	# Metrum Research Group differential equation solver
 	library(ggplot2)	# Plotting
 	library(grid)	# Plotting
+	library(numDeriv)	# Package containing function that returns numerical gradients of Bayes objective function value
 
 # Set working directory
 	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/LoopTest/"
@@ -20,7 +21,7 @@
 	# Output object is called "first.int.data"
 	# Sample a random individual from the simulated data
 		sample.ID <- sample(c(1,6,11,16),1)
-		# sample.ID <- 20
+		# sample.ID <- 6
 		conc.data <- first.int.data[first.int.data$SIM == 1 & first.int.data$ID == sample.ID,] # First three doses for the individual have been simulated
 
 # ------------------------------------------------------------------------------
@@ -37,8 +38,7 @@
 # Define a variable telling the loop if previous bayes results are present
 	# If they are present, they will be used as initial estimates for the next dosing interval
 		previous.bayes.results.present <- FALSE
-# Bayesian forecasting method
-	method <- "NTimeWeight"
+		bayes.result.list <- list("Initial" = NA)
 
 # If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
 	repeat {
@@ -86,52 +86,57 @@
 						input.bayes.data$evid[input.bayes.data$amt == 0] <- 0
 						input.bayes.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.bayes.data$rate[input.bayes.data$amt == 0] <- 0
-			# Initial estimates for Bayes parameters
-				initial.bayes.par <- exp(c(0,0,0,0))	# Population typical
-				if (previous.bayes.results.present == TRUE) initial.bayes.par <- c(bayes.result$par[1],bayes.result$par[2],bayes.result$par[3],bayes.result$par[4])
-				par <- initial.bayes.par
-			# Previous DV
-				prev.DV <- input.bayes.data$DV[input.bayes.data$time %in% sample.times[sample.times != 0]]
-			# Bayesian estimation
-				bayes.estimate <- function(par) {
-					# Describe parameters to be optimised
-						ETA1fit <- log(par[1])	# In the exponential domain
-						ETA2fit <- log(par[2])
-						ETA3fit <- log(par[3])
-						ETA4fit <- log(par[4])
-					# Add fitted parameters to the input data frame
-						input.bayes.data$ETA1 <- ETA1fit
-						input.bayes.data$ETA2 <- ETA2fit
-						input.bayes.data$ETA3 <- ETA3fit
-						input.bayes.data$ETA4 <- ETA4fit
-					# Simulate concentration-time profiles with fitted parameters
-						new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()
-						new.bayes.data <- as.data.frame(new.bayes.data)
-					# Pull out the predicted trough concentrations with the fitted doses for the interval
-						yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
-						# Posterior log-likelihood
-						# Error model: Y = IPRE*(1+ERRPRO), Y = IPRE + IPRE*ERRPRO
-							TIMET <- max(new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]) - new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]
-							if (method == "NTimeWeight") loglikpost.sd <- ERRPRO	# No time-weighting
-							if (method == "Peck1.005") loglikpost.sd <- ERRPRO*1.005^TIMET
-							if (method == "Peck1.01") loglikpost.sd <- ERRPRO*1.01^TIMET
-							if (method == "Half-life") {
-								Thalf <- new.bayes.data$Thalf[1]
-								weight.par <- log(2)/Thalf
-								loglikpost.sd <- ERRPRO*exp(weight.par*TIMET)
-							}
-							loglikpost <- dnorm(prev.DV,mean = yhat,sd = yhat*loglikpost.sd,log = T)
-						# Prior log-likelihood
-							ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)
-							ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)
-							loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)
-					# Objective function value and minimise the value
-						objective <- -1*sum(loglikpost,loglikprior)
-				}
-			# Run bayes.estimate function through optim
-				bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001,0.0001,0.0001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12))
-				# bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
+
+			repeat {
+				# Initial estimates for Bayes parameters
+					initial.bayes.par <- exp(c(0,0,0,0))	# Population typical
+					if (previous.bayes.results.present == TRUE) initial.bayes.par <- c(bayes.result$par[1],bayes.result$par[2],bayes.result$par[3],bayes.result$par[4])*exp(runif(4,min = -0.1,max = 0.1))	# Use previous parameter results as initial estimates mulitpled by a random number so that they are not exactly the same
+					par <- initial.bayes.par
+				# Previous DV
+					prev.DV <- input.bayes.data$DV[input.bayes.data$time %in% sample.times[sample.times != 0]]
+				# Bayesian estimation
+					bayes.estimate <- function(par) {
+						# Describe parameters to be optimised
+							ETA1fit <- log(par[1])	# In the exponential domain
+							ETA2fit <- log(par[2])
+							ETA3fit <- log(par[3])
+							ETA4fit <- log(par[4])
+						# Add fitted parameters to the input data frame
+							input.bayes.data$ETA1 <- ETA1fit
+							input.bayes.data$ETA2 <- ETA2fit
+							input.bayes.data$ETA3 <- ETA3fit
+							input.bayes.data$ETA4 <- ETA4fit
+						# Simulate concentration-time profiles with fitted parameters
+							new.bayes.data <- mod %>% data_set(input.bayes.data) %>% mrgsim()
+							new.bayes.data <- as.data.frame(new.bayes.data)
+							new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F] <- .Machine$double.eps
+						# Pull out the predicted trough concentrations with the fitted doses for the interval
+							yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
+							# Posterior log-likelihood
+							# Error model: Y = IPRE*(1+ERRPRO), Y = IPRE + IPRE*ERRPRO
+								TIMET <- max(new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]) - new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]
+								loglikpost.sd <- ERRPRO	# No time-weighting
+								loglikpost <- dnorm(prev.DV,mean = yhat,sd = yhat*loglikpost.sd,log = T)
+							# Prior log-likelihood
+								ETA <- c(ETA1fit,ETA2fit,ETA3fit,ETA4fit)
+								ETABSV <- c(PPVCL,PPVV1,PPVQ,PPVV2)
+								loglikprior <- dnorm(ETA,mean = 0,sd = ETABSV,log = T)
+						# Objective function value and minimise the value
+							objective <- -1*sum(loglikpost,loglikprior)
+					}
+				# Gradient function for "bayes.estimate"
+				# Gradient function must have the same arguments as "bayes.estimate"
+					gradient.function <- function(par) {
+						grad(func = bayes.estimate,x = par)
+					}
+				# Run bayes.estimate function through optim
+					bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12),gr = gradient.function)
+					# bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
+				if (bayes.result$convergence == 0) break
+			}
+
 				previous.bayes.results.present <- TRUE
+				bayes.result.list <- list(bayes.result.list,bayes.result)
 			# Calculate concentrations according to new Bayes estimates
 				# Convert new ETA values (estimated in the exp() domain)
 					new.ETA1 <- log(bayes.result$par[1])
@@ -297,3 +302,5 @@
 	print(conc.data$AUT[conc.data$time == last.time])
 	# See the effects of lame initiation phase dosing
 		print(conc.data$AUT[conc.data$time == last.time]-conc.data$AUT[conc.data$time == 98])
+
+	bayes.result.list
