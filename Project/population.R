@@ -31,7 +31,7 @@
 
 # Assign ID values to specific groups of covariate values
 # WEIGHT
-	cov.data$WT <- 45 # kg
+	cov.data$WT <- 70 # kg
 # ADA_TIME
 	ADA_TIME2	<- seq(from = 1,to = 5,by = 1)	# IDs with ADA present in the second sampling interval
 	ADA_TIME3	<- seq(from = 6,to = 10,by = 1)	# IDs with ADA present in the third sampling interval

@@ -63,7 +63,7 @@
 								input.bayes.data$rate <- -2	# Signifies that infusion duration is specified in model file
 								input.bayes.data$rate[input.bayes.data$amt == 0] <- 0
 
-					repeat {
+					# repeat {
 						# Initial estimates for Bayes parameters
 							initial.bayes.par <- exp(c(0,0,0,0))	# Population typical the first time bayes parameters are estimated
 							if (previous.bayes.results.present == TRUE) initial.bayes.par <- c(bayes.result$par[1],bayes.result$par[2],bayes.result$par[3],bayes.result$par[4])*exp(runif(4,min = -0.1,max = 0.1))	# Use previous parameter results as initial estimates mulitpled by a random number so that they are not exactly the same
@@ -84,12 +84,11 @@
 									input.bayes.data$ETA4 <- ETA4fit
 								# Simulate concentration-time profiles with fitted parameters
 									new.bayes.data <- mod %>% mrgsim(data = input.bayes.data) %>% as.tbl
-									new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F] <- .Machine$double.eps
+									new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F | new.bayes.data$IPRE < 0.001] <- 0.001
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
 									# Posterior log-likelihood
 									# Error model: Y = IPRE*(1+ERRPRO), Y = IPRE + IPRE*ERRPRO
-										TIMET <- max(new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]) - new.bayes.data$time[new.bayes.data$time %in% sample.times[sample.times != 0]]
 										loglikpost.sd <- ERRPRO	# No time-weighting
 										loglikpost <- dnorm(prev.DV,mean = yhat,sd = yhat*loglikpost.sd,log = T)
 									# Prior log-likelihood
@@ -105,11 +104,11 @@
 								grad(func = bayes.estimate,x = par)
 							}
 						# Run bayes.estimate function through optim
-							bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001,0.0001,0.0001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12),gr = gradient.function)
+							bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12),gr = gradient.function)
 							# bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
 						# If bayes.estimate successfully converged, then stop the repeat loop
-							if (bayes.result$convergence == 0) break
-					}
+							# if (bayes.result$convergence == 0) break
+					# }
 						previous.bayes.results.present <- TRUE
 					# Calculate concentrations according to new Bayes estimates
 						# Convert new ETA values (estimated in the exp() domain)
@@ -179,6 +178,7 @@
 									err <- par[2]
 								# Simulate concentration-time profiles with fitted doses
 									new.optimise.data <- optim.mod1 %>% mrgsim(data = input.optimise.data) %>% as.tbl
+									new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 0.001] <- 0.001
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.optimise.data$IPRE[new.optimise.data$time == max(next.TIME)]
 									res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
@@ -192,6 +192,7 @@
 							input.optimise.data$amt[input.optimise.data$time == last.sample] <- optimised.doses$par[1]
 							# Simulate concentration-time profiles with fitted doses
 								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim(data = input.optimise.data) %>% as.tbl
+								new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 0.001] <- 0.001
 								# However, if it is predicted the individual will achieve the target trough earlier, calculate when this will be achieved using TBT (time spent under target trough)
 								# Round to the nearest 7 days
 									if (new.optimise.data$IPRE[new.optimise.data$time == next.trough] < trough.target) {
@@ -226,6 +227,8 @@
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
 					# Simulate
 						conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
+						conc.data$IPRE[is.finite(conc.data$IPRE) == F | conc.data$IPRE < 0.001] <- 0.001
+						conc.data$DV[is.finite(conc.data$DV) == F | conc.data$DV < 0.001] <- 0.001
 					# Add the "next.sample" time to the list of sample.times
 						sample.times <- sort(c(unique(c(sample.times,next.sample))))
 					# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA

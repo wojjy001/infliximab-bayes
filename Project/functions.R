@@ -4,7 +4,7 @@
 # Create and set working directory
 # Specific for the simulation
 	n <- 20	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 10	# Number of simulations of the seed individuals to perform
+	nsim <- 100	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
 	sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
@@ -18,6 +18,7 @@
 	library(dplyr)
 	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
 	library(compiler)	# Compile repeatedly called functions
+	library(numDeriv)
 # Custom ggplot2 theme
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
 # Set seed for reproducible results
