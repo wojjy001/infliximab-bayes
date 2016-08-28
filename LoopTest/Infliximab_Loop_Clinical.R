@@ -101,13 +101,24 @@
 			ID = sample.ID,
 			times = conc.data$time[conc.data$amt != 0],
 			amt = conc.data$amt[conc.data$amt != 0],
-			int = c(0,diff(conc.data$time[conc.data$amt != 0]))
+			int = c(0,diff(conc.data$time[conc.data$amt != 0])),
+			ADA = conc.data$ADA[conc.data$amt != 0],
+			ALB = conc.data$ALBCOV[conc.data$amt != 0],
+			WT = conc.data$WTCOV[conc.data$amt != 0]
 		)
 	)
 #	Cumulative time under target trough by time = 546
- 	print(conc.data$TBT[conc.data$time == last.time])
+ 	print(conc.data$TUT[conc.data$time == last.time])
 # Print cumulative time under target trough by time = 98
 	# See the effects of lame initiation phase dosing
-		print(conc.data$TBT[conc.data$time == 98])
+		print(conc.data$TUT[conc.data$time == 98])
 # Print cumulative area under target trough at time = 546
 	print(conc.data$AUT[conc.data$time == last.time])
+
+# # Plot albumin, weight and ADA status over time
+# 	plotobj2 <- NULL
+# 	plotobj2 <- ggplot(conc.data[conc.data$time <= last.time,])
+# 	plotobj2 <- plotobj2 + geom_line(aes(x = time,y = WT/70),colour = "blue")
+# 	plotobj2 <- plotobj2 + geom_line(aes(x = time,y = ALB/4),colour = "red")
+# 	plotobj2 <- plotobj2 + geom_step(aes(x = time,y = ADA),colour = "darkgreen")
+# 	plotobj2

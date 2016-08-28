@@ -102,6 +102,6 @@
 # Run each "SIM" group through mrgsolve sequently
 # This could be parallelised if need be for speed!
 	conc.per.simulation <- function(input.data) {
-		conc.data <- mod %>% data_set(input.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
+		conc.data <- mod.sim %>% data_set(input.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
 		conc.data <- as.data.frame(conc.data)
 	}
