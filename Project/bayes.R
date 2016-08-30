@@ -4,10 +4,11 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
+	first.int.data <- first.int.data[first.int.data$ID == 2,]
 	bayes.function <- function(first.int.data) {
 		# Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
 			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
-				conc.data <- first.int.data
+				conc.data <- as.data.frame(first.int.data)
 				conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 		# Define a variable telling the loop if previous bayes results are present
 			# If they are present, they will be used as initial estimates for the next dosing interval
@@ -27,12 +28,16 @@
 					# Time of most recent sample
 						last.sample <- max(sample.times)
 					# Previous time-interval
-						prev.TIME <- seq(from = 0,to = last.sample,by = 1)
+						prev.TIME <- seq(from = 0,to = last.sample,by = time.int)
 					# Pull covariate information from the beginning and end of the previous interval
 						# Weight
-							prev.WT <- conc.data$WT[conc.data$time == last.sample]
+							WT1 <- conc.data$WTCOV[conc.data$time %in% sample.times]
+							TIMEwt <- c(sample.times)
+							RATEwt <- c(WT1)
+							extrap.wt <- approxfun(TIMEwt,RATEwt,method = "linear")
+							prev.WT <- extrap.wt(prev.TIME)
 						# Albumin
-							ALB1 <- conc.data$ALB[conc.data$time %in% sample.times]
+							ALB1 <- conc.data$ALBCOV[conc.data$time %in% sample.times]
 							TIMEalb <- c(sample.times)
 							RATEalb <- c(ALB1)
 							extrap.alb <- approxfun(TIMEalb,RATEalb,method = "linear")
@@ -51,9 +56,9 @@
 							prev.ADA <- extrap.ada(prev.TIME)
 					# Set up a new input data frame for Bayes estimation
 						input.bayes.data <- conc.data[conc.data$time %in% prev.TIME,]
-						input.bayes.data$WT <- prev.WT
-						input.bayes.data$ADA <- prev.ADA
-						input.bayes.data$ALB <- prev.ALB
+						input.bayes.data$TIME_WT <- prev.WT
+						input.bayes.data$TIME_ADA <- prev.ADA
+						input.bayes.data$TIME_ALB <- prev.ALB
 						# Reduce data frame to only include sample times and dosing times
 							# input.bayes.data <- input.bayes.data[input.bayes.data$time %in% sample.times | input.bayes.data$amt != 0,]
 							# Re-add evid and rate columns
@@ -62,6 +67,8 @@
 								input.bayes.data$evid[input.bayes.data$amt == 0] <- 0
 								input.bayes.data$rate <- -2	# Signifies that infusion duration is specified in model file
 								input.bayes.data$rate[input.bayes.data$amt == 0] <- 0
+					# Flag that this is bayes scenario
+						input.bayes.data$FLAG <- 1
 
 					# repeat {
 						# Initial estimates for Bayes parameters
@@ -84,7 +91,7 @@
 									input.bayes.data$ETA4 <- ETA4fit
 								# Simulate concentration-time profiles with fitted parameters
 									new.bayes.data <- mod %>% mrgsim(data = input.bayes.data) %>% as.tbl
-									new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F | new.bayes.data$IPRE < 0.001] <- 0.001
+									new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F | new.bayes.data$IPRE < 0.0001] <- 0.0001
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
 									# Posterior log-likelihood
@@ -104,7 +111,7 @@
 								grad(func = bayes.estimate,x = par)
 							}
 						# Run bayes.estimate function through optim
-							bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12),gr = gradient.function)
+							bayes.result <- optim(par,bayes.estimate,hessian = FALSE,method = "L-BFGS-B",lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e7),gr = gradient.function)
 							# bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
 						# If bayes.estimate successfully converged, then stop the repeat loop
 							# if (bayes.result$convergence == 0) break
@@ -137,15 +144,15 @@
 					if (bayes.sim.data$IPRE[bayes.sim.data$time == last.sample] < trough.target | bayes.sim.data$IPRE[bayes.sim.data$time == last.sample] >= trough.upper) {
 						#	Next time-interval (default 56 days after the last sample - but dose.int can be updated via next.dose.int)
 						# The next trough is the last sample time plus dosing interval time
-							next.trough <- last.sample+dose.int
+							next.trough <- last.sample+next.dose.int
 							next.TIME <- c(last.sample,next.trough)
 							# next.TIME[next.TIME > 546] <- 546
-							next.TIME.int <- seq(from = next.TIME[1],to = next.TIME[2],by = 1)
+							next.TIME.int <- seq(from = next.TIME[1],to = next.TIME[2],by = time.int)
 						# Set up a data frame to be input for dose optimisation based on Bayes parameters
 							input.optimise.data <- conc.data
-							input.optimise.data$WT <- prev.WT
-							input.optimise.data$ALB <- tail(prev.ALB,1)	# Carried forward last value of the previous interval
-							input.optimise.data$ADA <- tail(prev.ADA,1)
+							input.optimise.data$TIME_WT <- tail(prev.WT,1)
+							input.optimise.data$TIME_ALB <- tail(prev.ALB,1)	# Carried forward last value of the previous interval
+							input.optimise.data$TIME_ADA <- tail(prev.ADA,1)
 							input.optimise.data$ETA1 <- new.ETA1
 							input.optimise.data$ETA2 <- new.ETA2
 							input.optimise.data$ETA3 <- new.ETA3
@@ -153,12 +160,12 @@
 						# Modify model code ready for simulation
 							prev.bayes.CENT <- bayes.sim.data$CENT[bayes.sim.data$time == last.sample]	# Last value for bayes predicted CENT
 							prev.bayes.PERI <- bayes.sim.data$PERI[bayes.sim.data$time == last.sample]
-							prev.bayes.TBT <- bayes.sim.data$TBT[bayes.sim.data$time == last.sample]
+							prev.bayes.TUT <- bayes.sim.data$TUT[bayes.sim.data$time == last.sample]
 							prev.bayes.AUT <- bayes.sim.data$AUT[bayes.sim.data$time == last.sample]
-							initial.bayes.compartment <- list(CENT = prev.bayes.CENT,PERI = prev.bayes.PERI,TBT = prev.bayes.TBT,AUT = prev.bayes.AUT)
+							initial.bayes.compartment <- list(CENT = prev.bayes.CENT,PERI = prev.bayes.PERI,TUT = prev.bayes.TUT,AUT = prev.bayes.AUT)
 							optim.mod1 <- mod %>% init(initial.bayes.compartment) %>% carry.out(amt,ERRPRO)
 						# Initial dose and error estimates
-							initial.dose <- 5*prev.WT	# 5 mg/kg - label recommendation
+							initial.dose <- amt.min*tail(prev.WT,1)	# 5 mg/kg - label recommendation
 							initial.error <- 0.01
 							par <- c(initial.dose,initial.error)
 						# Re-add evid and rate columns
@@ -169,6 +176,8 @@
 							input.optimise.data$evid[input.optimise.data$amt == 0] <- 0
 							input.optimise.data$rate <- -2	# Signifies that infusion duration is specified in model file
 							input.optimise.data$rate[input.optimise.data$amt == 0] <- 0
+						# Flag that this is bayes scenario
+							input.optimise.data$FLAG <- 1
 						# Subset times for only the next interval for dose optimisation
 							input.optimise.data <- input.optimise.data[input.optimise.data$time %in% next.TIME,]
 						# Find the doses that maximum the likelihood of trough concentrations being the target
@@ -178,36 +187,27 @@
 									err <- par[2]
 								# Simulate concentration-time profiles with fitted doses
 									new.optimise.data <- optim.mod1 %>% mrgsim(data = input.optimise.data) %>% as.tbl
-									new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 0.001] <- 0.001
+									new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 0.0001] <- 0.0001
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.optimise.data$IPRE[new.optimise.data$time == max(next.TIME)]
 									res <- dnorm(trough.target,yhat,yhat*err,log = T)	# Minimise the error between target trough (3 mg/L) and predicted trough concentrations
 								# Objective function value and minimise the value
 									objective <- -1*sum(res)
 							}
-							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(0.0001,0.0001),upper = c(50*prev.WT,Inf),control = list(parscale = par,factr = 1e12))
+							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(amt.min*tail(prev.WT,1),0.0001),upper = c(amt.max*tail(prev.WT,1),Inf),control = list(parscale = par,factr = 1e12))
 						# If optimised dose is reaching 50 mg/kg (max) then individual is not going to stay above target trough
 						# Predict when they will hit target with the 50 mg/kg dose and then make that time the time of next dose
 						# Based on Bayes parameters and carried forward covariate values!!!
 							input.optimise.data$amt[input.optimise.data$time == last.sample] <- optimised.doses$par[1]
 							# Simulate concentration-time profiles with fitted doses
 								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim(data = input.optimise.data) %>% as.tbl
-								new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 0.001] <- 0.001
+								new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 0.0001] <- 0.0001
 								# However, if it is predicted the individual will achieve the target trough earlier, calculate when this will be achieved using TBT (time spent under target trough)
-								# Round to the nearest 7 days
 									if (new.optimise.data$IPRE[new.optimise.data$time == next.trough] < trough.target) {
-										TBTdiff <- diff(new.optimise.data$TBT)/7
-										if (TBTdiff < 0.5) Ttarget <- 0
-										if (TBTdiff >= 0.5) Ttarget <- ceiling(TBTdiff)*7	# Time under target between dose and sample
-									} else {
-										Ttarget <- 0
+										next.dose.int <- 42	# New dosing interval for the individual based on the difference between the past and next sample times
 									}
-
-									next.sample <- max(new.optimise.data$time) - Ttarget	# Time that the next concentration will be sampled at
-									next.dose.int <- next.sample - new.optimise.data$time[1]	# New dosing interval for the individual based on the difference between the past and next sample times
-									if (next.dose.int == 0) {	# Can't have a dosing interval of 0, therefore make the new dosing interval still every 7 days (and the dose will be optimised instead for this frequency)
-										next.dose.int <- 7
-										next.sample <- max(new.optimise.data$time)	# Make the time of the next concentration to be sampled as what it was originally planned
+									if (new.optimise.data$IPRE[new.optimise.data$time == next.trough] >= trough.upper) {
+										next.dose.int <- 56
 									}
 						# Administer the individual the optimised dose
 							input.sim.data$amt[input.sim.data$time == last.sample] <- optimised.doses$par[1]
@@ -216,8 +216,8 @@
 							prev.dose.time <- head(tail(sample.times,2),1)
 							prev.dose <- conc.data$amt[conc.data$time == prev.dose.time]
 							input.sim.data$amt[input.sim.data$time == last.sample] <- prev.dose
-							next.sample <- last.sample+next.dose.int
 					}
+					next.sample <- last.sample+next.dose.int
 
 					# Re-add evid and rate columns
 						input.sim.data$cmt <- 1	# Signifies which compartment the dose goes into
@@ -225,14 +225,28 @@
 						input.sim.data$evid[input.sim.data$amt == 0] <- 0
 						input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
+					# Flag that this is simulation and want covariates to change depending on concentrations
+						input.sim.data$FLAG <- 0
 					# Simulate
 						conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
-						conc.data$IPRE[is.finite(conc.data$IPRE) == F | conc.data$IPRE < 0.001] <- 0.001
-						conc.data$DV[is.finite(conc.data$DV) == F | conc.data$DV < 0.001] <- 0.001
+						conc.data$IPRE[is.finite(conc.data$IPRE) == F | conc.data$IPRE < 0.0001] <- 0.0001
+						conc.data$DV[is.finite(conc.data$DV) == F | conc.data$DV < 0.0001] <- 0.0001
 					# Add the "next.sample" time to the list of sample.times
 						sample.times <- sort(c(unique(c(sample.times,next.sample))))
 					# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
 						conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+					# Plot individual's concentrations as they are being administered and optimised
+						scale.log10.labels <- c(0.001,0.01,0.1,1,10,100,1000)
+						plotobj2 <- NULL
+						plotobj2 <- ggplot()
+						plotobj2 <- plotobj2 + geom_line(aes(x = time,y = IPRE),data = bayes.sim.data[bayes.sim.data$time <= last.time,],colour = "blue",linetype = "dashed")
+						plotobj2 <- plotobj2 + geom_line(aes(x = time,y = IPRE),data = conc.data[conc.data$time <= last.time,],colour = "red")
+						plotobj2 <- plotobj2 + geom_point(aes(x = sample.times[!c(sample.times %in% c(0,next.sample))],y = prev.DV),size = 2)
+						plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
+						plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
+						plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels,lim = c(NA,NA))
+						plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)",breaks = c(0,14,42,98,154,210,266,322,378,434,490,546))
+						print(plotobj2)
 
 				# Stop the loop if IPRE at the last time-point has been calculated
 					if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
@@ -240,9 +254,25 @@
 		conc.data
 	}	# Brackets closing "bayes.function"
 
-	optimise.bayes.data <- ddply(first.int.data, .(SIM,ID), bayes.function, .parallel = TRUE)
+	optimise.bayes.data <- ddply(first.int.data, .(SIM,ID), bayes.function, .parallel = FALSE, .progress = "text")
+
+# Numerical summary of individual
+# Infusion times and amounts
+	print(
+		data.frame(
+			ID = 1,
+			times = optimise.bayes.data$time[optimise.bayes.data$amt != 0],
+			amt = optimise.bayes.data$amt[optimise.bayes.data$amt != 0],
+			int = c(0,diff(optimise.bayes.data$time[optimise.bayes.data$amt != 0])),
+			ADA = optimise.bayes.data$ADA[optimise.bayes.data$amt != 0],
+			ALB = optimise.bayes.data$ALBCOV[optimise.bayes.data$amt != 0],
+			WT = optimise.bayes.data$WTCOV[optimise.bayes.data$amt != 0]
+		)
+	)
+
+	print(tail(optimise.bayes.data[optimise.bayes.data$time <= 546,]))
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
-	optimise.bayes.data.filename <- "optimise_bayes_data.csv"
-	write.csv(optimise.bayes.data,file = optimise.bayes.data.filename,na = ".",quote = F,row.names = F)
+	# optimise.bayes.data.filename <- "optimise_bayes_data.csv"
+	# write.csv(optimise.bayes.data,file = optimise.bayes.data.filename,na = ".",quote = F,row.names = F)

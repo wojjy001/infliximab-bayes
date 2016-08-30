@@ -18,7 +18,7 @@
 					prev.DV <- conc.data$DV[conc.data$time == last.sample]
 					prev.DV[prev.DV < 0] <- 0.001
 				# Previous weight
-					prev.WT <- conc.data$WT[conc.data$time == last.sample]
+					prev.WT <- conc.data$WTCOV[conc.data$time == last.sample]
 				# Previous dose
 					prev.dose.time <- head(tail(sample.times,2),1)
 					prev.dose <- conc.data$amt[conc.data$time == prev.dose.time]
@@ -28,8 +28,9 @@
 					} else {
 						new.dose <- prev.dose	# Continue with previous dose if within range
 					}
-				# Cap "new.dose" to 50 mg/kg
-					if (new.dose > 50*prev.WT) new.dose <- 50*prev.WT
+				# Cap "new.dose" to 20 mg/kg
+					if (new.dose > amt.max*prev.WT) new.dose <- amt.max*prev.WT
+					if (new.dose < amt.min*prev.WT) new.dose <- amt.min*prev.WT	# Minimum dose is still 5 mg/kg
 
 				# Create input data frame for simulation
 					input.sim.data <- conc.data
@@ -40,6 +41,8 @@
 						input.sim.data$evid[input.sim.data$amt == 0] <- 0
 						input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
+					# Flag that this is simulation and want covariates to change depending on concentrations
+						input.sim.data$FLAG <- 0
 				# Simulate
 					conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 				# Add the "next.sample" time to the list of sample.times
@@ -53,9 +56,9 @@
 		conc.data
 	}	# Brackets closing "clinical.function"
 
-	clinical.data <- ddply(first.int.data, .(SIM,ID), clinical.function, .parallel = TRUE)
+	clinical.data <- ddply(first.int.data, .(SIM,ID), clinical.function, .parallel = FALSE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
-	clinical.data.filename <- "clinical_simulation.csv"
-	write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)
+	# clinical.data.filename <- "clinical_simulation.csv"
+	# write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)

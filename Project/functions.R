@@ -3,8 +3,8 @@
 # ------------------------------------------------------------------------------
 # Create and set working directory
 # Specific for the simulation
-	n <- 20	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 100	# Number of simulations of the seed individuals to perform
+	n <- 9	# Number of seed individuals (where each seed individual has a different set of covariate values)
+	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
 	# sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Windows
 	sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
@@ -23,7 +23,7 @@
 # Custom ggplot2 theme
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
 # Set seed for reproducible results
-	set.seed(123456)
+	set.seed(230289)
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal objects
@@ -46,7 +46,8 @@
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
 	# Overall time sequence
-		TIME <- seq(from = 0,to = 600,by = 1)
+		time.int <- 7	# Difference in simulation times
+		TIME <- seq(from = 0,to = 595,by = time.int)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
 	# Define the last time-point to be simulated
@@ -58,30 +59,12 @@
 		next.dose.int <- 56	# days
 
 # Set the dose for simulating the first intervals
-	amt1 <- 5	# 5 mg/kg
+	amt.init <- 5	# 5 mg/kg
+	amt.min <- 5	# 5 mg/kg
+	amt.max <- 50	# 20 mg/kg
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions
-# Function for calculating albumin concentrations for each individual for all time-points
-# A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
-	albumin.function <- function(input.data) {
-		TIMEalb <- c(min(input.data$TIME),max(input.data$TIME))
-		RATEalb <- c(head(input.data$BASE_ALB,1),head(input.data$FINAL_ALB,1))
-		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
-		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*input.data$TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*input.data$TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*input.data$TIME+PHASE_ALB3))	# Apply function to every time-point
-		as.data.frame(input.data)
-	}
-
-# Function for flagging if ADA are present for each individual for all time-points
-# This assumes that once a person develops ADA, they stay with ADA
-	ada.function <- function(input.data) {
-		TIMEada <- c(min(input.data$TIME),input.data$ADA_TIME[1],END)	# Specify times when ADA changes
-		RATEada <- c(0,1,1)	# Specify the values for it to change to
-		step.ada <- approxfun(TIMEada,RATEada,method = "const")	# Step function
-		input.data$ADA <- step.ada(input.data$TIME)	# Apply function to every time-point
-		as.data.frame(input.data)
-	}
-
 # Function for calculating changes in random effects
 # A linear function containing the baseline ETA (BASE_ETA) and their last ETA (FINAL_ETA)
 	eta.function <- function(input.data) {
