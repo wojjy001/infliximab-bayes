@@ -5,7 +5,8 @@
 	rm(list = ls(all = TRUE))
 # Global directory (where R scripts are saved)
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
-	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
+	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
+	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
 
 # # -------------------------------------------------------------------------------
 # # Parallelise jobs to increase speed
@@ -19,7 +20,8 @@
 # 		clusterEvalQ(cl,list(
 # 			library(foreach),
 # 			# source("D:/infliximab-bayes/Project/first_interval.R")	# Windows directory
-# 			source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/first_interval.R")	# Mac directory
+# 			source("E:/Wojciechowski/infliximab-bayes/Project/first_interval.R")	# Server directory
+# 			# source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/first_interval.R")	# Mac directory
 # 		))
 # 	# Register the parallel backend with the foreach package
 # 		registerDoParallel(cl)

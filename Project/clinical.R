@@ -60,5 +60,5 @@
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
-	# clinical.data.filename <- "clinical_simulation.csv"
-	# write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)
+	clinical.data.filename <- "clinical_simulation.csv"
+	write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)

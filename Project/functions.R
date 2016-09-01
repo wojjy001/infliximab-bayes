@@ -7,7 +7,8 @@
 	nsim <- 1	# Number of simulations of the seed individuals to perform
 	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
 	# sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Windows
-	sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
+	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Server
+	# sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
 	setwd(file.path(sim.output.dir))	#Set the working directory
 
@@ -59,9 +60,9 @@
 		next.dose.int <- 56	# days
 
 # Set the dose for simulating the first intervals
-	amt.init <- 5	# 5 mg/kg
-	amt.min <- 5	# 5 mg/kg
-	amt.max <- 50	# 20 mg/kg
+	amt.init <- 5	# initial dose mg/kg
+	amt.min <- 5	# minimum dose mg/kg
+	amt.max <- 20	# maximum dose mg/kg
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions

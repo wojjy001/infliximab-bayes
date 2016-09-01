@@ -43,5 +43,5 @@
 
 # ------------------------------------------------------------------------------
 # Write label.data to a .csv file
-	# label.data.filename <- "label_simulation.csv"
-	# write.csv(label.data,file = label.data.filename,na = ".",quote = F,row.names = F)
+	label.data.filename <- "label_simulation.csv"
+	write.csv(label.data,file = label.data.filename,na = ".",quote = F,row.names = F)
