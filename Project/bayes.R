@@ -4,7 +4,7 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	# first.int.data <- first.int.data[first.int.data$SIM == 2 & first.int.data$ID == 4,]
+	# first.int.data <- first.int.data[first.int.data$SIM == 15 & first.int.data$ID == 1,]
 	bayes.function <- function(first.int.data) {
 		# Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
 			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
@@ -113,8 +113,8 @@
 							# }
 						# Run bayes.estimate function through optim
 							bayes.result <- optim(par,bayes.estimate,hessian = FALSE,
-								# method = "BFGS",
-								# lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),
+								method = "L-BFGS-B",
+								lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),
 								control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12)#,
 								# gr = gradient.function
 							)
