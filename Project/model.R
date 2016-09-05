@@ -5,6 +5,7 @@
 # Using mrgsolve - differential equations
 # This compiled model is used for simulating n individuals and their concentration-time profiles
 	code <- '
+	$SET			atol = 1e-10
 	$INIT			// Initial conditions for PK compartments
 						CENT = 0,
 						PERI = 0,
