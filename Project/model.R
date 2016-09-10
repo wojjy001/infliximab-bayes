@@ -5,7 +5,9 @@
 # Using mrgsolve - differential equations
 # This compiled model is used for simulating n individuals and their concentration-time profiles
 	code <- '
-	$SET			atol = 1e-10
+	$SET			atol = 1e-8, rtol = 1e-8
+						maxsteps = 5000
+
 	$INIT			// Initial conditions for PK compartments
 						CENT = 0,
 						PERI = 0,
@@ -115,9 +117,9 @@
 						double pTUTdiff = TUTdiff/7;
 
 						// Albumin
-						dxdt_ALB = 0;
-						dxdt_WT = 0;
-						if (SOLVERTIME > 98) {
+						// dxdt_ALB = 0;
+						// dxdt_WT = 0;
+						// if (SOLVERTIME > 98) {
 							dxdt_ALB = ALB*0.001;
 							if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
 							if (pTUTdiff > 0.1) dxdt_ALB = ALB*-0.001;
@@ -125,7 +127,7 @@
 							dxdt_WT = WT*0.0005;
 							if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
 							if (pTUTdiff > 0.1) dxdt_WT = WT*-0.0005;
-						}
+						//}
 
 						if (FLAG == 0) {	// Simulation when new dose administered
 							// Limits on albumin

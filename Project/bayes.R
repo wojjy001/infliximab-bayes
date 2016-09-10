@@ -4,7 +4,7 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	# first.int.data <- first.int.data[first.int.data$SIM == 15 & first.int.data$ID == 1,]
+	first.int.data <- first.int.data[first.int.data$SIM == 15 & first.int.data$ID == 1,]
 	bayes.function <- function(first.int.data) {
 		# Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
 			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
@@ -92,6 +92,7 @@
 									input.bayes.data$ETA4 <- ETA4fit
 								# Simulate concentration-time profiles with fitted parameters
 									new.bayes.data <- mod %>% mrgsim(data = input.bayes.data) %>% as.tbl
+									if (exists("new.bayes.data") == FALSE) break
 									new.bayes.data$IPRE[is.finite(new.bayes.data$IPRE) == F | new.bayes.data$IPRE < 1e-8] <- 1e-8
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.bayes.data$IPRE[new.bayes.data$time %in% sample.times[sample.times != 0]]
@@ -106,11 +107,6 @@
 								# Objective function value and minimise the value
 									objective <- -1*sum(loglikpost,loglikprior)
 							}
-						# Gradient function for "bayes.estimate"
-						# Gradient function must have the same arguments as "bayes.estimate"
-							# gradient.function <- function(par) {
-							# 	grad(func = bayes.estimate,x = par)
-							# }
 						# Run bayes.estimate function through optim
 							bayes.result <- optim(par,bayes.estimate,hessian = FALSE,
 								method = "L-BFGS-B",
@@ -118,25 +114,24 @@
 								control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12)#,
 								# gr = gradient.function
 							)
-							# bayes.result <- optim(par,bayes.estimate,hessian = FALSE)
-						# If bayes.estimate successfully converged, then stop the repeat loop
-							# if (bayes.result$convergence == 0) break
-					# }
-						previous.bayes.results.present <- TRUE
-						bayes.result.list <- list(bayes.result.list,bayes.result)
-					# Calculate concentrations according to new Bayes estimates
-						# Convert new ETA values (estimated in the exp() domain)
-							new.ETA1 <- log(bayes.result$par[1])
-							new.ETA2 <- log(bayes.result$par[2])
-							new.ETA3 <- log(bayes.result$par[3])
-							new.ETA4 <- log(bayes.result$par[4])
-					# Add to "input.bayes.data" data frame
-						input.bayes.data$ETA1 <- new.ETA1
-						input.bayes.data$ETA2 <- new.ETA2
-						input.bayes.data$ETA3 <- new.ETA3
-						input.bayes.data$ETA4 <- new.ETA4
-					# Simulate previous interval according to the individual parameter estimates and level of covariate information
-						bayes.sim.data <- mod %>% mrgsim(data = input.bayes.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
+						# Check if bayes.result exists - may not if there were errors during optimisation
+							if (exists("bayes.result") == FALSE) break
+							previous.bayes.results.present <- TRUE
+							bayes.result.list <- list(bayes.result.list,bayes.result)
+							# Calculate concentrations according to new Bayes estimates
+								# Convert new ETA values (estimated in the exp() domain)
+									new.ETA1 <- log(bayes.result$par[1])
+									new.ETA2 <- log(bayes.result$par[2])
+									new.ETA3 <- log(bayes.result$par[3])
+									new.ETA4 <- log(bayes.result$par[4])
+							# Add to "input.bayes.data" data frame
+								input.bayes.data$ETA1 <- new.ETA1
+								input.bayes.data$ETA2 <- new.ETA2
+								input.bayes.data$ETA3 <- new.ETA3
+								input.bayes.data$ETA4 <- new.ETA4
+							# Simulate previous interval according to the individual parameter estimates and level of covariate information
+								bayes.sim.data <- mod %>% mrgsim(data = input.bayes.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
+								if (exists("bayes.sim.data") == FALSE) break
 
 				##############
 				##_OPTIMISE_##
@@ -194,6 +189,7 @@
 									err <- par[2]
 								# Simulate concentration-time profiles with fitted doses
 									new.optimise.data <- optim.mod1 %>% mrgsim(data = input.optimise.data) %>% as.tbl
+									if (exists("new.optimise.data") == FALSE) break
 									new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 1e-8] <- 1e-8
 								# Pull out the predicted trough concentrations with the fitted doses for the interval
 									yhat <- new.optimise.data$IPRE[new.optimise.data$time == max(next.TIME)]
@@ -202,12 +198,14 @@
 									objective <- -1*sum(res)
 							}
 							optimised.doses <- optim(par,optimise.dose,hessian = FALSE,method = "L-BFGS-B",lower = c(amt.min*tail(prev.WT,1),0.0001),upper = c(amt.max*tail(prev.WT,1),Inf),control = list(parscale = par,factr = 1e12))
+							if (exists("optimised.doses") == FALSE) break
 						# If optimised dose is reaching 50 mg/kg (max) then individual is not going to stay above target trough
 						# Predict when they will hit target with the 50 mg/kg dose and then make that time the time of next dose
 						# Based on Bayes parameters and carried forward covariate values!!!
 							input.optimise.data$amt[input.optimise.data$time == last.sample] <- optimised.doses$par[1]
 							# Simulate concentration-time profiles with fitted doses
 								new.optimise.data <- optim.mod1 %>% data_set(input.optimise.data) %>% mrgsim(data = input.optimise.data) %>% as.tbl
+								if (exists("new.optimise.data") == FALSE) break
 								new.optimise.data$IPRE[is.finite(new.optimise.data$IPRE) == F | new.optimise.data$IPRE < 1e-8] <- 1e-8
 								# However, if it is predicted the individual will achieve the target trough earlier, calculate when this will be achieved using TBT (time spent under target trough)
 								# Round to the nearest 7 days
@@ -245,28 +243,22 @@
 						input.sim.data$FLAG <- 0
 					# Simulate
 						conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
+						if (exists("conc.data") == FALSE) break
 						conc.data$IPRE[is.finite(conc.data$IPRE) == F | conc.data$IPRE < 1e-8] <- 1e-8
 						conc.data$DV[is.finite(conc.data$DV) == F | conc.data$DV < 1e-8] <- 1e-8
 					# Add the "next.sample" time to the list of sample.times
 						sample.times <- sort(c(unique(c(sample.times,next.sample))))
 					# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
 						conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
-					# Plot individual's concentrations as they are being administered and optimised
-						# scale.log10.labels <- c(0.001,0.01,0.1,1,10,100,1000)
-						# plotobj2 <- NULL
-						# plotobj2 <- ggplot()
-						# plotobj2 <- plotobj2 + geom_line(aes(x = time,y = IPRE),data = bayes.sim.data[bayes.sim.data$time <= last.time,],colour = "blue",linetype = "dashed")
-						# plotobj2 <- plotobj2 + geom_line(aes(x = time,y = IPRE),data = conc.data[conc.data$time <= last.time,],colour = "red")
-						# plotobj2 <- plotobj2 + geom_point(aes(x = sample.times[!c(sample.times %in% c(0,next.sample))],y = prev.DV),size = 2)
-						# plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-						# plotobj2 <- plotobj2 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
-						# plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = scale.log10.labels,labels = scale.log10.labels,lim = c(0.0001,NA))
-						# plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)",breaks = c(0,14,42,98,154,210,266,322,378,434,490,546))
-						# print(plotobj2)
 
 				# Stop the loop if IPRE at the last time-point has been calculated
 					if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
 			}	# Brackets closing "repeat"
+		conc.data$FLAG <- 1	# Add a flag of 1 if successful
+		if (exists("conc.data") == FALSE) {
+			conc.data <- first.int.data
+			conc.data$FLAG <- 0	# Unsuccessful
+		}
 		conc.data
 	}	# Brackets closing "bayes.function"
 
