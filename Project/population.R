@@ -4,8 +4,8 @@
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
-	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
+	# work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
+	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
 	source(paste0(work.dir,"functions.R"))
 
 # ------------------------------------------------------------------------------
@@ -62,5 +62,5 @@
 
 # ------------------------------------------------------------------------------
 # Write pop.data to a .csv file
-	# pop.data.filename <- "population_characteristics.csv"
-	# write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)
+	pop.data.filename <- "population_characteristics.csv"
+	write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)

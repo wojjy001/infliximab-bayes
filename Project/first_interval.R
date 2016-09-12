@@ -4,8 +4,8 @@
 # ------------------------------------------------------------------------------
 # Source the other R scripts and execute
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
-	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
+	# work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
+	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
 	source(paste0(work.dir,"population.R"))
 	source(paste0(work.dir,"model.R"))
 
@@ -47,4 +47,4 @@
 				first.int.data <- mod %>% mrgsim(data = input.first.int.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 		}
 # Create population data frame ready for mrgsolve simulation
-	first.int.data <- ddply(pop.data, .(ID,SIM), first.int.function, .parallel = FALSE)
+	first.int.data <- ddply(pop.data, .(ID,SIM), first.int.function, .parallel = TRUE)

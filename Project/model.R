@@ -6,7 +6,7 @@
 # This compiled model is used for simulating n individuals and their concentration-time profiles
 	code <- '
 	$SET			atol = 1e-8, rtol = 1e-8
-						maxsteps = 5000
+						maxsteps = 100000
 
 	$INIT			// Initial conditions for PK compartments
 						CENT = 0,
@@ -62,7 +62,7 @@
 						0.175561
 
 	$MAIN			// Infusion duration
-						D_CENT = 0.0833;  // 2 hours
+						D_CENT = 0.08333333;  // 2 hours
 
 						// Compartment initial conditions for covariates
 						ALB_0 = BASE_ALB;
@@ -105,14 +105,14 @@
 						// Area below target and time under/above target
 						dxdt_AUT = 0;
 						dxdt_TUT = 0;
-						if (SOLVERTIME > 0.0833 & CP < target) {
+						if (SOLVERTIME > 0.08333333 & CP < target) {
 							dxdt_AUT = target - CP;
 							dxdt_TUT = 1;
 						}
 
 						// Proportion of time under target
 						double pTUT = 0;
-						if (SOLVERTIME > 0.0833) pTUT = TUT/SOLVERTIME;
+						if (SOLVERTIME > 0.08333333) pTUT = TUT/SOLVERTIME;
 						double TUTdiff = TUT - prevTUT;
 						double pTUTdiff = TUTdiff/7;
 
@@ -142,7 +142,7 @@
 
 						// Anti-drug antibodies
 						double ADA = 0;
-						if (pTUT > 0.1 & SOLVERTIME > 0.0833) ADA = 1;
+						if (pTUT > 0.1 & SOLVERTIME > 0.08333333) ADA = 1;
 
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*(1+ERRPRO);

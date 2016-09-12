@@ -4,11 +4,14 @@
 # Create and set working directory
 # Specific for the simulation
 	n <- 9	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 100	# Number of simulations of the seed individuals to perform
-	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
+	nsim <- 10	# Number of simulations of the seed individuals to perform
+	# Set seed for reproducible results
+		seed <- round(runif(1,min = 000001,max = 999999),digits = 0)
+		set.seed(seed)
+	sim.name <- paste("SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
 	# sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Windows
-	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Server
-	# sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
+	# sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Server
+	sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
 	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
 	setwd(file.path(sim.output.dir))	#Set the working directory
 
@@ -23,8 +26,6 @@
 	library(numDeriv)
 # Custom ggplot2 theme
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
-# Set seed for reproducible results
-	set.seed(230289)
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal objects
@@ -47,7 +48,7 @@
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
 	# Overall time sequence
-		time.int <- 7	# Difference in simulation times
+		time.int <- 0.5	# Difference in simulation times
 		TIME <- seq(from = 0,to = 595,by = time.int)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100

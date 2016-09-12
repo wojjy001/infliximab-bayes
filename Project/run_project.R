@@ -5,8 +5,8 @@
 	rm(list = ls(all = TRUE))
 # Global directory (where R scripts are saved)
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
-	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
+	# work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
+	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
 
 # # -------------------------------------------------------------------------------
 # # Parallelise jobs to increase speed
@@ -20,26 +20,28 @@
 # 		clusterEvalQ(cl,list(
 # 			library(foreach),
 # 			# source("D:/infliximab-bayes/Project/first_interval.R")	# Windows directory
-# 			source("E:/Wojciechowski/infliximab-bayes/Project/first_interval.R")	# Server directory
-# 			# source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/first_interval.R")	# Mac directory
+# 			# source("E:/Wojciechowski/infliximab-bayes/Project/first_interval.R")	# Server directory
+# 			source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/first_interval.R")	# Mac directory
 # 		))
 # 	# Register the parallel backend with the foreach package
 # 		registerDoParallel(cl)
 
-# ------------------------------------------------------------------------------
-# Run "single-run" simulation files
-# First standard interval simulation
-	suppressPackageStartupMessages(	# Suppress package loading messages
-		suppressWarnings(	# Suppress warning messages
-			source(paste0(work.dir,"first_interval.R"))
-		)
-	)
-# # Label simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
-# # Clinical simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
+	nrep <- 2	# Number of repetitions to perform
+	rep.seq <- 1:nrep	# Sequence of repetitions
 
-# ------------------------------------------------------------------------------
-# Run the various Bayes estimation scenarios sequentially
-# Scenarios with no time-weighting
-	suppressWarnings(source(paste0(work.dir,"bayes.R")))
+	for (i in rep.seq) {
+		# Run "single-run" simulation files
+		# First standard interval simulation
+			suppressPackageStartupMessages(	# Suppress package loading messages
+				suppressWarnings(	# Suppress warning messages
+					source(paste0(work.dir,"first_interval.R"))
+				)
+			)
+		# Label simulation
+			suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
+		# Clinical simulation
+			suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
+		# Run the various Bayes estimation scenarios sequentially
+		# Scenarios with no time-weighting
+			suppressWarnings(source(paste0(work.dir,"bayes.R")))
+	}
