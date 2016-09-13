@@ -47,4 +47,4 @@
 				first.int.data <- mod %>% mrgsim(data = input.first.int.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 		}
 # Create population data frame ready for mrgsolve simulation
-	first.int.data <- ddply(pop.data, .(ID,SIM), first.int.function, .parallel = TRUE)
+	first.int.data <- ddply(pop.data, .(ID,SIM), first.int.function, .parallel = FALSE)
