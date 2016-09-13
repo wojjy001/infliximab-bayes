@@ -9,23 +9,13 @@ output:
 ---
 
 ```{r,echo = TRUE,warning = FALSE}
-# Set working directory
-  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"
-  n <- 20  # Number of seed individuals that were simulated
-  nsim <- 500 # Number of simulations of seed individuals
-  error.model <- "_fourier-extreme-albumin"  # Residual error model (testing proportional and log-normal)
-  sim.output.dir <- paste0("SIM",nsim,"_IND",n,error.model)
-  output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-output/",sim.output.dir,"/")
-  
-# Set up folder to save the processed output
-  save.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes-plots/"
-  dir.create(file.path(paste0(save.dir,sim.output.dir,"/")),showWarnings = FALSE)
-  
+# Remove all current objects in the workspace
+	rm(list = ls(all = TRUE))
 # Load package libraries
   library(ggplot2)  # Plotting
   library(grid)  # Plotting
   library(plyr)  # ddply function
-  
+
 # Custom ggplot2 theme
   theme_bw2 <- theme_set(theme_bw(base_size = 14))  
   
@@ -33,60 +23,61 @@ output:
   CI95lo <- function(x) quantile(x,probs = 0.025)  # Calculate 2.5th percentile
   CI95hi <- function(x) quantile(x,probs = 0.975)  # Calculate 97.5th percentile
   
-  # Summary function for calculating median and prediction intervals
-    summary.function <- function(x) {
-      median <- median(x)
-      stat.95lo <- CI95lo(x)
-      stat.95hi <- CI95hi(x)
-      result <- c(median,stat.95lo,stat.95hi)
-      names(result)[c(1,2,3)] <- c("median","stat.95lo","stat.95hi")
-      result
-    }
+# Summary function for calculating median and prediction intervals
+  summary.function <- function(x) {
+    median <- median(x)
+    stat.95lo <- quantile(x,probs = 0.025)
+    stat.95hi <- quantile(x,probs = 0.975)
+    result <- c(median,stat.95lo,stat.95hi)
+    names(result)[c(1,2,3)] <- c("median","stat.95lo","stat.95hi")
+    result
+  }
   
-# Pre-specified objects
-  trough.target <- 3  # Don't want to be below the trough
-  trough.upper <- 5  # Don't want concentrations to be too high - waste of drug
-  infusion.times <- c(0,14,42,98,154,210,266,322,378,434,490,546)
-  scale.log10.labels <- c(0.01,0.1,1,10,100,1000)
-  sample.time1 <- 98  # Sampling time at the end of interval 1
-  sample.time2 <- 210  # Sampling time at the end of interval 2
-  sample.time3 <- 378  # Sampling time at the end of interval 3
-  sample.time4 <- 546  # Sampling time at the end of interval 4
-  sample.times <- c(sample.time1,sample.time2,sample.time3,sample.time4)
-```
+# Set trough target objects
+  trough.target <- 3
+  trough.upper <- 5
+  
+# ------------------------------------------------------------------------------   
+# Set working directory
+  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/"
+  
+# Read in simulation output
+  file.list <- list.files(path = project.dir,pattern = "SUCCESS") # List of successful simulation sets
+  n <- 9  # Number of seed individuals that were simulated
+  nsim <- 10  # Number of simulations of seed individuals per set
+  nset <- length(file.list)  # Number of simulation sets in the directory
+  set.seq <- 1:nset  # Sequence of "set" numbers
 
-## Read in output
-
-Exclude individuals that are in SIM = 0 (these were only added to see what would happen in the population typical for each seed individual).
-
-Add an identifier label for each study.
-
-```{r,echo = TRUE,warning = FALSE}
-# Label simulation
-  label.data <- read.csv(file = paste0(output.dir,"label_simulation.csv"))
-  label.data <- label.data[label.data$SIM != 0,]
+# Read in the label simulation data 
+  read.label.data.function <- function(file.list) {
+    label.data <- read.csv(file = paste0(project.dir,file.list,"/label_simulation.csv"))
+  }
+  label.data <- ldply(file.list,read.label.data.function,.progress = "text")
+  SET <- sort(c(rep(set.seq,times = dim(label.data)[1]/nset)))
+  label.data$SET <- SET
   label.data$STUDY <- 1
-  # Append an ERRPRO column (because this data frame doesn't have it)
-    label.data$ERRPRO <- 0
-    label.data <- label.data[,c(1:4,21,5:20)]
-    label.data$STUDYf <- "Label"
   
-# Clinical simulation
-  clinical.data <- read.csv(file = paste0(output.dir,"clinical_simulation.csv"))
-  clinical.data <- clinical.data[clinical.data$SIM != 0,]
+# Read in the clinical simulation data
+  read.clinical.data.function <- function(file.list) {
+    clinical.data <- read.csv(file = paste0(project.dir,file.list,"/clinical_simulation.csv"))
+  }
+  clinical.data <- ldply(file.list,read.clinical.data.function,.progress = "text")
+  clinical.data$SET <- SET
   clinical.data$STUDY <- 2
-  clinical.data$STUDYf <- "Clinical"
   
-# Bayesian - No Time-Weighting
-  method1 <- "NTimeWeight"
-  covariate1 <- "AllCov"
-  bayes.data1 <- read.csv(file = paste0(output.dir,method1,covariate1,"/",method1,covariate1,"_optimise_bayes_simulation.csv"))
-  bayes.data1 <- bayes.data1[bayes.data1$SIM != 0,]    
-  bayes.data1$STUDY <- 3
-  bayes.data1$STUDYf <- paste0(method1,covariate1)
+# Read in the optimise.bayes simulation data
+  read.optimise.bayes.data <- function(file.list) {
+    optimise.bayes.data <- read.csv(file = paste0(project.dir,file.list,"/optimise_bayes_data.csv"))
+  }
+  optimise.bayes.data <- ldply(file.list,read.optimise.bayes.data,.progress = "text")
+  optimise.bayes.data$SET <- SET
+  optimise.bayes.data$STUDY <- 3
   
-# Combine all of the data frames
-  all.data <- rbind(label.data,clinical.data,bayes.data1)
+# Bind all data frames together
+  all.data <- rbind(label.data,clinical.data,optimise.bayes.data)
+  all.data <- all.data[all.data$time <= 546,] # Remove NA rows
+  all.data$IPRE <- as.numeric(all.data$IPRE)
+  all.data$STUDY <- as.factor(all.data$STUDY)
 ```
 
 ## Plot concentration-time for all studies
@@ -95,33 +86,38 @@ Represented as median and 95% prediction intervals
 
 ```{r,echo = TRUE,warning = FALSE}
 # Line (median) and ribbon (prediction intervals)
-  plotobj1 <- NULL
-  plotobj1 <- ggplot(all.data)
-  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE,colour = STUDYf),geom = "line",fun.y = median)
-  plotobj1 <- plotobj1 + stat_summary(aes(x = time,y = IPRE,fill = STUDYf),geom = "ribbon",fun.ymin = "CI95lo",fun.ymax = "CI95hi",alpha = 0.3)
-  plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
-  plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
-  plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)",breaks = scale.log10.labels,labels = scale.log10.labels)
-  plotobj1 <- plotobj1 + facet_wrap(~STUDYf)
-  plotobj1 <- plotobj1 + theme(legend.position = "none")
-  print(plotobj1)
+  # Calculate
+    summary.data <- ddply(all.data, .(STUDY,time), function(all.data) summary.function(all.data$IPRE))
+
+  # Plot
+    plotobj1 <- NULL
+    plotobj1 <- ggplot(summary.data)
+    plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median,colour = STUDY))
+    plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = stat.95lo,ymax = stat.95hi,fill = STUDY),alpha = 0.3)
+    plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
+    plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
+    plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
+    plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)")
+    plotobj1 <- plotobj1 + facet_wrap(~STUDY)
+    plotobj1 <- plotobj1 + theme(legend.position = "none")
+    print(plotobj1)
 ```
 
-## Summarise AUT at time = 546 days for all studies
+## Summarise TUT at time = 546 days for all studies
 
-AUT = Time spent under the target trough concentration (3 mg/L)
+TUT = Time spent under the target trough concentration (3 mg/L)
 
 ```{r,echo = TRUE,warning = FALSE}
 # Subset data frame for only time == 546
   all.data.546 <- all.data[all.data$time == 546,]
 # Calculate median and percentiles for AUT at 546 for all studies
-  summary.AUT.546 <- ddply(all.data.546, .(STUDYf), function(all.data.546) summary.function(all.data.546$AUT))
+  summary.AUT.546 <- ddply(all.data.546, .(STUDY), function(all.data.546) summary.function(all.data.546$TUT))
   print(summary.AUT.546)
   
 # Plot boxplots
   plotobj2 <- NULL
   plotobj2 <- ggplot(all.data.546)
-  plotobj2 <- plotobj2 + geom_boxplot(aes(x = STUDYf,y = AUT,group = STUDYf),outlier.shape = NA)
+  plotobj2 <- plotobj2 + geom_boxplot(aes(x = STUDY,y = TUT,group = STUDY),outlier.shape = NA)
   plotobj2 <- plotobj2 + scale_x_discrete("\nStudy")
   plotobj2 <- plotobj2 + scale_y_continuous("Time under target trough (days)\n")
   print(plotobj2)
@@ -133,56 +129,19 @@ AUT = Time spent under the target trough concentration (3 mg/L)
 # Use subsetted data for only time == 546 (all.data.546)
   all.data.546$BTT <- 0
   all.data.546$BTT[all.data.546$IPRE < trough.target] <- 1  # Below trough target (BTT) == 1 for IPRE < 3
-  summary.BTT.546 <- ddply(all.data.546, .(STUDYf), function(all.data.546) sum(all.data.546$BTT))
+  summary.BTT.546 <- ddply(all.data.546, .(STUDY), function(all.data.546) sum(all.data.546$BTT))
 # Add further information to summary.BTT.546
   names(summary.BTT.546)[2] <- "nBTT"  # Number of individuals below trough target
-  summary.BTT.546$n <- n*nsim # Number of individuals in the study population
+  summary.BTT.546$n <- n*nsim*nset # Number of individuals in the study population
   summary.BTT.546$pBTT <- round(summary.BTT.546$nBTT/summary.BTT.546$n,digits = 3)  # Proportion of individuals BTT
   print(summary.BTT.546)
 ```
 
-## Which individuals are below the target at time = 546 days?
-
-```{r,echo = TRUE,warning = FALSE}
-# Subset all.data.546 for BTT == 1
-  all.data.546.BTT <- all.data.546[all.data.546$BTT == 1,]
-  summary.BTT.546.ID <- ddply(all.data.546.BTT, .(ID,STUDYf), function(all.data.546.BTT) sum(all.data.546.BTT$BTT))
-  # Add some descriptions to seeds (ID)
-    # Final albumin
-      summary.BTT.546.ID$FINAL_ALB <- "1 U/L"
-      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(2,7,12,17)] <- "3 U/L"
-      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(3,8,13,18)] <- "4 U/L"
-      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(4,9,14,19)] <- "5 U/L"
-      summary.BTT.546.ID$FINAL_ALB[summary.BTT.546.ID$ID %in% c(5,10,15,20)] <- "7 U/L"      
-    # Onset of ADA
-      summary.BTT.546.ID$ADA_ONSET <- "Never"
-      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(1,2,3,4,5)] <- "154 days"
-      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(6,7,8,9,10)] <- "294 days"
-      summary.BTT.546.ID$ADA_ONSET[summary.BTT.546.ID$ID %in% c(11,12,13,14,15)] <- "462 days"
-  # Make an IDf column
-    summary.BTT.546.ID$IDf <- paste0(summary.BTT.546.ID$FINAL_ALB," ",summary.BTT.546.ID$ADA_ONSET)  
-
-# Plot 
-  plotobj3 <- NULL
-  plotobj3 <- ggplot(summary.BTT.546.ID)
-  plotobj3 <- plotobj3 + geom_point(aes(x = FINAL_ALB,y = V1,colour = ADA_ONSET),size = 4,alpha = 0.3)
-  plotobj3 <- plotobj3 + geom_point(aes(x = FINAL_ALB,y = V1,colour = ADA_ONSET),size = 4,shape = 1)  
-  plotobj3 <- plotobj3 + scale_x_discrete("\nSeed's Final Albumin")
-  plotobj3 <- plotobj3 + scale_y_continuous("Number below target trough (time = 546)\n")
-  plotobj3 <- plotobj3 + facet_wrap(~STUDYf,ncol = 5)
-  print(plotobj3)
-```
-
 ## Summary of findings
-
-1.  Label-recommended dosing (5 mg/kg) is the regimen least likely to maintain trough concentrations above the target (3 mg/L)
-2.  Clinical dosing (adjusting doses on isolated, sampled concentrations) performs well compared to the Bayesian-guided dosing studies - in terms of time spent under the target trough concentration and number individuals below the target trough concentration at day 546
-3.  Individuals who have onset of ADA in the last interval (i.e., at 462 days) are more likely to be below the target trough by day 546.  This is likely because the last dose was optimised/adjusted at day 378 and would not have accounted for the onset of ADA occurring in the next interval
-4.  Individuals with albumin progressing to 3 U/L by the end of the study are more likely to be under the target trough concentration by day 546 - low albumin increases infliximab's clearance.  After day 378 (last dose adjustment), albumin continues to decline for these individuals and is not accounted for when making dosing predictions
-    + Individuals who had final albumin of 1 U/L were all under the target trough at day 546
-5.  No dose-adjustment regimen here appears to be superior at maintaining trough concentrations above the target.  In all studies, there is wide variability in concentrations throughout the study-period despite somewhat individualised dose adjustments.
-
-### Ideas
-
-* Should the Bayesian scenario begin with a model guided doses? Currently, it is just 5 mg/kg like the label and clinical scenarios.
-    + It will most likely to perform better than the clinical scenario then!
+    
+```{r,echo = TRUE,warning = FALSE}
+# Set up folder to save the processed output
+  save.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes-plots/"
+  sim.output.dir <- paste0("SIM",nsim,"_IND",n)
+  dir.create(file.path(paste0(save.dir,sim.output.dir,"/")),showWarnings = FALSE)
+```
