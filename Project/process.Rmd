@@ -2,8 +2,8 @@
 title: 'Infliximab: Time-Weighted Bayesian Estimation'
 author: "Jessica Wojciechowski"
 date: "7 July 2016"
-output: 
-  html_document: 
+output:
+  html_document:
     fig_width: 10
     highlight: textmate
 ---
@@ -17,12 +17,12 @@ output:
   library(plyr)  # ddply function
 
 # Custom ggplot2 theme
-  theme_bw2 <- theme_set(theme_bw(base_size = 14))  
-  
+  theme_bw2 <- theme_set(theme_bw(base_size = 14))
+
 # Pre-specified functions
   CI95lo <- function(x) quantile(x,probs = 0.025)  # Calculate 2.5th percentile
   CI95hi <- function(x) quantile(x,probs = 0.975)  # Calculate 97.5th percentile
-  
+
 # Summary function for calculating median and prediction intervals
   summary.function <- function(x) {
     median <- median(x)
@@ -32,15 +32,16 @@ output:
     names(result)[c(1,2,3)] <- c("median","stat.95lo","stat.95hi")
     result
   }
-  
+
 # Set trough target objects
   trough.target <- 3
   trough.upper <- 5
-  
-# ------------------------------------------------------------------------------   
+
+# ------------------------------------------------------------------------------
 # Set working directory
-  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/"
-  
+  # project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
+  project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
+
 # Read in simulation output
   file.list <- list.files(path = project.dir,pattern = "SUCCESS") # List of successful simulation sets
   n <- 9  # Number of seed individuals that were simulated
@@ -48,7 +49,7 @@ output:
   nset <- length(file.list)  # Number of simulation sets in the directory
   set.seq <- 1:nset  # Sequence of "set" numbers
 
-# Read in the label simulation data 
+# Read in the label simulation data
   read.label.data.function <- function(file.list) {
     label.data <- read.csv(file = paste0(project.dir,file.list,"/label_simulation.csv"))
   }
@@ -56,7 +57,7 @@ output:
   SET <- sort(c(rep(set.seq,times = dim(label.data)[1]/nset)))
   label.data$SET <- SET
   label.data$STUDY <- 1
-  
+
 # Read in the clinical simulation data
   read.clinical.data.function <- function(file.list) {
     clinical.data <- read.csv(file = paste0(project.dir,file.list,"/clinical_simulation.csv"))
@@ -64,20 +65,64 @@ output:
   clinical.data <- ldply(file.list,read.clinical.data.function,.progress = "text")
   clinical.data$SET <- SET
   clinical.data$STUDY <- 2
-  
-# Read in the optimise.bayes simulation data
-  read.optimise.bayes.data <- function(file.list) {
-    optimise.bayes.data <- read.csv(file = paste0(project.dir,file.list,"/optimise_bayes_data.csv"))
+
+# Read in the clinical_TDM simulation data
+  read.clinical.TDM.data.function <- function(file.list) {
+    clinical.TDM.data <- read.csv(file = paste0(project.dir,file.list,"/clinical_TDM_simulation.csv"))
   }
-  optimise.bayes.data <- ldply(file.list,read.optimise.bayes.data,.progress = "text")
-  optimise.bayes.data$SET <- SET
-  optimise.bayes.data$STUDY <- 3
-  
+  clinical.TDM.data <- ldply(file.list,read.clinical.TDM.data.function,.progress = "text")
+  clinical.TDM.data$SET <- SET
+  clinical.TDM.data$STUDY <- 3
+
+# Read in the optimise.bayes1 simulation data (5 mg/kg initiation)
+  read.optimise.bayes.data1 <- function(file.list) {
+    optimise.bayes.data1 <- read.csv(file = paste0(project.dir,file.list,"/optimise_bayes_data1.csv"))
+  }
+  optimise.bayes.data1 <- ldply(file.list,read.optimise.bayes.data1,.progress = "text")
+  optimise.bayes.data1$SET <- SET
+  optimise.bayes.data1$STUDY <- 4
+
+# Read in the optimise.bayes2 simulation data (10 mg/kg initiation)
+  read.optimise.bayes.data2 <- function(file.list) {
+    optimise.bayes.data2 <- read.csv(file = paste0(project.dir,file.list,"/optimise_bayes_data2.csv"))
+  }
+  optimise.bayes.data2 <- ldply(file.list,read.optimise.bayes.data2,.progress = "text")
+  optimise.bayes.data2$SET <- SET
+  optimise.bayes.data2$STUDY <- 5
+
 # Bind all data frames together
-  all.data <- rbind(label.data,clinical.data,optimise.bayes.data)
+  all.data <- rbind(label.data,clinical.data,clinical.TDM.data,optimise.bayes.data1,optimise.bayes.data2)
   all.data <- all.data[all.data$time <= 546,] # Remove NA rows
   all.data$IPRE <- as.numeric(all.data$IPRE)
   all.data$STUDY <- as.factor(all.data$STUDY)
+
+# For each individual calculate when doses were given and how much
+  ind.summary.function <- function(all.data) {
+    ind.summary.data <- data.frame(
+      times = all.data$time[all.data$amt != 0],
+      amt = all.data$amt[all.data$amt != 0],
+      int = c(0,diff(all.data$time[all.data$amt != 0])),
+      ADA = all.data$ADA[all.data$amt != 0],
+      ALB = all.data$ALBCOV[all.data$amt != 0],
+      WT = all.data$WTCOV[all.data$amt != 0],
+      "mg/kg" = all.data$amt[all.data$amt != 0]/all.data$WTCOV[all.data$amt != 0]
+    )
+  }
+  ind.summary.data <- ddply(all.data, .(STUDY,SET,SIM,ID), ind.summary.function)
+
+# Subset all.data for everyone's trough data
+  collect.trough.function <- function(all.data) {
+    # Subset ind.summary.data for the specific individual
+      ID.number <- all.data$ID[1]
+      SET.number <- all.data$SET[1]
+      SIM.number <- all.data$SIM[1]
+      STUDY.number <- all.data$STUDY[1]
+      trough.times <- ind.summary.data$times[ind.summary.data$ID == ID.number & ind.summary.data$SIM == SIM.number & ind.summary.data$SET == SET.number & ind.summary.data$STUDY == STUDY.number]
+    # Subset all.data for times in trough.times
+      collect.trough.data <- all.data[all.data$time %in% trough.times,]
+  }
+
+  collect.trough.data <- ddply(all.data, .(STUDY,SET,SIM,ID), collect.trough.function, .progress = "text")
 ```
 
 ## Plot concentration-time for all studies
@@ -87,7 +132,7 @@ Represented as median and 95% prediction intervals
 ```{r,echo = TRUE,warning = FALSE}
 # Line (median) and ribbon (prediction intervals)
   # Calculate
-    summary.data <- ddply(all.data, .(STUDY,time), function(all.data) summary.function(all.data$IPRE))
+    summary.data <- ddply(collect.trough.data, .(STUDY,time), function(all.data) summary.function(all.data$IPRE))
 
   # Plot
     plotobj1 <- NULL
@@ -97,7 +142,8 @@ Represented as median and 95% prediction intervals
     plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
     plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
     plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
-    plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)")
+    plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.001,NA))
+    # plotobj1 <- plotobj1 + scale_y_continuous("Infliximab Concentration (mg/L)\n",lim = c(0,NA))
     plotobj1 <- plotobj1 + facet_wrap(~STUDY)
     plotobj1 <- plotobj1 + theme(legend.position = "none")
     print(plotobj1)
@@ -113,7 +159,7 @@ TUT = Time spent under the target trough concentration (3 mg/L)
 # Calculate median and percentiles for AUT at 546 for all studies
   summary.AUT.546 <- ddply(all.data.546, .(STUDY), function(all.data.546) summary.function(all.data.546$TUT))
   print(summary.AUT.546)
-  
+
 # Plot boxplots
   plotobj2 <- NULL
   plotobj2 <- ggplot(all.data.546)
@@ -138,7 +184,7 @@ TUT = Time spent under the target trough concentration (3 mg/L)
 ```
 
 ## Summary of findings
-    
+
 ```{r,echo = TRUE,warning = FALSE}
 # Set up folder to save the processed output
   save.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes-plots/"

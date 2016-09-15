@@ -12,7 +12,7 @@
 # ------------------------------------------------------------------------------
 # Create a data frame ready for mrgsolve simulation
 	# Function for creating a data frame ready for mrgsolve simulation
-		first.int.function <- function(pop.data) {
+		first.int.function1 <- function(pop.data) {
 			ID.number <- pop.data$ID[1]	# Individual ID
 			BASE_WT <- pop.data$BASE_WT[1]	# Individual weight
 			BASE_ALB <- pop.data$BASE_ALB[1]	# Individual albumin
@@ -32,7 +32,7 @@
 				ETA3,
 				ETA4,
 				ERRPRO,
-				amt = amt.init*BASE_WT,	# mg/kg dose
+				amt = amt.init1*BASE_WT,	# mg/kg dose
 				evid = 1,	# Dosing event
 				cmt = 1,	# Dose into the central compartment (compartment = 1)
 				rate = -2	# Infusion duration is specific in the model file
@@ -47,4 +47,4 @@
 				first.int.data <- mod %>% mrgsim(data = input.first.int.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 		}
 # Create population data frame ready for mrgsolve simulation
-	first.int.data <- ddply(pop.data, .(ID,SIM), first.int.function, .parallel = FALSE)
+	first.int.data1 <- ddply(pop.data, .(ID,SIM), first.int.function1, .parallel = FALSE)

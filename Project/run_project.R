@@ -3,11 +3,12 @@
 # ------------------------------------------------------------------------------
 # Remove all current objects in the workspace
 	rm(list = ls(all = TRUE))
-	system(command = "open -n -a R")
+	# system(command = "open -n -a R")
+
 # Global directory (where R scripts are saved)
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
-	# work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
-	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
+	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
+	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
 
 # # -------------------------------------------------------------------------------
 # # Parallelise jobs to increase speed
@@ -29,14 +30,18 @@
 
 # ------------------------------------------------------------------------------
 # Run "single-run" simulation files
-# First standard interval simulation
+# First standard interval simulation (initial dose is 5 mg/kg)
 	suppressPackageStartupMessages(	# Suppress package loading messages
 		suppressWarnings(	# Suppress warning messages
-			source(paste0(work.dir,"first_interval.R"))
+			source(paste0(work.dir,"first_interval1.R"))
 		)
 	)
+# First standard interval simulation (initial dose is 10 mg/kg)
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"first_interval2.R"))))
 # Label simulation
 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
+# Clinical simulation where doses are adjusted based on trough concentrations (DV)
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical_TDM.R"))))
 # Clinical simulation
 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
 # Run the various Bayes estimation scenarios sequentially

@@ -5,10 +5,14 @@
 # Assuming linear kinetics - double the dose, double the trough concentration
 # ------------------------------------------------------------------------------
 # Set up a loop that will sample the individual's concentration optimise their dose and administer until time = 546 days
+	# first.int.data <- first.int.data[first.int.data$ID == 1 & first.int.data$SIM == 1,]
 	clinical.function <- function(first.int.data) {
 		# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
 			conc.data <- first.int.data
 			conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+			# Previous dose mg/kg
+				prev.mgkg.dose <- 5	# Initially 5 mg/kg
+				prev.int <- 56	# Initially every 56 days
 
 		# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
 			repeat {
@@ -16,21 +20,29 @@
 					last.sample <- max(sample.times)
 				# Previous DV
 					prev.DV <- conc.data$DV[conc.data$time == last.sample]
-					prev.DV[prev.DV < 0] <- 0.001
+					prev.DV[prev.DV < 0] <- 1e-8
 				# Previous weight
 					prev.WT <- conc.data$WTCOV[conc.data$time == last.sample]
 				# Previous dose
 					prev.dose.time <- head(tail(sample.times,2),1)
-					prev.dose <- conc.data$amt[conc.data$time == prev.dose.time]
 				# Calculate the new dose for the next interval based on "sample" and "dose"
 					if (prev.DV < trough.target | prev.DV >= trough.upper) {
-						new.dose <- trough.target/prev.DV*prev.dose	# Adjust the dose if out of range
+						if (prev.mgkg.dose == 5) {
+							prev.mgkg.dose <- 7.5	# Now increase to 7.5 mg/kg
+							new.dose <- prev.mgkg.dose*prev.WT
+							prev.int <- 56
+						} else if (prev.mgkg.dose == 7.5) {
+							prev.mgkg.dose <- 10	# Now increase to 10 mg/kg
+							new.dose <- prev.mgkg.dose*prev.WT
+							prev.int <- 56
+						} else {
+							prev.mgkg.dose <- 10
+							new.dose <- prev.mgkg.dose*prev.WT
+							prev.int <- 42	# Now increase frequency to every 42 days instead of every 56 days
+						}
 					} else {
-						new.dose <- prev.dose	# Continue with previous dose if within range
+						new.dose <- prev.mgkg.dose*prev.WT	# Continue with previous dose if within range
 					}
-				# Cap "new.dose" to 20 mg/kg
-					if (new.dose > amt.max*prev.WT) new.dose <- amt.max*prev.WT
-					if (new.dose < amt.min*prev.WT) new.dose <- amt.min*prev.WT	# Minimum dose is still 5 mg/kg
 
 				# Create input data frame for simulation
 					input.sim.data <- conc.data
@@ -46,7 +58,7 @@
 				# Simulate
 					conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 				# Add the "next.sample" time to the list of sample.times
-					next.sample <- last.sample+dose.int
+					next.sample <- last.sample+prev.int
 					sample.times <- sort(c(unique(c(sample.times,next.sample))))
 				# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
 					conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
@@ -56,7 +68,7 @@
 		conc.data
 	}	# Brackets closing "clinical.function"
 
-	clinical.data <- ddply(first.int.data, .(SIM,ID), clinical.function, .parallel = FALSE)
+	clinical.data <- ddply(first.int.data1, .(SIM,ID), clinical.function, .parallel = FALSE)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file

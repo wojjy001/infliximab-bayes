@@ -24,7 +24,7 @@
 				ETA3,
 				ETA4,
 				ERRPRO,
-				amt = amt.init*BASE_WT,	# mg/kg dose
+				amt = amt.init1*BASE_WT,	# mg/kg dose
 				evid = 1,	# Dosing event
 				cmt = 1,	# Dose into the central compartment (compartment = 1)
 				rate = -2	# Infusion duration is specific in the model file

@@ -48,7 +48,7 @@
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
 	# Overall time sequence
-		time.int <- 0.5	# Difference in simulation times
+		time.int <- 7	# Difference in simulation times
 		TIME <- seq(from = 0,to = 595,by = time.int)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
@@ -61,7 +61,9 @@
 		next.dose.int <- 56	# days
 
 # Set the dose for simulating the first intervals
-	amt.init <- 5	# initial dose mg/kg
+	amt.init1 <- 5	# initial dose mg/kg
+	amt.init2 <- 10	# initial dose mg/kg
+# Set the min and max mg/kg doses for bayesian dosing
 	amt.min <- 5	# minimum dose mg/kg
 	amt.max <- 20	# maximum dose mg/kg
 
