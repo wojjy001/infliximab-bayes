@@ -117,17 +117,13 @@
 						double pTUTdiff = TUTdiff/7;
 
 						// Albumin
-						// dxdt_ALB = 0;
-						// dxdt_WT = 0;
-						// if (SOLVERTIME > 98) {
-							dxdt_ALB = ALB*0.001;
-							if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
-							if (pTUTdiff > 0.1) dxdt_ALB = ALB*-0.001;
-							// Weight
-							dxdt_WT = WT*0.0005;
-							if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
-							if (pTUTdiff > 0.1) dxdt_WT = WT*-0.0005;
-						//}
+						dxdt_ALB = 0.001785714;	// Increase in albumin of 0.1 U/L over 56 days
+						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
+						if (pTUTdiff > 0.1) dxdt_ALB = ALB*-0.001785714;  // Decrease in albumin of 0.1 U/L over 56 days
+						// Weight
+						dxdt_WT = 0.01785714;	// Increase in weight of 1 kg over 56 days
+						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
+						if (pTUTdiff > 0.1) dxdt_WT = -0.01785714;	// Decrease in weight of 1 kg over 56 days
 
 						if (FLAG == 0) {	// Simulation when new dose administered
 							// Limits on albumin
