@@ -14,7 +14,7 @@
 # # Parallelise jobs to increase speed
 # 	library(doParallel)	# Parallel processing
 # 	# Set up cores to run parallel processes, thus increasing speed
-# 	# Set up a cluster of cores to run the job Overall
+# 	# Set up a cluster of cores to run the job overall
 # 		cl <- makePSOCKcluster(2)
 # 		# detectCores() searches for the number of cores that the local machine has
 # 	# List packages required to be sent to each core for the parallel process
