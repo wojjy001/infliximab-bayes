@@ -114,7 +114,7 @@
 						double pTUT = 0;
 						if (SOLVERTIME > 0.08333333) pTUT = TUT/SOLVERTIME;
 						double TUTdiff = TUT - prevTUT;
-						double pTUTdiff = TUTdiff/7;
+						double pTUTdiff = TUTdiff;
 
 						// Albumin
 						dxdt_ALB = 0.001785714;	// Increase in albumin of 0.1 U/L over 56 days
