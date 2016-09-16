@@ -117,9 +117,9 @@
 						double pTUTdiff = TUTdiff;
 
 						// Albumin
-						dxdt_ALB = 0.001785714;	// Increase in albumin of 0.1 U/L over 56 days
+						dxdt_ALB = 0.003571429;	// Increase in albumin of 0.1 U/L over 56 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
-						if (pTUTdiff > 0.1) dxdt_ALB = ALB*-0.001785714;  // Decrease in albumin of 0.1 U/L over 56 days
+						if (pTUTdiff > 0.1) dxdt_ALB = ALB*-0.003571429;  // Decrease in albumin of 0.1 U/L over 56 days
 						// Weight
 						dxdt_WT = 0.01785714;	// Increase in weight of 1 kg over 56 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
