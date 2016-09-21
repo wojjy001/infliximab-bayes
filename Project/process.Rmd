@@ -99,9 +99,10 @@ output:
 # For each individual calculate when doses were given and how much
   ind.summary.function <- function(all.data) {
     ind.summary.data <- data.frame(
-      times = all.data$time[all.data$amt != 0],
+      time = all.data$time[all.data$amt != 0],
       amt = all.data$amt[all.data$amt != 0],
       int = c(0,diff(all.data$time[all.data$amt != 0])),
+      IPRE = all.data$IPRE[all.data$amt !=0],
       ADA = all.data$ADA[all.data$amt != 0],
       ALB = all.data$ALBCOV[all.data$amt != 0],
       WT = all.data$WTCOV[all.data$amt != 0],
@@ -117,7 +118,7 @@ output:
       SET.number <- all.data$SET[1]
       SIM.number <- all.data$SIM[1]
       STUDY.number <- all.data$STUDY[1]
-      trough.times <- ind.summary.data$times[ind.summary.data$ID == ID.number & ind.summary.data$SIM == SIM.number & ind.summary.data$SET == SET.number & ind.summary.data$STUDY == STUDY.number]
+      trough.times <- ind.summary.data$time[ind.summary.data$ID == ID.number & ind.summary.data$SIM == SIM.number & ind.summary.data$SET == SET.number & ind.summary.data$STUDY == STUDY.number]
     # Subset all.data for times in trough.times
       collect.trough.data <- all.data[all.data$time %in% trough.times,]
   }
@@ -132,7 +133,11 @@ Represented as median and 95% prediction intervals
 ```{r,echo = TRUE,warning = FALSE}
 # Line (median) and ribbon (prediction intervals)
   # Calculate
-    summary.data <- ddply(collect.trough.data, .(STUDY,time), function(all.data) summary.function(all.data$IPRE))
+    summary.data <- ddply(ind.summary.data, .(STUDY,time), function(ind.summary.data) summary.function(ind.summary.data$IPRE))
+
+  # Assign descriptions to STUDY
+    summary.data$STUDYf <- as.factor(summary.data$STUDY)
+    levels(summary.data$STUDYf) <- c("Label","Clinical","Clinical TDM","Bayes - 5mg/kg Init","Bayes - 10mg/kg Init")
 
   # Plot
     plotobj1 <- NULL
@@ -141,10 +146,10 @@ Represented as median and 95% prediction intervals
     plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = stat.95lo,ymax = stat.95hi,fill = STUDY),alpha = 0.3)
     plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.target),linetype = "dashed")
     plotobj1 <- plotobj1 + geom_hline(aes(yintercept = trough.upper),linetype = "dashed")
-    plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)")
+    plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)",breaks = c(0,14,42,98,154,210,266,322,378,434,490,546))
     plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.0001,0.001,0.01,0.1,1,10,100,1000),labels = c(0.0001,0.001,0.01,0.1,1,10,100,1000))
     # plotobj1 <- plotobj1 + scale_y_continuous("Infliximab Concentration (mg/L)\n",lim = c(0,NA))
-    plotobj1 <- plotobj1 + facet_wrap(~STUDY)
+    plotobj1 <- plotobj1 + facet_wrap(~STUDYf)
     plotobj1 <- plotobj1 + theme(legend.position = "none")
     print(plotobj1)
 ```
@@ -155,7 +160,8 @@ Represented as median and 95% prediction intervals
 # Weight
 # Line (median) and ribbon (prediction intervals)
   # Calculate
-    wt.summary.data <- ddply(collect.trough.data, .(STUDY,time), function(all.data) summary.function(all.data$WTCOV))
+    collect.trough.data$cWT <- collect.trough.data$WTCOV-collect.trough.data$BASE_WT
+    wt.summary.data <- ddply(collect.trough.data, .(STUDY,time), function(all.data) summary.function(all.data$cWT))
 
   # Plot
     plotobj2 <- NULL
@@ -163,7 +169,7 @@ Represented as median and 95% prediction intervals
     plotobj2 <- plotobj2 + geom_line(aes(x = time,y = median,colour = STUDY))
     plotobj2 <- plotobj2 + geom_ribbon(aes(x = time,ymin = stat.95lo,ymax = stat.95hi,fill = STUDY),alpha = 0.3)
     plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)")
-    plotobj2 <- plotobj2 + scale_y_continuous("Total body weight (kg)\n")
+    plotobj2 <- plotobj2 + scale_y_continuous("Change in total body weight (kg)\n")
     # plotobj2 <- plotobj2 + scale_y_continuous("Infliximab Concentration (mg/L)\n",lim = c(0,NA))
     plotobj2 <- plotobj2 + facet_wrap(~STUDY)
     plotobj2 <- plotobj2 + theme(legend.position = "none")
@@ -171,8 +177,9 @@ Represented as median and 95% prediction intervals
     
 # Albumin
 # Line (median) and ribbon (prediction intervals)
-# Calculate
-  alb.summary.data <- ddply(collect.trough.data, .(STUDY,time), function(all.data) summary.function(all.data$ALBCOV))
+  # Calculate
+    collect.trough.data$cALB <- collect.trough.data$ALBCOV - collect.trough.data$BASE_ALB
+    alb.summary.data <- ddply(collect.trough.data, .(STUDY,time), function(all.data) summary.function(all.data$cALB))
 
 # Plot
   plotobj3 <- NULL
@@ -180,7 +187,7 @@ Represented as median and 95% prediction intervals
   plotobj3 <- plotobj3 + geom_line(aes(x = time,y = median,colour = STUDY))
   plotobj3 <- plotobj3 + geom_ribbon(aes(x = time,ymin = stat.95lo,ymax = stat.95hi,fill = STUDY),alpha = 0.3)
   plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)")
-  plotobj3 <- plotobj3 + scale_y_continuous("Albumin (U/L)\n")
+  plotobj3 <- plotobj3 + scale_y_continuous("Change in albumin (U/L)\n")
   # plotobj3 <- plotobj3 + scale_y_continuous("Infliximab Concentration (mg/L)\n",lim = c(0,NA))
   plotobj3 <- plotobj3 + facet_wrap(~STUDY)
   plotobj3 <- plotobj3 + theme(legend.position = "none")
