@@ -26,7 +26,7 @@
 				# Previous dose
 					prev.dose.time <- head(tail(sample.times,2),1)
 				# Calculate the new dose for the next interval based on "sample" and "dose"
-					if (prev.DV < trough.target | prev.DV >= trough.upper) {
+					if (prev.DV < trough.target) {
 						if (prev.mgkg.dose == 5) {
 							prev.mgkg.dose <- 7.5	# Now increase to 7.5 mg/kg
 							new.dose <- prev.mgkg.dose*prev.WT
