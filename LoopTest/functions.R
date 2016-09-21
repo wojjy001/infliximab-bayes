@@ -1,28 +1,40 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for containing universal functions
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Create and set working directory
 # Specific for the simulation
-	n <- 20	# Number of seed individuals (where each seed individual has a different set of covariate values)
+	n <- 1	# Number of seed individuals (where each seed individual has a different set of covariate values)
 	nsim <- 1	# Number of simulations of the seed individuals to perform
-	sim.name <- paste("SIM",nsim,"_IND",n,sep = "")	# Simulation folder's name
-	sim.output.dir <- paste0(work.dir,sim.name,"/")	# Simulation directory
-	dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
-	setwd(file.path(sim.output.dir))	#Set the working directory
+	# Set seed for reproducible results
+		seed <- round(runif(1,min = 000001,max = 999999),digits = 0)
+		# seed <- 647914
+		set.seed(seed)
+	sim.name <- paste("SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
+	# sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
+	# dir.create(file.path(sim.output.dir),showWarnings = FALSE) # Create simulation directory
+	# setwd(file.path(sim.output.dir))	#Set the working directory
 
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Load package libaries
 	library(ggplot2)	# Plotting package
 	library(grid)	# Plotting package
 	library(plyr)	# Split and rearrange data, ddply functions
+	library(dplyr)
 	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
 	library(compiler)	# Compile repeatedly called functions
+	library(numDeriv)
 # Custom ggplot2 theme
-	theme_bw2 <- theme_set(theme_bw(base_size = 14))
-# Set seed for reproducible results
-	# set.seed(123456)
+	theme_bw2 <- theme_set(theme_bw(base_size = 12))
+	theme_bw2 <- theme_update(
+		plot.margin = unit(c(1.1,1.1,3,1.1),"lines"),
+		axis.title.x = element_text(size = 12,vjust = 0),
+		axis.title.y = element_text(size = 12,vjust = 0,angle = 90),
+		strip.text.x = element_text(size = 10),
+		strip.text.y = element_text(size = 10,angle = 90),
+		plot.title = element_text(face = "bold",hjust = 0,size = 14)
+	)
 
-#-------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Pre-defined universal objects
 # Target trough concentration definitions
 	trough.target <- 3	# Set the target trough concentration for dose optimisation
@@ -39,35 +51,31 @@
 # Define time sequences
 	# Infusion times (0, 2, 6 weeks and then every 8 weeks) in days
 		TIME1i <- c(0,14,42)
+		TIMEi <- c(TIME1i,98,154,210,266,322,378,434,490,546)
 	# Infusion duration (2 hours) in days
 		INFD <- 2/24
 	# Overall time sequence
-		TIME <- seq(from = 0,to = 600,by = 1)
+		time.int <- 1	# Difference in simulation times
+		TIME <- seq(from = 0,to = 595,by = time.int)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
+	# Define the last time-point to be simulated
+		last.time <- 546	# days
+	# After the initiation phase, the first sample will be collected at day 98
+		sample.times <- c(0,98)	# days
+	# Initial dosing interval for the maintenance phase
+		dose.int <- 56	# days
+		next.dose.int <- 56	# days
+
+# Set the dose for simulating the first intervals
+	amt.init1 <- 5	# initial dose mg/kg
+	amt.init2 <- 10	# initial dose mg/kg
+# Set the min and max mg/kg doses for bayesian dosing
+	amt.min <- 5	# minimum dose mg/kg
+	amt.max <- 20	# maximum dose mg/kg
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions
-# Function for calculating albumin concentrations for each individual for all time-points
-# A linear function containing the baseline albumin (BASE_ALB) and their last albumin (FINAL_ALB)
-	albumin.function <- function(input.data) {
-		TIMEalb <- c(min(input.data$TIME),max(input.data$TIME))
-		RATEalb <- c(head(input.data$BASE_ALB,1),head(input.data$FINAL_ALB,1))
-		step.alb <- approxfun(TIMEalb,RATEalb,method = "linear")	# Linear function
-		input.data$ALB <- step.alb(input.data$TIME)*(1+AMP_ALB1*sin(2*pi*FREQ_ALB1*input.data$TIME+PHASE_ALB1)+AMP_ALB2*sin(2*pi*FREQ_ALB2*input.data$TIME+PHASE_ALB2)+AMP_ALB3*sin(2*pi*FREQ_ALB3*input.data$TIME+PHASE_ALB3))	# Apply function to every time-point
-		as.data.frame(input.data)
-	}
-
-# Function for flagging if ADA are present for each individual for all time-points
-# This assumes that once a person develops ADA, they stay with ADA
-	ada.function <- function(input.data) {
-		TIMEada <- c(min(input.data$TIME),input.data$ADA_TIME[1],END)	# Specify times when ADA changes
-		RATEada <- c(0,1,1)	# Specify the values for it to change to
-		step.ada <- approxfun(TIMEada,RATEada,method = "const")	# Step function
-		input.data$ADA <- step.ada(input.data$TIME)	# Apply function to every time-point
-		as.data.frame(input.data)
-	}
-
 # Function for calculating changes in random effects
 # A linear function containing the baseline ETA (BASE_ETA) and their last ETA (FINAL_ETA)
 	eta.function <- function(input.data) {
@@ -95,13 +103,4 @@
 			}
 		# Return the resulting data frame
 		input.data
-	}
-
-# Function for simulating individual concentration time profiles
-# A single ID is present in all simulations (SIM) - which mrgsolve does not like
-# Run each "SIM" group through mrgsolve sequently
-# This could be parallelised if need be for speed!
-	conc.per.simulation <- function(input.data) {
-		conc.data <- mod.sim %>% data_set(input.data) %>% carry.out(SIM,amt,ERRPRO) %>% mrgsim()
-		conc.data <- as.data.frame(conc.data)
 	}
