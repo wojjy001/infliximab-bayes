@@ -29,9 +29,9 @@
 # 		registerDoParallel(cl)
 
 # ------------------------------------------------------------------------------
-seeds <- c(4033,96433,112209,141915,229433,299247,309449,355108,402385,416828,460403,488160,541147,604233,642803,643087,715276,725943,734678,756111,765270,968450)
-for (i in 1:length(seeds)) {
-	seed <- seeds[i]
+# seeds <- c(4033,96433,112209,141915,229433,299247,309449,355108,402385,416828,460403,488160,541147,604233,642803,643087,715276,725943,734678,756111,765270,968450)
+# for (i in 1:length(seeds)) {
+# 	seed <- seeds[i]
 # Run "single-run" simulation files
 # First standard interval simulation (initial dose is 5 mg/kg)
 	suppressPackageStartupMessages(	# Suppress package loading messages
@@ -39,15 +39,15 @@ for (i in 1:length(seeds)) {
 			source(paste0(work.dir,"first_interval1.R"))
 		)
 	)
-# # First standard interval simulation (initial dose is 10 mg/kg)
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"first_interval2.R"))))
-# # Label simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
-# # Clinical simulation where doses are adjusted based on trough concentrations (DV)
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical_TDM.R"))))
+# First standard interval simulation (initial dose is 10 mg/kg)
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"first_interval2.R"))))
+# Label simulation
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
+# Clinical simulation where doses are adjusted based on trough concentrations (DV)
+	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical_TDM.R"))))
 # Clinical simulation
 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
-# # Run the various Bayes estimation scenarios sequentially
-# # Scenarios with no time-weighting
-# 	suppressWarnings(source(paste0(work.dir,"bayes.R")))
-}
+# Run the various Bayes estimation scenarios sequentially
+# Scenarios with no time-weighting
+	suppressWarnings(source(paste0(work.dir,"bayes.R")))
+# }
