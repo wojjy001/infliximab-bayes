@@ -117,13 +117,13 @@
 						double pTUTdiff = TUTdiff;
 
 						// Albumin
-						dxdt_ALB = 0.003571429;	// Increase in albumin of 0.2 U/L over 56 days
+						dxdt_ALB = 150*2.5/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 2.5 U/L, EC50 = 150 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
-						if (pTUTdiff > 0.1) dxdt_ALB = ALB*-0.003571429;  // Decrease in albumin of 0.2 U/L over 56 days
+						if (pTUTdiff > 0.1) dxdt_ALB = 150*-2.5/pow(150+SOLVERTIME,2);  // First derivative of Emax equation, Emax = -2.5 U/L, EC50 = 150 days
 						// Weight
-						dxdt_WT = 0.01785714;	// Increase in weight of 1 kg over 56 days
+						dxdt_WT = 150*8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 8 kg, EC50 = 150 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
-						if (pTUTdiff > 0.1) dxdt_WT = -0.01785714;	// Decrease in weight of 1 kg over 56 days
+						if (pTUTdiff > 0.1) dxdt_WT = 150*-8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = -8 kg, EC50 = 150 days
 
 						if (FLAG == 0) {	// Simulation when new dose administered
 							// Limits on albumin
