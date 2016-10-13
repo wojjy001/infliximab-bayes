@@ -4,12 +4,12 @@
 # Create and set working directory
 # Specific for the simulation
 	n <- 9	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	nsim <- 10	# Number of simulations of the seed individuals to perform
+	# nsim <- 20	# Number of simulations of the seed individuals to perform
 	# Set seed for reproducible results
-		seed <- round(runif(1,min = 000001,max = 999999),digits = 0)
+		# seed <- round(runif(1,min = 000001,max = 999999),digits = 0)
 		# seed <- 647914
 		set.seed(seed)
-	sim.name <- paste("SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
+	sim.name <- paste("SUCCESS_SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
 	# sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Windows
 	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Server
 	# sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
