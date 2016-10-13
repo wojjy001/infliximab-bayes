@@ -4,42 +4,49 @@
 # ------------------------------------------------------------------------------
 # Create a data frame ready for mrgsolve simulation
 	# Function for creating a data frame ready for mrgsolve simulation
-		label.function <- function(pop.data) {
-			ID.number <- pop.data$ID[1]	# Individual ID
-			BASE_WT <- pop.data$BASE_WT[1]	# Individual weight
-			BASE_ALB <- pop.data$BASE_ALB[1]	# Individual albumin
-			ETA1 <- pop.data$ETA1
-			ETA2 <- pop.data$ETA2
-			ETA3 <- pop.data$ETA3
-			ETA4 <- pop.data$ETA4
-			ERRPRO <- pop.data$ERRPRO
+		label.function <- function(first.int.data) {
+			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+				conc.data <- first.int.data
+				conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+			# Assign dosing and frequency for the label simulation
+				mgkg.dose <- 5	# Always 5 mg/kg
+				label.int <- 56	# Always every 56 days
 
-			input.label.data <- data.frame(
-				ID = ID.number,
-				time = TIME,	# Time points for simulation
-				BASE_WT,	# Baseline weight
-				BASE_ALB,	# Baseline albumin
-				ETA1,
-				ETA2,
-				ETA3,
-				ETA4,
-				ERRPRO,
-				amt = amt.init1*BASE_WT,	# mg/kg dose
-				evid = 1,	# Dosing event
-				cmt = 1,	# Dose into the central compartment (compartment = 1)
-				rate = -2	# Infusion duration is specific in the model file
-			)
-			# Make the amt given in the last time-point == 0
-				input.label.data$amt[!c(input.label.data$time %in% TIMEi)] <- 0
-				input.label.data$evid[!c(input.label.data$time %in% TIMEi)] <- 0
-				input.label.data$rate[!c(input.label.data$time %in% TIMEi)] <- 0
-			# Flag that this is simulation and want covariates to change depending on concentrations
-				input.label.data$FLAG <- 0
-		# Simulate concentration-time profiles for individuals in input.label.data
-			label.data <- mod %>% mrgsim(data = input.label.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
-	}
+			# Make a loop that pulls the patient's weight at time of next dose
+				repeat{
+					# Time of next dose
+						next.dose <- max(sample.times)
+					# Weight
+					 	current.WT <- conc.data$WTCOV[conc.data$time == next.dose]
+					# Calculate new dose for patient
+						new.dose <- mgkg.dose*current.WT
+
+					# Create input data frame for simulation
+						input.sim.data <- conc.data
+						input.sim.data$amt[input.sim.data$time == next.dose] <- new.dose	# Add new dose to data frame at time of last sample
+						# Re-add evid and rate columns
+							input.sim.data$cmt <- 1	# Signifies which compartment the dose goes into
+							input.sim.data$evid <- 1	# Signifies dosing event
+							input.sim.data$evid[input.sim.data$amt == 0] <- 0
+							input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
+							input.sim.data$rate[input.sim.data$amt == 0] <- 0
+						# Flag that this is simulation and want covariates to change depending on concentrations
+							input.sim.data$FLAG <- 0
+					# Simulate
+						conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
+
+					# Add the "next.sample" time to the list of sample.times
+						next.sample <- next.dose+label.int
+						sample.times <- sort(c(unique(c(sample.times,next.sample))))
+					# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+						conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+					# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
+						if (is.na(conc.data$IPRE[conc.data$time == last.time]) == FALSE) break
+				}	# Brackets closing "repeat"
+			conc.data
+		}
 # Create population data frame ready for mrgsolve simulation
-	label.data <- ddply(pop.data, .(ID,SIM), label.function, .parallel = FALSE)
+	label.data <- ddply(first.int.data1, .(ID,SIM), label.function, .parallel = FALSE)
 
 # ------------------------------------------------------------------------------
 # Write label.data to a .csv file
