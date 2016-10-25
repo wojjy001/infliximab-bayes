@@ -4,12 +4,13 @@
 # Create and set working directory
 # Specific for the simulation
 	n <- 9	# Number of seed individuals (where each seed individual has a different set of covariate values)
-	# nsim <- 20	# Number of simulations of the seed individuals to perform
+	nsim <- 10	# Number of simulations of the seed individuals to perform
 	# Set seed for reproducible results
-		# seed <- round(runif(1,min = 000001,max = 999999),digits = 0)
+		seed <- round(runif(1,min = 000001,max = 999999),digits = 0)
 		# seed <- 647914
 		set.seed(seed)
-	sim.name <- paste("SUCCESS_SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
+	# sim.name <- paste("SUCCESS_SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
+	sim.name <- paste("SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
 	# sim.output.dir <- paste0("D:/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Windows
 	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Server
 	# sim.output.dir <- paste0("/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/",sim.name,"/")	# Simulation directory for Mac
@@ -50,11 +51,11 @@
 		INFD <- 2/24
 	# Overall time sequence
 		time.int <- 1	# Difference in simulation times
-		TIME <- seq(from = 0,to = 595,by = time.int)
+		TIME <- seq(from = 0,to = 602,by = time.int)
 	# Object specifying beyond the TIME sequence
 		END <- max(TIME)+100
 	# Define the last time-point to be simulated
-		last.time <- 546	# days
+		last.time <- 602	# days
 	# After the initiation phase, the first sample will be collected at day 98
 		sample.times <- c(0,98)	# days
 	# Initial dosing interval for the maintenance phase
