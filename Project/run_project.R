@@ -9,24 +9,8 @@
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
 	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
 	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
-
-# # -------------------------------------------------------------------------------
-# # Parallelise jobs to increase speed
-# 	library(doParallel)	# Parallel processing
-# 	# Set up cores to run parallel processes, thus increasing speed
-# 	# Set up a cluster of cores to run the job overall
-# 		cl <- makePSOCKcluster(2)
-# 		# detectCores() searches for the number of cores that the local machine has
-# 	# List packages required to be sent to each core for the parallel process
-# 	# The foreach package always needs to be included
-# 		clusterEvalQ(cl,list(
-# 			library(foreach),
-# 			# source("D:/infliximab-bayes/Project/first_interval.R")	# Windows directory
-# 			# source("E:/Wojciechowski/infliximab-bayes/Project/first_interval.R")	# Server directory
-# 			source("/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/first_interval.R")	# Mac directory
-# 		))
-# 	# Register the parallel backend with the foreach package
-# 		registerDoParallel(cl)
+# Source and compile model file
+	source(paste0(work.dir,"model.R"))
 
 # ------------------------------------------------------------------------------
 # Read in seeds from previous output
@@ -44,26 +28,33 @@
 	# file.data$nsim <- as.numeric(levels(file.data$nsim))[file.data$nsim]
 	# file.data$seed <- as.numeric(levels(file.data$seed)[file.data$seed])
 	#
-	# for (i in c(4:5,44,55)) {
-	# 	nsim <- file.data$nsim[i]
-	# 	seed <- file.data$seed[i]
-		# print(paste0("seed ",seed," nsim ",nsim))
-	# Run "single-run" simulation files
-	# First standard interval simulation (initial dose is 5 mg/kg)
-		suppressPackageStartupMessages(	# Suppress package loading messages
-			suppressWarnings(	# Suppress warning messages
-				source(paste0(work.dir,"first_interval1.R"))
-			)
-		)
-	# First standard interval simulation (initial dose is 10 mg/kg)
-		suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"first_interval2.R"))))
-	# Label simulation
-		suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
-	# Clinical simulation where doses are adjusted based on trough concentrations (DV)
-		suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical_TDM.R"))))
-	# Clinical simulation
-		suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
-	# Run the various Bayes estimation scenarios sequentially
-	# Scenarios with no time-weighting
-		suppressWarnings(source(paste0(work.dir,"bayes.R")))
-	# }
+for (i in 1:15) {
+	# Source universal functions file
+		source(paste0(work.dir,"functions.R"))
+		# nsim <- file.data$nsim[i]
+		# seed <- file.data$seed[i]
+		print(paste0("seed ",seed," nsim ",nsim))
+	try(
+		for (i in 0:1) {
+			time.dep <- i	# 0 = no time-dependent covariate and random effect changes
+			# 1 = time-dependent covariate and random effect changes
+			# Create population
+				source(paste0(work.dir,"population.R"))
+			# First standard interval simulation (initial dose is 5 mg/kg)
+					suppressPackageStartupMessages(	# Suppress package loading messages
+						suppressWarnings(	# Suppress warning messages
+							source(paste0(work.dir,"first_interval1.R"))
+						)
+					)
+			# Run "single-run" simulation files
+			# Label simulation
+				suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
+			# Clinical simulation where doses are adjusted based on trough concentrations (DV)
+				suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical_TDM.R"))))
+			# Clinical simulation
+				suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
+			# Bayesian simulation
+				suppressWarnings(source(paste0(work.dir,"bayes.R")))
+		}
+	)
+}

@@ -6,7 +6,6 @@
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
 	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
 	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
-	source(paste0(work.dir,"functions.R"))
 
 # ------------------------------------------------------------------------------
 # Define population's characteristics
@@ -47,6 +46,9 @@
 		cov.data$BASE_ETA4 <- rnorm(n*nsim,mean = 0,sd = PPVV2)	# Baseline ETA for V2
 		cov.data$FINAL_ETA4 <- log(exp(cov.data$BASE_ETA4)*runif(n*nsim,min = 0.7,max = 1.3))	# Final ETA for V2
 
+# Random number for ADA onset
+	cov.data$ADAr <- runif(n*nsim,min = 0,max = 1)
+
 # ------------------------------------------------------------------------------
 # Data frame of individual characteristics
 	pop.data <- lapply(cov.data,rep.int,times = length(TIME))
@@ -62,5 +64,5 @@
 
 # ------------------------------------------------------------------------------
 # Write pop.data to a .csv file
-	pop.data.filename <- "population_characteristics.csv"
+	pop.data.filename <- paste0("time_dep_",time.dep,"_population_characteristics.csv")
 	write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)

@@ -3,6 +3,9 @@
 # ------------------------------------------------------------------------------
 # Define the model parameters and equations
 # Using mrgsolve - differential equations
+	library(plyr)	# Split and rearrange data, ddply functions
+	library(dplyr)
+	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
 # This compiled model is used for simulating n individuals and their concentration-time profiles
 	code <- '
 	$SET			atol = 1e-8, rtol = 1e-8
@@ -11,7 +14,6 @@
 	$INIT			// Initial conditions for PK compartments
 						CENT = 0,
 						PERI = 0,
-						AUT = 0,
 						TUT = 0
 
 	$CMT			// Specify covariate compartments
@@ -33,14 +35,15 @@
 						ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance
 
 						// Covariate values for simulation
-						BASE_WT = 70,	// Waseline weight (kg)
+						BASE_WT = 70,	// Baseline weight (kg)
 						BASE_ALB = 3,	// Baseline albumin at treatment initiation
 						TIME_WT = 70,	// Time-dependent weight (kg)
 						TIME_ADA = 0,	// Time-dependent ADA status
 						TIME_ALB = 3, // Time-dependent albumin (U/L)
+						ADAr = 0,	// ADA random number
 						target = 3,	// Target trough concentration (mg/L)
 						SIM = 0,	// Simulation identifier
-						FLAG = 0,	// Scenario identifier
+						FLAG = 0,	// Time-dependence scenario identifier
 
 						// Presimulated PPV values
 						ETA1 = 0,
@@ -73,7 +76,7 @@
 							double ADACOV = 1;	// No anti-drug antibodies
 							if (ADA == 1) ADACOV = 1+ADA_CL; // Anti-drug antibodies
 
-						if (FLAG == 1) {	// For Bayesian scenarios
+						if (FLAG == 0) {	// For Bayesian scenarios or non-time dependent scenarios
 							ALBCOV = TIME_ALB;
 							WTCOV = TIME_WT;
 						}
@@ -89,9 +92,6 @@
 						double K12 = Q/V1;
 						double K21 = Q/V2;
 
-						// Half-life
-						double Thalf = log(2)/(0.5*((K10+K12+K21)-sqrt(pow(K10+K12+K21,2)-4*K10*K21)));
-
 						// Previous time under target concentration
 						double prevTUT = TUT;
 
@@ -102,30 +102,28 @@
 						// Plasma concentration
 						double CP = CENT/V1;	// Plasma concentration of the central compartment
 
-						// Area below target and time under/above target
-						dxdt_AUT = 0;
+						// Time under target
 						dxdt_TUT = 0;
-						if (SOLVERTIME > 0.08333333 & CP < target) {
-							dxdt_AUT = target - CP;
-							dxdt_TUT = 1;
-						}
+						if (SOLVERTIME > 0.08333333 & CP < target) dxdt_TUT = 1;
 
 						// Proportion of time under target
 						double pTUT = 0;
-						if (SOLVERTIME > 0.08333333) pTUT = TUT/SOLVERTIME;
+						if (SOLVERTIME > 0.08333333) {
+							pTUT = TUT/SOLVERTIME;
+						}
 						double TUTdiff = TUT - prevTUT;
 						double pTUTdiff = TUTdiff;
 
 						// Albumin
-						dxdt_ALB = 150*2.5/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 2.5 U/L, EC50 = 150 days
+						dxdt_ALB = 150*2.5/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 2.5 U/L, ET50 = 150 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
-						if (pTUTdiff > 0.1) dxdt_ALB = 150*-2.5/pow(150+SOLVERTIME,2);  // First derivative of Emax equation, Emax = -2.5 U/L, EC50 = 150 days
+						if (pTUTdiff > 0.1) dxdt_ALB = 150*-2.5/pow(150+SOLVERTIME,2);  // First derivative of Emax equation, Emax = -2.5 U/L, ET50 = 150 days
 						// Weight
-						dxdt_WT = 150*8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 8 kg, EC50 = 150 days
+						dxdt_WT = 150*8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 8 kg, ET50 = 150 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
-						if (pTUTdiff > 0.1) dxdt_WT = 150*-8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = -8 kg, EC50 = 150 days
+						if (pTUTdiff > 0.1) dxdt_WT = 150*-8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = -8 kg, ET50 = 150 days
 
-						if (FLAG == 0) {	// Simulation when new dose administered
+						if (FLAG == 1) {	// Simulation when new dose administered
 							// Limits on albumin
 							double ALBCOV = ALB;
 							if (ALBCOV < 2) ALBCOV = 2;
@@ -136,14 +134,18 @@
 							if (WTCOV > 110) WTCOV = 110;
 						}
 
-						// Anti-drug antibodies
+						// Probability of developing anti-drug antibodies
 						double ADA = 0;
-						if (pTUT > 0.1 & SOLVERTIME > 0.08333333) ADA = 1;
+						double ADAp = 0;
+						if (FLAG == 1) {
+							ADAp = TUT/(20+TUT);
+							if (ADAr < ADAp) ADA = 1;
+						}
 
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*(1+ERRPRO);
 
-	$CAPTURE	BASE_WT BASE_ALB ADA CL ALBCOV WTCOV V1 Q V2 ETA1 ETA2 ETA3 ETA4 Thalf pTUT pTUTdiff
+	$CAPTURE	BASE_WT WTCOV BASE_ALB ALBCOV ADA ADAp ADAr CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 pTUT pTUTdiff
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)

@@ -20,9 +20,11 @@
 					last.sample <- max(sample.times)
 				# Previous DV
 					prev.DV <- conc.data$DV[conc.data$time == last.sample]
-					prev.DV[prev.DV < 0] <- 1e-8
-				# Previous weight
+					prev.DV[prev.DV < 0] <- .Machine$double.eps
+				# Previous covariate values
 					prev.WT <- conc.data$WTCOV[conc.data$time == last.sample]
+					prev.ADA <- conc.data$ADA[conc.data$time == last.sample]
+					prev.ALB <- conc.data$ALBCOV[conc.data$time == last.sample]
 				# Previous dose
 					prev.dose.time <- head(tail(sample.times,2),1)
 				# Calculate the new dose for the next interval based on "sample" and "dose"
@@ -47,6 +49,9 @@
 				# Create input data frame for simulation
 					input.sim.data <- conc.data
 					input.sim.data$amt[input.sim.data$time == last.sample] <- new.dose	# Add new dose to data frame at time of last sample
+					input.sim.data$TIME_WT <- prev.WT
+					input.sim.data$TIME_ADA <- prev.ADA
+					input.sim.data$TIME_ALB <- prev.ALB
 					# Re-add evid and rate columns
 						input.sim.data$cmt <- 1	# Signifies which compartment the dose goes into
 						input.sim.data$evid <- 1	# Signifies dosing event
@@ -54,7 +59,7 @@
 						input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
 					# Flag that this is simulation and want covariates to change depending on concentrations
-						input.sim.data$FLAG <- 0
+						input.sim.data$FLAG <- time.dep
 				# Simulate
 					conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 				# Add the "next.sample" time to the list of sample.times
@@ -72,5 +77,5 @@
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file
-	clinical.data.filename <- "clinical_simulation.csv"
+	clinical.data.filename <- paste0("time_dep_",time.dep,"_clinical_simulation.csv")
 	write.csv(clinical.data,file = clinical.data.filename,na = ".",quote = F,row.names = F)

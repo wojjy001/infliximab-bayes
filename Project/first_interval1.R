@@ -6,8 +6,6 @@
 	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
 	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
 	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
-	source(paste0(work.dir,"population.R"))
-	source(paste0(work.dir,"model.R"))
 
 # ------------------------------------------------------------------------------
 # Create a data frame ready for mrgsolve simulation
@@ -16,6 +14,7 @@
 			ID.number <- pop.data$ID[1]	# Individual ID
 			BASE_WT <- pop.data$BASE_WT[1]	# Individual weight
 			BASE_ALB <- pop.data$BASE_ALB[1]	# Individual albumin
+			ADAr <- pop.data$ADAr[1]
 			ETA1 <- pop.data$ETA1
 			ETA2 <- pop.data$ETA2
 			ETA3 <- pop.data$ETA3
@@ -27,6 +26,10 @@
 				time = TIME,	# Time points for simulation
 				BASE_WT,	# Baseline weight
 				BASE_ALB,	# Baseline albumin
+				TIME_WT = BASE_WT,
+				TIME_ADA = 0,
+				TIME_ALB = BASE_ALB,
+				ADAr,
 				ETA1,
 				ETA2,
 				ETA3,
@@ -42,7 +45,7 @@
 				input.first.int.data$evid[!c(input.first.int.data$time %in% TIME1i)] <- 0
 				input.first.int.data$rate[!c(input.first.int.data$time %in% TIME1i)] <- 0
 			# Flag that this is simulation and want covariates to change depending on concentrations
-				input.first.int.data$FLAG <- 0
+				input.first.int.data$FLAG <- time.dep
 			# Simulate concentration-time profiles for individuals in input.conc.data
 				first.int.data <- mod %>% mrgsim(data = input.first.int.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 		}

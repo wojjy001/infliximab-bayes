@@ -41,6 +41,9 @@
   trough.target <- 3
   trough.upper <- 5
 
+	n <- 9
+	nsim <- 10
+
 # ------------------------------------------------------------------------------
 # Set working directory
   # project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
@@ -55,35 +58,41 @@
 # Read in the simulation data
   read.data.function <- function(input.list) {
     # Label data
-      label.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/label_simulation.csv"))
-      label.data$STUDY <- 1
+      label.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
+      label.data0$STUDY <- 1
+			label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
+      label.data1$STUDY <- 5
     # Clinical data
-      clinical.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/clinical_simulation.csv"))
-      clinical.data$STUDY <- 2
+      clinical.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
+      clinical.data0$STUDY <- 2
+			clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
+      clinical.data1$STUDY <- 6
     # Clinical TDM data
-      clinical.TDM.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/clinical_TDM_simulation.csv"))
-      clinical.TDM.data$STUDY <- 3
+      clinical.TDM.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
+      clinical.TDM.data0$STUDY <- 3
+			clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
+      clinical.TDM.data1$STUDY <- 7
     # Optimise.bayes1 data (5 mg/kg initiation)
-      optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/optimise_bayes_data1.csv"))
-      optimise.bayes.data1$STUDY <- 4
-    # Optimise.bayes2.data (10 mg/kg initiation)
-      optimise.bayes.data2 <- read.csv(file = paste0(project.dir,input.list$file.list,"/optimise_bayes_data2.csv"))
-      optimise.bayes.data2$STUDY <- 5
+      optimise.bayes.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
+      optimise.bayes.data0$STUDY <- 4
+			optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
+      optimise.bayes.data1$STUDY <- 8
     # Bind data from the set
-      set.data <- rbind(label.data,clinical.data,clinical.TDM.data,optimise.bayes.data1,optimise.bayes.data2)
+      set.data <- rbind(label.data0,label.data1,clinical.data0,clinical.data1,clinical.TDM.data0,clinical.TDM.data1,optimise.bayes.data0,optimise.bayes.data1)
   }
   all.data <- ddply(input.list, .(set.seq), read.data.function)
   all.data <- all.data[all.data$time <= 546,] # Remove NA rows
-  all.data$IPRE <- as.numeric(levels(all.data$IPRE))[all.data$IPRE]
+  # all.data$IPRE <- as.numeric(levels(all.data$IPRE))[all.data$IPRE]
 
   all.data$IDf <- as.factor(all.data$ID)
   levels(all.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
 # Assign descriptions to STUDY
   all.data$STUDYf <- as.factor(all.data$STUDY)
-  levels(all.data$STUDYf) <- c("Label","Clinical","Clinical TDM","Bayes - 5mg/kg Init","Bayes - 10mg/kg Init")
+  levels(all.data$STUDYf) <- c("Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
+	"TD Label","TD Clinical","TD Clinical TDM","TD Bayes")
 
 # Give each individual a unique ID number (uID)
-  uID <- sort(c(rep(1:9000,times = length(all.data$IPRE)/9000)))
+  uID <- sort(c(rep(seq(from = 1,to = n*nsim*8,by = 1),times = length(unique(all.data$time)))))
   all.data$uID <- uID
 
 # There are some really small negative numbers in the dataset
@@ -91,39 +100,25 @@
 
 # For each individual calculate when doses were given and how much
   ind.summary.function <- function(all.data) {
-    if (!c(all.data$STUDY[1] %in% c(1,3))) {
-      ind.summary.data <- data.frame(
-        time = all.data$time[all.data$amt != 0],
-        amt = all.data$amt[all.data$amt != 0],
-        int = c(0,diff(all.data$time[all.data$amt != 0])),
-        IPRE = all.data$IPRE[all.data$amt != 0],
-        ADA = all.data$ADA[all.data$amt != 0],
-        ALB = all.data$ALBCOV[all.data$amt != 0],
-        WT = all.data$WTCOV[all.data$amt != 0],
-        pTUT = all.data$pTUT[all.data$amt != 0],
-        "mg/kg" = all.data$amt[all.data$amt != 0]/all.data$WTCOV[all.data$amt != 0]
-      )
-    } else {
-      ind.summary.data <- data.frame(
-        time = all.data$time[all.data$amt != 0 | all.data$time == 546],
-        amt = all.data$amt[all.data$amt != 0 | all.data$time == 546],
-        int = c(0,diff(all.data$time[all.data$amt != 0 | all.data$time == 546])),
-        IPRE = all.data$IPRE[all.data$amt != 0 | all.data$time == 546],
-        ADA = all.data$ADA[all.data$amt != 0 | all.data$time == 546],
-        ALB = all.data$ALBCOV[all.data$amt != 0 | all.data$time == 546],
-        WT = all.data$WTCOV[all.data$amt != 0 | all.data$time == 546],
-        pTUT = all.data$pTUT[all.data$amt != 0 | all.data$time == 546],
-        "mg/kg" = all.data$amt[all.data$amt != 0 | all.data$time == 546]/all.data$WTCOV[all.data$amt != 0 | all.data$time == 546]
-      )
-    }
+    ind.summary.data <- data.frame(
+      time = all.data$time[all.data$amt != 0 | all.data$time == 546],
+      amt = all.data$amt[all.data$amt != 0 | all.data$time == 546],
+      int = c(0,diff(all.data$time[all.data$amt != 0 | all.data$time == 546])),
+      IPRE = all.data$IPRE[all.data$amt != 0 | all.data$time == 546],
+      ADA = all.data$ADA[all.data$amt != 0 | all.data$time == 546],
+      ALB = all.data$ALBCOV[all.data$amt != 0 | all.data$time == 546],
+      WT = all.data$WTCOV[all.data$amt != 0 | all.data$time == 546],
+      pTUT = all.data$pTUT[all.data$amt != 0 | all.data$time == 546],
+      "mg/kg" = all.data$amt[all.data$amt != 0 | all.data$time == 546]/all.data$WTCOV[all.data$amt != 0 | all.data$time == 546]
+    )
   }
   ind.summary.data <- ddply(all.data, .(STUDY,set.seq,SIM,ID,uID), ind.summary.function)
 
 # Line (median) and ribbon (prediction intervals)
   # Bin time
     ind.summary.data$TIMEBIN <- ind.summary.data$time
-		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY == 2] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY == 2]-98)/56)*56+98
-		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,5)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,5)]-98)/56)*56+98
+		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)]-98)/56)*56+98
+		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,8)]-98)/56)*56+98
 
   # Assign descriptions to ID
     ind.summary.data$IPRE <- as.numeric(ind.summary.data$IPRE)
@@ -133,7 +128,8 @@
     levels(ind.summary.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
   # Assign descriptions to STUDY
     ind.summary.data$STUDYf <- as.factor(ind.summary.data$STUDY)
-    levels(ind.summary.data$STUDYf) <- c("Label","Clinical","Clinical TDM","Bayes - 5mg/kg Init","Bayes - 10mg/kg Init")
+    levels(ind.summary.data$STUDYf) <- c("Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
+		"TD Label","TD Clinical","TD Clinical TDM","TD Bayes")
 
 ## Plot concentration-time for all studies
 # Calculate
@@ -153,14 +149,14 @@
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = 5),linetype = "dashed")
   plotobj1 <- plotobj1 + scale_y_log10("Trough Infliximab Concentrations (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
   plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj1 <- plotobj1 + facet_wrap(~STUDYf,ncol = 5)
+  plotobj1 <- plotobj1 + facet_wrap(~STUDYf,ncol = 4)
   plotobj1 <- plotobj1 + theme(legend.position = "none")
   plotobj1
 
   ggsave(plot = plotobj1,filename = paste0(project.dir,"trough_time_noCI.png"),units = "cm",width = 30,height = 10)
 
 # Plot - Each ID separately by STUDY
-  ID.list <- 1:9
+  ID.list <- 1:n
   plot.function <- function(ID.list) {
     plotobj2 <- NULL
     plotobj2 <- ggplot(ID.STUDY.summary.data[ID.STUDY.summary.data$ID == ID.list,])
@@ -175,7 +171,7 @@
     plotobj2 <- plotobj2 + geom_hline(aes(yintercept = 5),linetype = "dashed")
     plotobj2 <- plotobj2 + scale_y_log10("Trough Infliximab Concentrations (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
     plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj2 <- plotobj2 + facet_wrap(~STUDYf,ncol = 5)
+    plotobj2 <- plotobj2 + facet_wrap(~STUDYf,ncol = 4)
     plotobj2 <- plotobj2 + theme(legend.position = "none")
     plotobj2
 
@@ -201,7 +197,7 @@
   plotobj3 <- plotobj3 + geom_line(aes(x = TIMEBIN,y = median))
   plotobj3 <- plotobj3 + scale_y_continuous("Weight at Trough Times (kg)\n")
   plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj3 <- plotobj3 + facet_wrap(~STUDYf,ncol = 5)
+  plotobj3 <- plotobj3 + facet_wrap(~STUDYf,ncol = 4)
   plotobj3 <- plotobj3 + theme(legend.position = "none")
   plotobj3
 
@@ -220,7 +216,7 @@
     plotobj4 <- plotobj4 + geom_line(aes(x = TIMEBIN,y = median))
     plotobj4 <- plotobj4 + scale_y_continuous("Weight at Trough Times (kg)\n")
     plotobj4 <- plotobj4 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj4 <- plotobj4 + facet_wrap(~STUDYf,ncol = 5)
+    plotobj4 <- plotobj4 + facet_wrap(~STUDYf,ncol = 4)
     plotobj4 <- plotobj4 + theme(legend.position = "none")
     plotobj4
 
@@ -246,7 +242,7 @@
   plotobj5 <- plotobj5 + geom_line(aes(x = TIMEBIN,y = median))
   plotobj5 <- plotobj5 + scale_y_continuous("Albumin at Trough Times (U/L)\n")
   plotobj5 <- plotobj5 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj5 <- plotobj5 + facet_wrap(~STUDYf,ncol = 5)
+  plotobj5 <- plotobj5 + facet_wrap(~STUDYf,ncol = 4)
   plotobj5 <- plotobj5 + theme(legend.position = "none")
   plotobj5
 
@@ -265,7 +261,7 @@
     plotobj6 <- plotobj6 + geom_line(aes(x = TIMEBIN,y = median))
     plotobj6 <- plotobj6 + scale_y_continuous("Albumin at Trough Times (U/L)\n")
     plotobj6 <- plotobj6 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj6 <- plotobj6 + facet_wrap(~STUDYf,ncol = 5)
+    plotobj6 <- plotobj6 + facet_wrap(~STUDYf,ncol = 4)
     plotobj6 <- plotobj6 + theme(legend.position = "none")
     plotobj6
 
@@ -292,7 +288,7 @@
   plotobj7 <- plotobj7 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
   plotobj7 <- plotobj7 + scale_y_continuous("Proportion of time under target trough\n")
   plotobj7 <- plotobj7 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj7 <- plotobj7 + facet_wrap(~STUDYf,ncol = 5)
+  plotobj7 <- plotobj7 + facet_wrap(~STUDYf,ncol = 4)
   plotobj7 <- plotobj7 + theme(legend.position = "none")
   plotobj7
 
@@ -312,7 +308,7 @@
     plotobj8 <- plotobj8 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
     plotobj8 <- plotobj8 + scale_y_continuous("Proportion of time under target trough\n")
     plotobj8 <- plotobj8 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj8 <- plotobj8 + facet_wrap(~STUDYf,ncol = 5)
+    plotobj8 <- plotobj8 + facet_wrap(~STUDYf,ncol = 4)
     plotobj8 <- plotobj8 + theme(legend.position = "none")
     plotobj8
 
@@ -357,7 +353,7 @@
   }
   ADA.onset.summary <- ddply(ind.summary.data, .(STUDY,STUDYf,set.seq,SIM,ID,IDf), ADA.onset.function)
   ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
-  ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/9000)
+  ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/n*nsim)
   ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 	ada.revert.proportion
 
@@ -379,7 +375,7 @@
 
 # Proportion that develop ADA
   ID.ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
-  ID.ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/1000)
+  ID.ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/nsim)
   ID.ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 
 ## Study graphical summaries by seed

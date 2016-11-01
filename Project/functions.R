@@ -21,11 +21,6 @@
 # Load package libaries
 	library(ggplot2)	# Plotting package
 	library(grid)	# Plotting package
-	library(plyr)	# Split and rearrange data, ddply functions
-	library(dplyr)
-	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
-	library(compiler)	# Compile repeatedly called functions
-	library(numDeriv)
 # Custom ggplot2 theme
 	theme_bw2 <- theme_set(theme_bw(base_size = 14))
 
@@ -66,29 +61,36 @@
 	amt.init1 <- 5	# initial dose mg/kg
 	amt.init2 <- 10	# initial dose mg/kg
 # Set the min and max mg/kg doses for bayesian dosing
-	amt.min <- 5	# minimum dose mg/kg
-	amt.max <- 20	# maximum dose mg/kg
+	amt.min <- 3	# minimum dose mg/kg
+	amt.max <- 10	# maximum dose mg/kg
 
 # ------------------------------------------------------------------------------
 # Pre-defined universal functions
 # Function for calculating changes in random effects
 # A linear function containing the baseline ETA (BASE_ETA) and their last ETA (FINAL_ETA)
 	eta.function <- function(input.data) {
-		# ETA2
-			TIMEeta2 <- c(min(input.data$TIME),max(input.data$TIME))
-			RATEeta2 <- c(head(input.data$BASE_ETA2,1),head(input.data$FINAL_ETA2,1))
-			step.eta2 <- approxfun(TIMEeta2,RATEeta2,method = "linear")	# Linear function
-			input.data$ETA2 <- step.eta2(input.data$TIME)	# Apply function to every time-point
-		# ETA3
-			TIMEeta3 <- c(min(input.data$TIME),max(input.data$TIME))
-			RATEeta3 <- c(head(input.data$BASE_ETA3,1),head(input.data$FINAL_ETA3,1))
-			step.eta3 <- approxfun(TIMEeta3,RATEeta3,method = "linear")	# Linear function
-			input.data$ETA3 <- step.eta3(input.data$TIME)	# Apply function to every time-point
-		# ETA4
-			TIMEeta4 <- c(min(input.data$TIME),max(input.data$TIME))
-			RATEeta4 <- c(head(input.data$BASE_ETA4,1),head(input.data$FINAL_ETA4,1))
-			step.eta4 <- approxfun(TIMEeta4,RATEeta4,method = "linear")	# Linear function
-			input.data$ETA4 <- step.eta4(input.data$TIME)	# Apply function to every time-point
+		if (time.dep == 0) {
+			input.data$ETA2 <- input.data$BASE_ETA2
+			input.data$ETA3 <- input.data$BASE_ETA3
+			input.data$ETA4 <- input.data$BASE_ETA4
+		}
+		if (time.dep == 1) {
+			# ETA2
+				TIMEeta2 <- c(min(input.data$TIME),max(input.data$TIME))
+				RATEeta2 <- c(head(input.data$BASE_ETA2,1),head(input.data$FINAL_ETA2,1))
+				step.eta2 <- approxfun(TIMEeta2,RATEeta2,method = "linear")	# Linear function
+				input.data$ETA2 <- step.eta2(input.data$TIME)	# Apply function to every time-point
+			# ETA3
+				TIMEeta3 <- c(min(input.data$TIME),max(input.data$TIME))
+				RATEeta3 <- c(head(input.data$BASE_ETA3,1),head(input.data$FINAL_ETA3,1))
+				step.eta3 <- approxfun(TIMEeta3,RATEeta3,method = "linear")	# Linear function
+				input.data$ETA3 <- step.eta3(input.data$TIME)	# Apply function to every time-point
+			# ETA4
+				TIMEeta4 <- c(min(input.data$TIME),max(input.data$TIME))
+				RATEeta4 <- c(head(input.data$BASE_ETA4,1),head(input.data$FINAL_ETA4,1))
+				step.eta4 <- approxfun(TIMEeta4,RATEeta4,method = "linear")	# Linear function
+				input.data$ETA4 <- step.eta4(input.data$TIME)	# Apply function to every time-point
+		}
 		# If SIM = 0, i.e, population typical patient, make ETAs equal zero
 			if (input.data$SIM[1] == 0) {
 				input.data$ETA1 <- 0
