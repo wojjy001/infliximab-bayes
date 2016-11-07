@@ -138,7 +138,7 @@
 						double ADA = 0;
 						double ADAp = 0;
 						if (FLAG == 1) {
-							ADAp = TUT/(20+TUT);
+							ADAp = pow(TUT,5)/(pow(19,5)+pow(TUT,5));
 							if (ADAr < ADAp) ADA = 1;
 						}
 
