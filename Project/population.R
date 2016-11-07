@@ -56,13 +56,5 @@
 	pop.data <- pop.data[with(pop.data, order(pop.data$SIM,pop.data$ID)), ]
 	pop.data$TIME <- TIME
 
-# Calculate ETA values for all time-points
-	pop.data <- ddply(pop.data, .(SIM,ID), eta.function)
-
 # Simulating the same residual error
 	pop.data$ERRPRO <- rnorm(length(pop.data$TIME),mean = 0,sd = ERRPRO)	# Proportional residual error
-
-# ------------------------------------------------------------------------------
-# Write pop.data to a .csv file
-	pop.data.filename <- paste0("time_dep_",time.dep,"_population_characteristics.csv")
-	write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)

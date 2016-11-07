@@ -42,43 +42,45 @@
   trough.upper <- 5
 
 	n <- 9
-	nsim <- 10
+	nsim <- 1000
 
 # ------------------------------------------------------------------------------
 # Set working directory
   # project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
   project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
+	plot.dir <- paste0(project.dir,"Plots3/")
 
 # Read in simulation output
   file.list <- list.files(path = project.dir,pattern = "SUCCESS") # List of successful simulation sets
   nset <- length(file.list)  # Number of simulation sets in the directory
   set.seq <- 1:nset  # Sequence of "set" numbers
   input.list <- data.frame(file.list,set.seq)
+	input.list <- head(input.list,nsim/10)
 
 # Read in the simulation data
   read.data.function <- function(input.list) {
     # Label data
       label.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
       label.data0$STUDY <- 1
-			label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
-      label.data1$STUDY <- 5
+			# label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
+      # label.data1$STUDY <- 5
     # Clinical data
       clinical.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
       clinical.data0$STUDY <- 2
-			clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
-      clinical.data1$STUDY <- 6
+			# clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
+      # clinical.data1$STUDY <- 6
     # Clinical TDM data
       clinical.TDM.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
       clinical.TDM.data0$STUDY <- 3
-			clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
-      clinical.TDM.data1$STUDY <- 7
+			# clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
+      # clinical.TDM.data1$STUDY <- 7
     # Optimise.bayes1 data (5 mg/kg initiation)
       optimise.bayes.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
       optimise.bayes.data0$STUDY <- 4
-			optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
-      optimise.bayes.data1$STUDY <- 8
+			# optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
+      # optimise.bayes.data1$STUDY <- 8
     # Bind data from the set
-      set.data <- rbind(label.data0,label.data1,clinical.data0,clinical.data1,clinical.TDM.data0,clinical.TDM.data1,optimise.bayes.data0,optimise.bayes.data1)
+      set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
   }
   all.data <- ddply(input.list, .(set.seq), read.data.function)
   all.data <- all.data[all.data$time <= 546,] # Remove NA rows
@@ -88,11 +90,12 @@
   levels(all.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
 # Assign descriptions to STUDY
   all.data$STUDYf <- as.factor(all.data$STUDY)
-  levels(all.data$STUDYf) <- c("Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-	"TD Label","TD Clinical","TD Clinical TDM","TD Bayes")
+  levels(all.data$STUDYf) <- c(
+		# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
+	"Label","Clinical Protocol","Clinical TDM","Bayesian-Guided")
 
 # Give each individual a unique ID number (uID)
-  uID <- sort(c(rep(seq(from = 1,to = n*nsim*8,by = 1),times = length(unique(all.data$time)))))
+  uID <- sort(c(rep(seq(from = 1,to = n*nsim*4,by = 1),times = length(unique(all.data$time)))))
   all.data$uID <- uID
 
 # There are some really small negative numbers in the dataset
@@ -101,15 +104,15 @@
 # For each individual calculate when doses were given and how much
   ind.summary.function <- function(all.data) {
     ind.summary.data <- data.frame(
-      time = all.data$time[all.data$amt != 0 | all.data$time == 546],
-      amt = all.data$amt[all.data$amt != 0 | all.data$time == 546],
-      int = c(0,diff(all.data$time[all.data$amt != 0 | all.data$time == 546])),
-      IPRE = all.data$IPRE[all.data$amt != 0 | all.data$time == 546],
-      ADA = all.data$ADA[all.data$amt != 0 | all.data$time == 546],
-      ALB = all.data$ALBCOV[all.data$amt != 0 | all.data$time == 546],
-      WT = all.data$WTCOV[all.data$amt != 0 | all.data$time == 546],
-      pTUT = all.data$pTUT[all.data$amt != 0 | all.data$time == 546],
-      "mg/kg" = all.data$amt[all.data$amt != 0 | all.data$time == 546]/all.data$WTCOV[all.data$amt != 0 | all.data$time == 546]
+      time = all.data$time[all.data$amt != 0],
+      amt = all.data$amt[all.data$amt != 0],
+      int = c(0,diff(all.data$time[all.data$amt != 0])),
+      IPRE = all.data$IPRE[all.data$amt != 0],
+      ADA = all.data$ADA[all.data$amt != 0],
+      ALB = all.data$ALBCOV[all.data$amt != 0],
+      WT = all.data$WTCOV[all.data$amt != 0],
+      pTUT = all.data$pTUT[all.data$amt != 0],
+      "mg/kg" = all.data$amt[all.data$amt != 0]/all.data$WTCOV[all.data$amt != 0]
     )
   }
   ind.summary.data <- ddply(all.data, .(STUDY,set.seq,SIM,ID,uID), ind.summary.function)
@@ -128,8 +131,9 @@
     levels(ind.summary.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
   # Assign descriptions to STUDY
     ind.summary.data$STUDYf <- as.factor(ind.summary.data$STUDY)
-    levels(ind.summary.data$STUDYf) <- c("Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-		"TD Label","TD Clinical","TD Clinical TDM","TD Bayes")
+    levels(ind.summary.data$STUDYf) <- c(
+			# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
+		"Label","Clinical Protocol","Clinical TDM","Bayesian-Guided")
 
 ## Plot concentration-time for all studies
 # Calculate
@@ -153,7 +157,7 @@
   plotobj1 <- plotobj1 + theme(legend.position = "none")
   plotobj1
 
-  ggsave(plot = plotobj1,filename = paste0(project.dir,"trough_time_noCI.png"),units = "cm",width = 30,height = 10)
+  ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.png"),units = "cm",width = 30,height = 10)
 
 # Plot - Each ID separately by STUDY
   ID.list <- 1:n
@@ -176,7 +180,7 @@
     plotobj2
 
     ID.label <- ID.STUDY.summary.data$IDf[ID.STUDY.summary.data$ID == ID.list][1]
-    ggsave(plot = plotobj2,filename = paste0(project.dir,ID.label,"_trough_time.png"),units = "cm",width = 30,height = 10)
+    ggsave(plot = plotobj2,filename = paste0(plot.dir,ID.label,"_trough_time.png"),units = "cm",width = 30,height = 10)
   }
   plot.list <- lapply(ID.list,plot.function)
   plot.list
@@ -201,7 +205,7 @@
   plotobj3 <- plotobj3 + theme(legend.position = "none")
   plotobj3
 
-  ggsave(plot = plotobj3,filename = paste0(project.dir,"WT_time.png"),units = "cm",width = 30,height = 10)
+  ggsave(plot = plotobj3,filename = paste0(plot.dir,"WT_time.png"),units = "cm",width = 30,height = 10)
 
 # Plot - Each ID separately by STUDY
   wt.plot.function <- function(ID.list) {
@@ -221,7 +225,7 @@
     plotobj4
 
     ID.label <- ID.STUDY.wt.summary.data$IDf[ID.STUDY.wt.summary.data$ID == ID.list][1]
-    ggsave(plot = plotobj4,filename = paste0(project.dir,ID.label,"_WT_time.png"),units = "cm",width = 30,height = 10)
+    ggsave(plot = plotobj4,filename = paste0(plot.dir,ID.label,"_WT_time.png"),units = "cm",width = 30,height = 10)
   }
   wt.plot.list <- lapply(ID.list,wt.plot.function)
   wt.plot.list
@@ -246,7 +250,7 @@
   plotobj5 <- plotobj5 + theme(legend.position = "none")
   plotobj5
 
-  ggsave(plot = plotobj5,filename = paste0(project.dir,"ALB_time.png"),units = "cm",width = 30,height = 10)
+  ggsave(plot = plotobj5,filename = paste0(plot.dir,"ALB_time.png"),units = "cm",width = 30,height = 10)
 
 # Plot - Each ID separately by STUDY
   alb.plot.function <- function(ID.list) {
@@ -266,7 +270,7 @@
     plotobj6
 
     ID.label <- ID.STUDY.alb.summary.data$IDf[ID.STUDY.alb.summary.data$ID == ID.list][1]
-    ggsave(plot = plotobj6,filename = paste0(project.dir,ID.label,"_ALB_time.png"),units = "cm",width = 30,height = 10)
+    ggsave(plot = plotobj6,filename = paste0(plot.dir,ID.label,"_ALB_time.png"),units = "cm",width = 30,height = 10)
   }
   alb.plot.list <- lapply(ID.list,alb.plot.function)
   alb.plot.list
@@ -285,14 +289,14 @@
 	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
 	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
   plotobj7 <- plotobj7 + geom_line(aes(x = TIMEBIN,y = median))
-  plotobj7 <- plotobj7 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
+  # plotobj7 <- plotobj7 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
   plotobj7 <- plotobj7 + scale_y_continuous("Proportion of time under target trough\n")
   plotobj7 <- plotobj7 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
   plotobj7 <- plotobj7 + facet_wrap(~STUDYf,ncol = 4)
   plotobj7 <- plotobj7 + theme(legend.position = "none")
   plotobj7
 
-  ggsave(plot = plotobj7,filename = paste0(project.dir,"ptut_time.png"),units = "cm",width = 30,height = 10)
+  ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.png"),units = "cm",width = 30,height = 10)
 
 # Plot - Each ID separately by STUDY
   ptut.plot.function <- function(ID.list) {
@@ -305,7 +309,7 @@
 		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
 		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
     plotobj8 <- plotobj8 + geom_line(aes(x = TIMEBIN,y = median))
-    plotobj8 <- plotobj8 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
+    # plotobj8 <- plotobj8 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
     plotobj8 <- plotobj8 + scale_y_continuous("Proportion of time under target trough\n")
     plotobj8 <- plotobj8 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
     plotobj8 <- plotobj8 + facet_wrap(~STUDYf,ncol = 4)
@@ -313,7 +317,7 @@
     plotobj8
 
     ID.label <- ID.STUDY.ptut.summary.data$IDf[ID.STUDY.ptut.summary.data$ID == ID.list][1]
-    ggsave(plot = plotobj8,filename = paste0(project.dir,ID.label,"_ptut_time.png"),units = "cm",width = 30,height = 10)
+    ggsave(plot = plotobj8,filename = paste0(plot.dir,ID.label,"_ptut_time.png"),units = "cm",width = 30,height = 10)
   }
   ptut.plot.list <- lapply(ID.list,ptut.plot.function)
   ptut.plot.list
@@ -353,9 +357,9 @@
   }
   ADA.onset.summary <- ddply(ind.summary.data, .(STUDY,STUDYf,set.seq,SIM,ID,IDf), ADA.onset.function)
   ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
-  ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/n*nsim)
-  ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
-	ada.revert.proportion
+  ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(n*nsim))
+  # ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
+	# ada.revert.proportion
 
 ## Study Numerical Summaries by Seed
 # Proportion of time under target trough at study conclusion, days (pTUT)
@@ -376,7 +380,7 @@
 # Proportion that develop ADA
   ID.ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
   ID.ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/nsim)
-  ID.ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
+  # ID.ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 
 ## Study graphical summaries by seed
 # Proportion of time below target trough
@@ -389,7 +393,7 @@
   plotobj9 <- plotobj9 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
   plotobj9
 
-  ggsave(plot = plotobj9,filename = paste0(project.dir,"pTUT_546_Seed.png"),units = "cm",width = 20,height = 20)
+  ggsave(plot = plotobj9,filename = paste0(plot.dir,"pTUT_546_Seed.png"),units = "cm",width = 20,height = 20)
 
 # Change in weight
   plotobj10 <- NULL
@@ -401,7 +405,7 @@
   plotobj10 <- plotobj10 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
   plotobj10
 
-  ggsave(plot = plotobj10,filename = paste0(project.dir,"cWT_Seed.png"),units = "cm",width = 20,height = 20)
+  ggsave(plot = plotobj10,filename = paste0(plot.dir,"cWT_Seed.png"),units = "cm",width = 20,height = 20)
 
 # Change in albumin
   plotobj11 <- NULL
@@ -413,23 +417,23 @@
   plotobj11 <- plotobj11 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
   plotobj11
 
-  ggsave(plot = plotobj11,filename = paste0(project.dir,"cALB_Seed.png"),units = "cm",width = 20,height = 20)
+  ggsave(plot = plotobj11,filename = paste0(plot.dir,"cALB_Seed.png"),units = "cm",width = 20,height = 20)
 
-# Proportion with ADA onset and proportion that revert back
-  ID.ada.on.proportion$ON <- 0
-  ID.ada.revert.proportion$ON <- 1
-  ID.ada <- rbind(ID.ada.on.proportion,ID.ada.revert.proportion)
-  ID.ada$ON <- as.factor(ID.ada$ON)
-  levels(ID.ada$ON) <- c("Onset of ADA","Reverted ADA status")
-
-  plotobj12 <- NULL
-  plotobj12 <- ggplot(ID.ada)
-  plotobj12 <- plotobj12 + geom_point(aes(x = IDf,y = V1,colour = STUDYf),size = 4,alpha = 0.5)
-  plotobj12 <- plotobj12 + geom_point(aes(x = IDf,y = V1,colour = STUDYf),size = 4,shape = 1)
-  plotobj12 <- plotobj12 + scale_x_discrete("\nBaseline seed")
-  plotobj12 <- plotobj12 + scale_y_continuous("Proportion of individuals\n")
-  plotobj12 <- plotobj12 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
-  plotobj12 <- plotobj12 + facet_wrap(~ON)
-  plotobj12
-
-  ggsave(plot = plotobj12,filename = paste0(project.dir,"ADA_Seed.png"),units = "cm",width = 40,height = 20)
+# # Proportion with ADA onset and proportion that revert back
+#   ID.ada.on.proportion$ON <- 0
+#   ID.ada.revert.proportion$ON <- 1
+#   ID.ada <- rbind(ID.ada.on.proportion,ID.ada.revert.proportion)
+#   ID.ada$ON <- as.factor(ID.ada$ON)
+#   levels(ID.ada$ON) <- c("Onset of ADA","Reverted ADA status")
+#
+#   plotobj12 <- NULL
+#   plotobj12 <- ggplot(ID.ada)
+#   plotobj12 <- plotobj12 + geom_point(aes(x = IDf,y = V1,colour = STUDYf),size = 4,alpha = 0.5)
+#   plotobj12 <- plotobj12 + geom_point(aes(x = IDf,y = V1,colour = STUDYf),size = 4,shape = 1)
+#   plotobj12 <- plotobj12 + scale_x_discrete("\nBaseline seed")
+#   plotobj12 <- plotobj12 + scale_y_continuous("Proportion of individuals\n")
+#   plotobj12 <- plotobj12 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
+#   plotobj12 <- plotobj12 + facet_wrap(~ON)
+#   plotobj12
+#
+#   ggsave(plot = plotobj12,filename = paste0(project.dir,"ADA_Seed.png"),units = "cm",width = 40,height = 20)

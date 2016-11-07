@@ -34,25 +34,28 @@ for (i in 1:15) {
 		# nsim <- file.data$nsim[i]
 		# seed <- file.data$seed[i]
 		print(paste0("seed ",seed," nsim ",nsim))
+		# Create population
+			source(paste0(work.dir,"population.R"))
 	try(
 		for (i in 0:1) {
 			time.dep <- i	# 0 = no time-dependent covariate and random effect changes
 			# 1 = time-dependent covariate and random effect changes
-			# Create population
-				source(paste0(work.dir,"population.R"))
+			# Calculate ETA values for all time-points (based on time-dependence scenario)
+				pop.data <- ddply(pop.data, .(SIM,ID), eta.function)
+				# Write pop.data to a .csv file
+					pop.data.filename <- paste0("time_dep_",time.dep,"_population_characteristics.csv")
+					write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)
 			# First standard interval simulation (initial dose is 5 mg/kg)
-					suppressPackageStartupMessages(	# Suppress package loading messages
-						suppressWarnings(	# Suppress warning messages
-							source(paste0(work.dir,"first_interval1.R"))
-						)
-					)
+				suppressWarnings(	# Suppress warning messages
+					source(paste0(work.dir,"first_interval1.R"))
+				)
 			# Run "single-run" simulation files
 			# Label simulation
-				suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
+				suppressWarnings(source(paste0(work.dir,"label.R")))
 			# Clinical simulation where doses are adjusted based on trough concentrations (DV)
-				suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical_TDM.R"))))
+				suppressWarnings(source(paste0(work.dir,"clinical_TDM.R")))
 			# Clinical simulation
-				suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
+				suppressWarnings(source(paste0(work.dir,"clinical.R")))
 			# Bayesian simulation
 				suppressWarnings(source(paste0(work.dir,"bayes.R")))
 		}
