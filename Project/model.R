@@ -17,29 +17,29 @@
 						TUT = 0
 
 	$CMT			// Specify covariate compartments
-						ALB,	// Albumin, U/L
+						ALB,	// Albumin, g/dL
 						WT	// Weight, kg
 
 	$PARAM		// Population parameters
-						POPCL = 0.294,
-						POPV1 = 3.33,
-						POPQ = 0.0719,
-						POPV2 = 1.14,
+						POPCL = 0.381,
+						POPV1 = 2.37,
+						POPQ = 0.122,
+						POPV2 = 0.604,
 
 						// Covariate effects
-						WT_CL = 0.614,	// Effect of weight on clearance
-						WT_V1 = 0.691,	// Effect of weight on V1
-						WT_Q = 1.1,	// Effect of weight on Q
-						WT_V2 = 0.59,	// Effect of weight on V2
-						ALB_CL = -1.17,	// Effect of albumin on clearance
-						ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance
+						WT_CL = 0.612,	// Effect of weight on clearance
+						WT_V1 = 0.696,	// Effect of weight on V1
+						WT_Q = 1.15,	// Effect of weight on Q
+						WT_V2 = 0.604,	// Effect of weight on V2
+						ALB_CL = -1.39,	// Effect of albumin on clearance
+						ADA_CL = 1.59,	// Effect of anti-drug antibodies on clearance
 
 						// Covariate values for simulation
 						BASE_WT = 70,	// Baseline weight (kg)
 						BASE_ALB = 3,	// Baseline albumin at treatment initiation
 						TIME_WT = 70,	// Time-dependent weight (kg)
 						TIME_ADA = 0,	// Time-dependent ADA status
-						TIME_ALB = 3, // Time-dependent albumin (U/L)
+						TIME_ALB = 3, // Time-dependent albumin (g/dL)
 						ADAr = 0,	// ADA random number
 						target = 3,	// Target trough concentration (mg/L)
 						SIM = 0,	// Simulation identifier
@@ -55,14 +55,14 @@
 	$OMEGA		name = "BSV"
 						block = FALSE
 						labels = s(PPVCL,PPVV1,PPVQ,PPVV2)
-						0.106929
-						0.0225
-						1.21
-						0.638401
+						0.01809025
+						0.1769885
+						0.7250523
+						0.104976
 
 	$SIGMA		block = FALSE
 						labels = s(ERR_PRO)
-						0.175561
+						0.09
 
 	$MAIN			// Infusion duration
 						D_CENT = 0.08333333;  // 2 hours

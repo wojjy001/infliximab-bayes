@@ -28,7 +28,7 @@
 	# file.data$nsim <- as.numeric(levels(file.data$nsim))[file.data$nsim]
 	# file.data$seed <- as.numeric(levels(file.data$seed)[file.data$seed])
 	#
-for (i in 1:15) {
+for (i in 1:12) {
 	# Source universal functions file
 		source(paste0(work.dir,"functions.R"))
 		# nsim <- file.data$nsim[i]
