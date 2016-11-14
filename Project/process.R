@@ -123,6 +123,9 @@
 		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)]-98)/56)*56+98
 		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,8)]-98)/56)*56+98
 
+		# standard.times <- c(0,14,42,98,154,210,266,322,378,434,490,546)
+		# subset.ind.summary.data <- ind.summary.data[ind.summary.data$time %in% standard.times,]
+
   # Assign descriptions to ID
     ind.summary.data$IPRE <- as.numeric(ind.summary.data$IPRE)
     ind.summary.data$WT <- as.numeric(ind.summary.data$WT)
@@ -386,14 +389,59 @@
 # Proportion of time below target trough
   plotobj9 <- NULL
   plotobj9 <- ggplot(ID.pTUT.summary)
-  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,alpha = 0.5)
-  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,shape = 1)
-  plotobj9 <- plotobj9 + scale_x_discrete("\nBaseline seed")
-  plotobj9 <- plotobj9 + scale_y_continuous("Median proportion of time below target trough\n")
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	plotobj9 <- plotobj9 + geom_errorbar(aes(x = IDf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.9),size = 1)
+  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,colour = STUDYf),position = position_dodge(width = 0.9),size = 4)
+  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,group = STUDYf),position = position_dodge(width = 0.9),size = 4,shape = 1)
+  plotobj9 <- plotobj9 + scale_x_discrete("\nBaseline Seed")
+  plotobj9 <- plotobj9 + scale_y_continuous("Proportion of time below target trough\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj9 <- plotobj9 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
+	plotobj9 <- plotobj9 + theme(legend.position = "none")
+	# plotobj9 <- plotobj9 + facet_wrap(~WT)
   plotobj9
 
   ggsave(plot = plotobj9,filename = paste0(plot.dir,"pTUT_546_Seed.png"),units = "cm",width = 20,height = 20)
+
+# Proportion of time below target trough during maintenance phase
+	main.tut.function <- function(all.data) {
+		init.TUT <- all.data$TUT[all.data$time == 98]
+		all.data$mainTUT <- all.data$TUT
+		all.data$mainTUT[all.data$time >= 98] <- all.data$TUT[all.data$time >= 98]-init.TUT
+		all.data$mainpTUT <- 0
+		all.data$mainpTUT[all.data$time > 98] <- all.data$mainTUT[all.data$time > 98]/(all.data$time[all.data$time > 98]-98)
+		all.data
+	}
+	main.ind.tut.data <- ddply(all.data[all.data$time %in% standard.times,], .(uID), main.tut.function)
+  ID.main.pTUT.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(STUDY,STUDYf,ID,IDf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
+	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(1,4,7)] <- 2.5
+	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(2,5,8)] <- 3
+	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(3,6,9)] <- 3.5
+	ID.main.pTUT.summary$WT[ID.main.pTUT.summary$ID %in% c(1,2,3)] <- 40
+	ID.main.pTUT.summary$WT[ID.main.pTUT.summary$ID %in% c(4,5,6)] <- 70
+	ID.main.pTUT.summary$WT[ID.main.pTUT.summary$ID %in% c(7,8,9)] <- 100
+
+	plotobj13 <- NULL
+  plotobj13 <- ggplot(ID.main.pTUT.summary)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	plotobj13 <- plotobj13 + geom_errorbar(aes(x = STUDYf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.2),size = 1)
+  plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,colour = STUDYf),position = position_dodge(width = 0.2),size = 4)
+  plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
+  plotobj13 <- plotobj13 + scale_x_discrete("\nStudy")
+  plotobj13 <- plotobj13 + scale_y_continuous("Proportion of time below target trough during maintenance\n",breaks = seq(from = 0,to = 1,by = 0.1))
+  plotobj13 <- plotobj13 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
+	# plotobj13 <- plotobj13 + theme(legend.position = "none")
+	plotobj13 <- plotobj13 + facet_grid(ALB~WT)
+  plotobj13
+
+  ggsave(plot = plotobj13,filename = paste0(plot.dir,"mainpTUT_546_Seed.png"),units = "cm",width = 20,height = 20)
 
 # Change in weight
   plotobj10 <- NULL
