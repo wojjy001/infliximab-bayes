@@ -31,12 +31,12 @@
 	trough.upper <- 5	# Set upper bound for trough concentrations
 
 # Values for PPV (Population Parameter Variability), as SDs
-	PPVCL <- 0.1345
-	PPVV1 <- 0.4207
-	PPVQ <- 0.8515
-	PPVV2 <- 0.3240
+	PPVCL <- sqrt(0.106929)
+	PPVV1 <- sqrt(0.0225)
+	PPVQ <- sqrt(1.21)
+	PPVV2 <- sqrt(0.638401)
 # Value for RUV (Residual Unexplained Variability), as SD
-	ERRPRO <- 0.3
+	ERRPRO <- sqrt(0.175561)
 
 # Define time sequences
 	# Infusion times (0, 2, 6 weeks and then every 8 weeks) in days

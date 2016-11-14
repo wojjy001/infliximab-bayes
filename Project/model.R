@@ -21,18 +21,18 @@
 						WT	// Weight, kg
 
 	$PARAM		// Population parameters
-						POPCL = 0.381,
-						POPV1 = 2.37,
-						POPQ = 0.122,
-						POPV2 = 1.37,
+						POPCL = 0.294,
+						POPV1 = 3.33,
+						POPQ = 0.0719,
+						POPV2 = 1.14,
 
 						// Covariate effects
-						WT_CL = 0.612,	// Effect of weight on clearance
-						ALB_CL = -1.39,	// Effect of albumin on clearance
-						ADA_CL = 1.59,	// Effect of anti-drug antibodies on clearance
-						WT_V1 = 0.696,	// Effect of weight on V1
-						WT_Q = 1.15,	// Effect of weight on Q
-						WT_V2 = 0.604,	// Effect of weight on V2
+						WT_CL = 0.614,	// Effect of weight on clearance
+						ALB_CL = -1.17,	// Effect of albumin on clearance
+						ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance
+						WT_V1 = 0.691,	// Effect of weight on V1
+						WT_Q = 1.1,	// Effect of weight on Q
+						WT_V2 = 0.59,	// Effect of weight on V2
 
 						// Covariate values for simulation
 						BASE_WT = 70,	// Baseline weight (kg)
@@ -57,14 +57,14 @@
 	$OMEGA		name = "BSV"
 						block = FALSE
 						labels = s(PPVCL,PPVV1,PPVQ,PPVV2)
-						0.01809025
-						0.1769885
-						0.7250523
-						0.104976
+						0.106929
+						0.0225
+						1.21
+						0.638401
 
 	$SIGMA		block = FALSE
 						labels = s(ERR_PRO)
-						0.16
+						0.175561
 
 	$MAIN			// Infusion duration
 						D_CENT = 0.08333333;  // 2 hours
