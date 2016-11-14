@@ -13,7 +13,7 @@
 				label.int <- 56	# Always every 56 days
 
 			# Make a loop that pulls the patient's weight at time of next dose
-				repeat{
+				repeat {
 					# Time of next dose
 						next.dose <- max(sample.times)
 					# Previous covariate values

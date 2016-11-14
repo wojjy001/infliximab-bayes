@@ -15,6 +15,8 @@
 			BASE_WT <- pop.data$BASE_WT[1]	# Individual weight
 			BASE_ALB <- pop.data$BASE_ALB[1]	# Individual albumin
 			ADAr <- pop.data$ADAr[1]
+			ALBr <- pop.data$ALBr[1]
+			WTr <- pop.data$WTr[1]
 			ETA1 <- pop.data$ETA1
 			ETA2 <- pop.data$ETA2
 			ETA3 <- pop.data$ETA3
@@ -30,6 +32,8 @@
 				TIME_ADA = 0,
 				TIME_ALB = BASE_ALB,
 				ADAr,
+				ALBr,
+				WTr,
 				ETA1,
 				ETA2,
 				ETA3,

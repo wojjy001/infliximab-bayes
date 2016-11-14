@@ -49,6 +49,12 @@
 # Random number for ADA onset
 	cov.data$ADAr <- runif(n*nsim,min = 0,max = 1)
 
+# Random number for albumin Emax
+	cov.data$ALBr <- rlnorm(n*nsim,meanlog = log(1),sdlog = 0.3)
+
+# Random number for weight Emax
+	cov.data$WTr <- rlnorm(n*nsim,meanlog = log(4),sdlog = 0.3)
+
 # ------------------------------------------------------------------------------
 # Data frame of individual characteristics
 	pop.data <- lapply(cov.data,rep.int,times = length(TIME))
