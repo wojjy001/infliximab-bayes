@@ -8,43 +8,66 @@
 	# first.int.data <- first.int.data[first.int.data$ID == 1 & first.int.data$SIM == 1,]
 	clinical.function <- function(first.int.data) {
 		# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
+			# first.int.data <- first.int.data1
 			conc.data <- first.int.data
 			conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 			# Previous dose mg/kg
 				prev.mgkg.dose <- 5	# Initially 5 mg/kg
+				prev.dose <- head(conc.data$amt,1)
 				prev.int <- 56	# Initially every 56 days
+				increments <- 0
 
 		# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
 			repeat {
-				# Time of most recent sample
+				# Time of most recent samples
+					last.two.samples <- tail(sample.times,2)
 					last.sample <- max(sample.times)
 				# Previous DV
-					prev.DV <- conc.data$DV[conc.data$time == last.sample]
+					prev.DV <- conc.data$DV[conc.data$time %in% last.two.samples]
 					prev.DV[prev.DV < 0] <- .Machine$double.eps
 				# Previous covariate values
 					prev.WT <- conc.data$WTCOV[conc.data$time == last.sample]
 					prev.ADA <- conc.data$ADA[conc.data$time == last.sample]
 					prev.ALB <- conc.data$ALBCOV[conc.data$time == last.sample]
 				# Previous dose
-					prev.dose.time <- head(tail(sample.times,2),1)
+					prev.dose.time <- head(last.two.samples,1)
 				# Calculate the new dose for the next interval based on "sample" and "dose"
-					if (prev.DV < trough.target) {
-						if (prev.mgkg.dose == 5) {
-							prev.mgkg.dose <- 7.5	# Now increase to 7.5 mg/kg
-							new.dose <- prev.mgkg.dose*prev.WT
-							prev.int <- 56
-						} else if (prev.mgkg.dose == 7.5) {
-							prev.mgkg.dose <- 10	# Now increase to 10 mg/kg
-							new.dose <- prev.mgkg.dose*prev.WT
-							prev.int <- 56
-						} else {
-							prev.mgkg.dose <- 10
-							new.dose <- prev.mgkg.dose*prev.WT
-							prev.int <- 42	# Now increase frequency to every 42 days instead of every 56 days
-						}
-					} else {
-						new.dose <- prev.mgkg.dose*prev.WT	# Continue with previous dose if within range
+					if (prev.DV[2] < 1 & prev.mgkg.dose == 5) {
+						prev.mgkg.dose <- 7.5	# Now increase to 7.5 mg/kg
+						new.dose <- prev.mgkg.dose*prev.WT+sum(increments)
+						prev.int <- 42
+					} else if (prev.DV[1] < 1 & prev.mgkg.dose == 7.5 & prev.int == 42) {
+						prev.mgkg.dose <- 7.5
+						new.dose <- prev.mgkg.dose*prev.WT+sum(increments)
+						prev.int <- 56	# Revert back to 8-weekly dosing after the 6-week interval
+					} else if (prev.DV[2] < 1 & prev.mgkg.dose == 7.5 & prev.int == 56) {
+						prev.mgkg.dose <- 10
+						new.dose <- prev.mgkg.dose*prev.WT+sum(increments)
+						prev.int <- 42
+					} else if (prev.DV[2] < 1 & prev.mgkg.dose == 10 & prev.int == 42) {
+						prev.mgkg.dose <- 10
+						new.dose <- prev.mgkg.dose*prev.WT+sum(increments)
+						prev.int <- 28
 					}
+					if (prev.DV[2] < 3 & prev.DV[2] >= 1) {
+						increments <- c(increments,50)
+						new.dose <- prev.dose+50
+					}
+					if (prev.DV[2] > 5) {
+						new.dose <- prev.dose
+					}
+					if (prev.DV[1] > 5 & prev.DV[2] > 5) {
+						increments <- c(increments,-50)
+						new.dose <- prev.dose-50
+					}
+					if (prev.DV[2] >= 3 & prev.DV[2] <= 5) {
+						new.dose <- prev.dose
+					}
+					if (new.dose > amt.max*prev.WT) {
+						new.dose <- amt.max*prev.WT
+						prev.mgkg.dose <- 10
+					}
+					prev.dose <- new.dose
 
 				# Create input data frame for simulation
 					input.sim.data <- conc.data

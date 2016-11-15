@@ -9,6 +9,8 @@
 		# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
 			conc.data <- first.int.data
 			conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
+			prev.int <- 56
+			interval.increment <- 0
 
 		# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
 			repeat {
@@ -30,9 +32,19 @@
 					} else {
 						new.dose <- prev.dose	# Continue with previous dose if within range
 					}
-				# Cap "new.dose" to 20 mg/kg
-					if (new.dose > amt.max*prev.WT) new.dose <- amt.max*prev.WT
-					if (new.dose < amt.min*prev.WT) new.dose <- amt.min*prev.WT	# Minimum dose is still 5 mg/kg
+				# Cap "new.dose" to 10 mg/kg
+					if (new.dose > amt.max*prev.WT) {
+						new.dose <- amt.max*prev.WT
+						new.int <- prev.int-7
+						if (new.int < 7) new.int <- 7
+						prev.int <- new.int
+					}
+					if (new.dose < amt.min*prev.WT) {
+						new.dose <- amt.min*prev.WT	# Minimum dose is still 3 mg/kg
+						new.int <- prev.int+7
+						if (new.int > 56) new.int <- 56
+						prev.int <- new.int
+					}
 
 				# Create input data frame for simulation
 					input.sim.data <- conc.data
@@ -51,7 +63,7 @@
 				# Simulate
 					conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
 				# Add the "next.sample" time to the list of sample.times
-					next.sample <- last.sample+dose.int
+					next.sample <- last.sample+prev.int
 					sample.times <- sort(c(unique(c(sample.times,next.sample))))
 				# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
 					conc.data$IPRE[conc.data$time > max(sample.times)] <- NA

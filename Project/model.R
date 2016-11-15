@@ -41,8 +41,6 @@
 						TIME_ADA = 0,	// Time-dependent ADA status
 						TIME_ALB = 3, // Time-dependent albumin (g/dL)
 						ADAr = 0,	// ADA random number
-						ALBr = 2,	// Albumin Emax
-						WTr = 4,	// Weight Emax
 						target = 3,	// Target trough concentration (mg/L)
 						SIM = 0,	// Simulation identifier
 						FLAG = 0,	// Time-dependence scenario identifier
@@ -117,13 +115,13 @@
 						double pTUTdiff = TUTdiff;
 
 						// Albumin
-						dxdt_ALB = 150*ALBr/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = ALBr U/L, ET50 = 150 days
+						dxdt_ALB = 150*2.5/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 2.5 g/dL, ET50 = 150 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_ALB = 0;
-						if (pTUTdiff > 0.1) dxdt_ALB = 150*-ALBr/pow(150+SOLVERTIME,2);  // First derivative of Emax equation, Emax = -ALBr U/L, ET50 = 150 days
+						if (pTUTdiff > 0.1) dxdt_ALB = 150*-2.5/pow(150+SOLVERTIME,2);  // First derivative of Emax equation, Emax = -2.5 g/dL, ET50 = 150 days
 						// Weight
-						dxdt_WT = 150*WTr/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = WTr kg, ET50 = 150 days
+						dxdt_WT = 150*8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = 8 kg, ET50 = 150 days
 						if (pTUTdiff > 0.05 & pTUTdiff <= 0.1) dxdt_WT = 0;
-						if (pTUTdiff > 0.1) dxdt_WT = 150*-WTr/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = -WTr kg, ET50 = 150 days
+						if (pTUTdiff > 0.1) dxdt_WT = 150*-8/pow(150+SOLVERTIME,2);	// First derivative of Emax equation, Emax = -8 kg, ET50 = 150 days
 
 						if (FLAG == 1) {	// Simulation when new dose administered
 							// Limits on albumin
@@ -147,7 +145,7 @@
 	$TABLE		table(IPRE) = CENT/V1;
 						table(DV) = table(IPRE)*(1+ERRPRO);
 
-	$CAPTURE	BASE_WT WTCOV BASE_ALB ALBCOV ADA ADAp ADAr ALBr WTr CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 pTUT pTUTdiff
+	$CAPTURE	BASE_WT WTCOV BASE_ALB ALBCOV ADA ADAp ADAr CL V1 Q V2 ETA1 ETA2 ETA3 ETA4 pTUT pTUTdiff
 	'
 # Compile the model code
 	mod <- mcode("popINFLIX",code)
