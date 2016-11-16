@@ -31,7 +31,7 @@
 for (i in 1:nrow(file.data)) {
 		nsim <- file.data$nsim[i]
 		seed <- file.data$seed[i]
-		print(paste0("seed ",seed," nsim ",nsim))		
+		print(paste0("seed ",seed," nsim ",nsim))
 		# Source universal functions file
 			source(paste0(work.dir,"functions.R"))
 		# Create population
@@ -56,8 +56,10 @@ for (i in 1:nrow(file.data)) {
 			# # Label simulation
 			# 	suppressWarnings(source(paste0(work.dir,"label.R")))
 			# Clinical simulation where doses are adjusted based on trough concentrations (DV)
+				print("Clinical TDM")
 				suppressWarnings(source(paste0(work.dir,"clinical_TDM.R")))
 			# Clinical simulation
+				print("Clinical Protocol")
 				suppressWarnings(source(paste0(work.dir,"clinical.R")))
 			# # Bayesian simulation
 			# 	suppressWarnings(source(paste0(work.dir,"bayes.R")))

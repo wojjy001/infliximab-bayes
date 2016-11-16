@@ -48,19 +48,15 @@
 						prev.mgkg.dose <- 10
 						new.dose <- prev.mgkg.dose*prev.WT+sum(increments)
 						prev.int <- 28
-					}
-					if (prev.DV[2] < 3 & prev.DV[2] >= 1) {
+					} else if (prev.DV[2] < 3 & prev.DV[2] >= 1) {
 						increments <- c(increments,50)
 						new.dose <- prev.dose+50
-					}
-					if (prev.DV[2] > 5) {
+					} else if (prev.DV[2] > 5) {
 						new.dose <- prev.dose
-					}
-					if (prev.DV[1] > 5 & prev.DV[2] > 5) {
+					} else if (prev.DV[1] > 5 & prev.DV[2] > 5) {
 						increments <- c(increments,-50)
 						new.dose <- prev.dose-50
-					}
-					if (prev.DV[2] >= 3 & prev.DV[2] <= 5) {
+					} else {
 						new.dose <- prev.dose
 					}
 					if (new.dose > amt.max*prev.WT) {

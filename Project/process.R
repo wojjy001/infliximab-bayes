@@ -81,6 +81,7 @@
       # optimise.bayes.data1$STUDY <- 8
     # Bind data from the set
       set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
+			# set.data <- rbind(label.data1,clinical.data1,clinical.TDM.data1,optimise.bayes.data1)
   }
   all.data <- ddply(input.list, .(set.seq), read.data.function)
   all.data <- all.data[all.data$time <= 546,] # Remove NA rows
@@ -120,10 +121,10 @@
 # Line (median) and ribbon (prediction intervals)
   # Bin time
     ind.summary.data$TIMEBIN <- ind.summary.data$time
-		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)]-98)/56)*56+98
-		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(4,8)]-98)/56)*56+98
+		# ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)]-98)/56)*56+98
+		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,3,4,6,7,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,3,4,6,7,8)]-98)/56)*56+98
 
-		# standard.times <- c(0,14,42,98,154,210,266,322,378,434,490,546)
+		standard.times <- c(0,14,42,98,154,210,266,322,378,434,490,546)
 		# subset.ind.summary.data <- ind.summary.data[ind.summary.data$time %in% standard.times,]
 
   # Assign descriptions to ID
@@ -247,7 +248,7 @@
 	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
 	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
   plotobj5 <- plotobj5 + geom_line(aes(x = TIMEBIN,y = median))
-  plotobj5 <- plotobj5 + scale_y_continuous("Albumin at Trough Times (U/L)\n")
+  plotobj5 <- plotobj5 + scale_y_continuous("Albumin at Trough Times (g/dL)\n")
   plotobj5 <- plotobj5 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
   plotobj5 <- plotobj5 + facet_wrap(~STUDYf,ncol = 4)
   plotobj5 <- plotobj5 + theme(legend.position = "none")
@@ -266,7 +267,7 @@
 		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
 		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
     plotobj6 <- plotobj6 + geom_line(aes(x = TIMEBIN,y = median))
-    plotobj6 <- plotobj6 + scale_y_continuous("Albumin at Trough Times (U/L)\n")
+    plotobj6 <- plotobj6 + scale_y_continuous("Albumin at Trough Times (g/dL)\n")
     plotobj6 <- plotobj6 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
     plotobj6 <- plotobj6 + facet_wrap(~STUDYf,ncol = 4)
     plotobj6 <- plotobj6 + theme(legend.position = "none")
@@ -344,7 +345,7 @@
   last.data$cWT <- last.data$WTCOV-last.data$BASE_WT
   wt.summary <- ddply(last.data, .(STUDY), function(last.data) summary.function(last.data$cWT))
 
-# Change in albumin, U/L
+# Change in albumin, g/dL
   last.data$cALB <- last.data$ALBCOV-last.data$BASE_ALB
   alb.summary <- ddply(last.data, .(STUDY), function(last.data) summary.function(last.data$cALB))
 
@@ -377,7 +378,7 @@
 # Change in total body weight, kg
   ID.wt.summary <- ddply(last.data, .(STUDY,STUDYf,ID,IDf), function(last.data) summary.function(last.data$cWT))
 
-# Change in albumin, U/L
+# Change in albumin, g/dL
   ID.alb.summary <- ddply(last.data, .(STUDY,STUDYf,ID,IDf), function(last.data) summary.function(last.data$cALB))
 
 # Proportion that develop ADA
@@ -424,6 +425,11 @@
 	ID.main.pTUT.summary$WT[ID.main.pTUT.summary$ID %in% c(4,5,6)] <- 70
 	ID.main.pTUT.summary$WT[ID.main.pTUT.summary$ID %in% c(7,8,9)] <- 100
 
+	ID.main.pTUT.summary$ALBf <- as.factor(ID.main.pTUT.summary$ALB)
+	levels(ID.main.pTUT.summary$ALBf) <- c("ALB 2.5 g/dL","ALB 3 g/dL","ALB 3.5 g/dL")
+	ID.main.pTUT.summary$WTf <- as.factor(ID.main.pTUT.summary$WT)
+	levels(ID.main.pTUT.summary$WTf) <- c("WT 40 kg","WT 70 kg","WT 100 kg")
+
 	plotobj13 <- NULL
   plotobj13 <- ggplot(ID.main.pTUT.summary)
 	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
@@ -438,7 +444,7 @@
   plotobj13 <- plotobj13 + scale_y_continuous("Proportion of time below target trough during maintenance\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj13 <- plotobj13 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
 	# plotobj13 <- plotobj13 + theme(legend.position = "none")
-	plotobj13 <- plotobj13 + facet_grid(ALB~WT)
+	plotobj13 <- plotobj13 + facet_grid(ALBf~WTf)
   plotobj13
 
   ggsave(plot = plotobj13,filename = paste0(plot.dir,"mainpTUT_546_Seed.png"),units = "cm",width = 20,height = 20)
@@ -461,27 +467,27 @@
   plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,alpha = 0.5)
   plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,shape = 1)
   plotobj11 <- plotobj11 + scale_x_discrete("\nBaseline seed")
-  plotobj11 <- plotobj11 + scale_y_continuous("Median change in albumin (U/L)\n")
+  plotobj11 <- plotobj11 + scale_y_continuous("Median change in albumin (g/dL)\n")
   plotobj11 <- plotobj11 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
   plotobj11
 
   ggsave(plot = plotobj11,filename = paste0(plot.dir,"cALB_Seed.png"),units = "cm",width = 20,height = 20)
 
-# # Proportion with ADA onset and proportion that revert back
-#   ID.ada.on.proportion$ON <- 0
-#   ID.ada.revert.proportion$ON <- 1
-#   ID.ada <- rbind(ID.ada.on.proportion,ID.ada.revert.proportion)
-#   ID.ada$ON <- as.factor(ID.ada$ON)
-#   levels(ID.ada$ON) <- c("Onset of ADA","Reverted ADA status")
-#
-#   plotobj12 <- NULL
-#   plotobj12 <- ggplot(ID.ada)
-#   plotobj12 <- plotobj12 + geom_point(aes(x = IDf,y = V1,colour = STUDYf),size = 4,alpha = 0.5)
-#   plotobj12 <- plotobj12 + geom_point(aes(x = IDf,y = V1,colour = STUDYf),size = 4,shape = 1)
-#   plotobj12 <- plotobj12 + scale_x_discrete("\nBaseline seed")
-#   plotobj12 <- plotobj12 + scale_y_continuous("Proportion of individuals\n")
-#   plotobj12 <- plotobj12 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
-#   plotobj12 <- plotobj12 + facet_wrap(~ON)
-#   plotobj12
-#
-#   ggsave(plot = plotobj12,filename = paste0(project.dir,"ADA_Seed.png"),units = "cm",width = 40,height = 20)
+# Calculate time to target in the maintenance for each individual and then summarise
+	time.to.target.function <- function(ind.summary.data) {
+		main.data <- ind.summary.data[ind.summary.data$time >= 98,]
+		for (i in 1:nrow(main.data)) {
+			if (main.data$IPRE[i] >= 3) target <- T
+			if (main.data$IPRE[i] < 3) target <- F
+			time.to.target <- main.data$time[i]
+			if (time.to.target >= 546) time.to.target <- NA
+			if (target == T) break
+		}
+		ind.summary.data$target <- time.to.target
+		ind.summary.data
+	}
+
+	time.to.target.data <- ddply(ind.summary.data, .(uID), time.to.target.function)
+	time.to.target.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(STUDY,STUDYf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
+
+	save.image(file = paste0(plot.dir,"time_dependent.RData"))
