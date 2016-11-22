@@ -46,8 +46,8 @@
 
 # ------------------------------------------------------------------------------
 # Set working directory
-  # project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
-  project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
+  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
+  # project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
 	plot.dir <- paste0(project.dir,"Plots3/")
 
 # Read in simulation output
@@ -365,6 +365,10 @@
   # ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 	# ada.revert.proportion
 
+	ada.init.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on))
+	ada.init.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(n*nsim))
+	ada.main.proportion <- (ada.on.summary$n-ada.init.summary$V1)/(n*nsim)
+
 ## Study Numerical Summaries by Seed
 # Proportion of time under target trough at study conclusion, days (pTUT)
   ID.pTUT.summary <- ddply(all.data[all.data$time == 546,], .(STUDY,STUDYf,ID,IDf), function(all.data) summary.function(all.data$pTUT))
@@ -384,6 +388,11 @@
 # Proportion that develop ADA
   ID.ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
   ID.ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/nsim)
+
+	ID.ada.init.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(nsim))
+	ID.ada.main.proportion <- ID.ada.init.proportion
+	ID.ada.main.proportion$V1 <- (ID.ada.on.summary$n/nsim)-ID.ada.init.proportion$V1
+
   # ID.ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 
 ## Study graphical summaries by seed
@@ -417,6 +426,8 @@
 		all.data
 	}
 	main.ind.tut.data <- ddply(all.data[all.data$time %in% standard.times,], .(uID), main.tut.function)
+	main.ind.tut.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(STUDY,STUDYf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
+
   ID.main.pTUT.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(STUDY,STUDYf,ID,IDf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
 	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(1,4,7)] <- 2.5
 	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(2,5,8)] <- 3
@@ -430,6 +441,8 @@
 	ID.main.pTUT.summary$WTf <- as.factor(ID.main.pTUT.summary$WT)
 	levels(ID.main.pTUT.summary$WTf) <- c("WT 40 kg","WT 70 kg","WT 100 kg")
 
+	ID.main.pTUT.summary$ADApro <- round(ID.ada.main.proportion$V1,digits = 2)
+
 	plotobj13 <- NULL
   plotobj13 <- ggplot(ID.main.pTUT.summary)
 	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
@@ -440,6 +453,7 @@
 	plotobj13 <- plotobj13 + geom_errorbar(aes(x = STUDYf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.2),size = 1)
   plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,colour = STUDYf),position = position_dodge(width = 0.2),size = 4)
   plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
+	plotobj13 <- plotobj13 + geom_text(aes(x = STUDYf,y = stat.50hi+0.07,label = ADApro))
   plotobj13 <- plotobj13 + scale_x_discrete("\nStudy")
   plotobj13 <- plotobj13 + scale_y_continuous("Proportion of time below target trough during maintenance\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj13 <- plotobj13 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
@@ -489,5 +503,84 @@
 
 	time.to.target.data <- ddply(ind.summary.data, .(uID), time.to.target.function)
 	time.to.target.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(STUDY,STUDYf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
+	time.to.target.ind.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(STUDY,STUDYf,ID,IDf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
+	time.to.target.ind.summary$pro <- round(time.to.target.ind.summary$n/1000,digits = 2)
 
+	time.to.target.ind.summary$ALB[time.to.target.ind.summary$ID %in% c(1,4,7)] <- 2.5
+	time.to.target.ind.summary$ALB[time.to.target.ind.summary$ID %in% c(2,5,8)] <- 3
+	time.to.target.ind.summary$ALB[time.to.target.ind.summary$ID %in% c(3,6,9)] <- 3.5
+	time.to.target.ind.summary$WT[time.to.target.ind.summary$ID %in% c(1,2,3)] <- 40
+	time.to.target.ind.summary$WT[time.to.target.ind.summary$ID %in% c(4,5,6)] <- 70
+	time.to.target.ind.summary$WT[time.to.target.ind.summary$ID %in% c(7,8,9)] <- 100
+
+	time.to.target.ind.summary$ALBf <- as.factor(time.to.target.ind.summary$ALB)
+	levels(time.to.target.ind.summary$ALBf) <- c("ALB 2.5 g/dL","ALB 3 g/dL","ALB 3.5 g/dL")
+	time.to.target.ind.summary$WTf <- as.factor(time.to.target.ind.summary$WT)
+	levels(time.to.target.ind.summary$WTf) <- c("WT 40 kg","WT 70 kg","WT 100 kg")
+
+	plotobj16 <- NULL
+  plotobj16 <- ggplot(time.to.target.ind.summary)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	plotobj16 <- plotobj16 + geom_errorbar(aes(x = STUDYf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.2),size = 1)
+  plotobj16 <- plotobj16 + geom_point(aes(x = STUDYf,y = median,colour = STUDYf),position = position_dodge(width = 0.2),size = 4)
+  plotobj16 <- plotobj16 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
+	plotobj16 <- plotobj16 + geom_text(aes(x = STUDYf,y = stat.50hi+15,label = pro))
+  plotobj16 <- plotobj16 + scale_x_discrete("\nStudy")
+  plotobj16 <- plotobj16 + scale_y_continuous("Time to first trough target achievement (days)\n",breaks = seq(from = 98,to = 546,by = 56))
+  plotobj16 <- plotobj16 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
+	# plotobj16 <- plotobj16 + theme(legend.position = "none")
+	plotobj16 <- plotobj16 + facet_grid(ALBf~WTf)
+  plotobj16
+
+  ggsave(plot = plotobj16,filename = paste0(plot.dir,"mainT2T_546_Seed.png"),units = "cm",width = 20,height = 20)
+
+# Plot 2 individual patients and their concentration-time profiles from all studies
+	# 1 = 40 kg, 2.5 g/dL
+	# 2 = 100 kg, 3.5 g/dL
+	random.set <- sample(all.data$set.seq,1)
+	low.random <- sample(all.data$SIM[all.data$ID == 1],1)
+	low.random.data <- all.data[all.data$ID == 1 & all.data$SIM == low.random & all.data$set.seq == random.set,]
+	low.random.data$IDf <- "Example 2: Baseline WT 40 kg, ALB 2.5 g/dL"
+
+	high.random <- sample(all.data$SIM[all.data$ID == 9],1)
+	high.random.data <- all.data[all.data$ID == 9 & all.data$SIM == high.random & all.data$set.seq == random.set,]
+	high.random.data$IDf <- "Example 1: Baseline WT 100 kg, ALB 3.5 g/dL"
+
+	random.data <- rbind(low.random.data,high.random.data)
+
+	plotobj14 <- NULL
+	plotobj14 <- ggplot(random.data)
+	plotobj14 <- plotobj14 + geom_line(aes(x = time,y = IPRE,colour = STUDYf))
+	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV,colour = STUDYf),data = random.data[random.data$amt != 0,],size = 2)
+	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0,],size = 2,shape = 1)
+	plotobj14 <- plotobj14 + geom_hline(aes(yintercept = 3),linetype = "dashed")
+	plotobj14 <- plotobj14 + geom_hline(aes(yintercept = 5),linetype = "dashed")
+	plotobj14 <- plotobj14 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.001,1000),breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
+	plotobj14 <- plotobj14 + scale_x_continuous("\nTime (days)",lim = c(98,154),breaks = seq(from = 98,to = 154,by = 7),labels = seq(from = 98,to = 154,by = 7))
+	plotobj14 <- plotobj14 + theme(legend.position = "none")
+	plotobj14 <- plotobj14 + facet_wrap(~IDf)
+	plotobj14
+
+  ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.png"),units = "cm",width = 20,height = 10)
+
+	plotobj15 <- NULL
+	plotobj15 <- ggplot(random.data)
+	plotobj15 <- plotobj15 + geom_line(aes(x = time,y = IPRE,colour = STUDYf))
+	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV,colour = STUDYf),data = random.data[random.data$amt != 0,],size = 2)
+	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0,],size = 2,shape = 1)
+	plotobj15 <- plotobj15 + geom_hline(aes(yintercept = 3),linetype = "dashed")
+	plotobj15 <- plotobj15 + geom_hline(aes(yintercept = 5),linetype = "dashed")
+	plotobj15 <- plotobj15 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.001,1000),breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
+	plotobj15 <- plotobj15 + scale_x_continuous("\nTime (days)",lim = c(490,546),breaks = seq(from = 490,to = 546,by = 7),labels = seq(from = 490,to = 546,by = 7))
+	plotobj15 <- plotobj15 + theme(legend.position = "none")
+	plotobj15 <- plotobj15 + facet_wrap(~IDf)
+	plotobj15
+
+  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.png"),units = "cm",width = 20,height = 10)
+
+# Save the workspace so I don't have to re-read all of the data frames
 	save.image(file = paste0(plot.dir,"time_dependent.RData"))
