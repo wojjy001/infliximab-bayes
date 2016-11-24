@@ -17,6 +17,7 @@ Project/infliximab_run.R
 
 *.pptx
 
+<<<<<<< HEAD
 *.png
 
 *.csv
@@ -24,3 +25,10 @@ Project/infliximab_run.R
 *.csv
 
 *.csv
+=======
+*.history
+
+*.png
+
+*.history
+>>>>>>> optimise-interval

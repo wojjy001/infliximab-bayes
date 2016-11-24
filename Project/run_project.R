@@ -1,75 +1,68 @@
-# Time-weighted Bayes project
+# in silico infliximab dosing project
 # Script for setting the working directory and executing other R scripts
 # ------------------------------------------------------------------------------
 # Remove all current objects in the workspace
 	rm(list = ls(all = TRUE))
+	# system(command = "open -n -a R")
+
 # Global directory (where R scripts are saved)
-	work.dir <- "D:/infliximab-bayes/Project/"
-
-# -------------------------------------------------------------------------------
-# Parallelise jobs to increase speed
-	library(doParallel)	# Parallel processing
-	# Set up cores to run parallel processes, thus increasing speed
-	# Set up a cluster of cores to run the job Overall
-		cl <- makePSOCKcluster(3)
-		# detectCores() searches for the number of cores that the local machine has
-	# List packages required to be sent to each core for the parallel process
-	# The foreach package always needs to be included
-		clusterEvalQ(cl,list(
-			library(foreach),
-			source("D:/infliximab-bayes/Project/first_interval.R")
-		))
-	# Register the parallel backend with the foreach package
-		registerDoParallel(cl)
+	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
+	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
+	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
+# Source and compile model file
+	source(paste0(work.dir,"model.R"))
 
 # ------------------------------------------------------------------------------
-# Run "single-run" simulation files
-# First standard interval simulation
-	suppressPackageStartupMessages(	# Suppress package loading messages
-		suppressWarnings(	# Suppress warning messages
-			source(paste0(work.dir,"first_interval.R"))
-		)
+# Read in seeds from previous output
+	project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"
+  file.list <- list.files(path = project.dir,pattern = "SUCCESS") # List of successful
+	library(stringr)
+	library(plyr)
+	library(dplyr)
+	num.list <- str_extract_all(file.list,pattern = "[0-9]")	# Find all the numbers in the filename
+	numlist2 <- llply(num.list,function(num.list) paste(num.list,collapse = ""))	# Paste their numbers back together
+	num.unlist <- unlist(numlist2)	# Unlist them
+	num.unlist.split <- str_split(num.unlist,pattern = "[9]",n = 2)	# Where the first 9 occurs, split the string into 2
+	file.data <- structure(data.frame(matrix(unlist(num.unlist.split),length(num.unlist),2,T)))
+	names(file.data)[c(1,2)] <- c("nsim","seed")
+	file.data$nsim <- as.numeric(levels(file.data$nsim))[file.data$nsim]
+	file.data$seed <- as.numeric(levels(file.data$seed)[file.data$seed])
+
+for (i in 1:nrow(file.data)) {
+		nsim <- file.data$nsim[i]
+		seed <- file.data$seed[i]
+		print(paste0("seed ",seed," nsim ",nsim))
+		# Source universal functions file
+			source(paste0(work.dir,"functions.R"))
+		# Create population
+			# source(paste0(work.dir,"population.R"))
+	try(
+		for (i in 0:1) {
+			time.dep <- i	# 0 = no time-dependent covariate and random effect changes
+			# 1 = time-dependent covariate and random effect changes
+			# # Calculate ETA values for all time-points (based on time-dependence scenario)
+			# 	pop.data <- ddply(pop.data, .(SIM,ID), eta.function)
+			# 	# Write pop.data to a .csv file
+			# 		pop.data.filename <- paste0("time_dep_",time.dep,"_population_characteristics.csv")
+			# 		write.csv(pop.data,file = pop.data.filename,na = ".",quote = F,row.names = F)
+			# Read in the previous pop.data
+				prev.pop.data.name <- paste0("time_dep_",i,"_population_characteristics.csv")
+				pop.data <- read.csv(file = prev.pop.data.name)
+			# First standard interval simulation (initial dose is 5 mg/kg)
+				suppressWarnings(	# Suppress warning messages
+					source(paste0(work.dir,"first_interval1.R"))
+				)
+			# Run "single-run" simulation files
+			# # Label simulation
+			# 	suppressWarnings(source(paste0(work.dir,"label.R")))
+			# Clinical simulation where doses are adjusted based on trough concentrations (DV)
+				print("Clinical TDM")
+				suppressWarnings(source(paste0(work.dir,"clinical_TDM.R")))
+			# Clinical simulation
+				print("Clinical Protocol")
+				suppressWarnings(source(paste0(work.dir,"clinical.R")))
+			# # Bayesian simulation
+			# 	suppressWarnings(source(paste0(work.dir,"bayes.R")))
+		}
 	)
-# # Label simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"label.R"))))
-# # Clinical simulation
-# 	suppressPackageStartupMessages(suppressWarnings(source(paste0(work.dir,"clinical.R"))))
-
-# ------------------------------------------------------------------------------
-# Run the various Bayes estimation scenarios sequentially
-# Scenarios with no time-weighting
-	method <- "NTimeWeight"
-	covariate <- "AllCov"	# AllCov = All covariates
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-
-# Scenarios using Peck, Q = 1.005
-	method <- "Peck1.005"
-	covariate <- "AllCov"	# AllCov = All covariates
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-
-# Scenarios using Peck, Q = 1.01
-	method <- "Peck1.01"
-	covariate <- "AllCov"	# AllCov = All covariates
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoADA"	# NoADA = No ADA information, assume population typical, i.e., 0
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoALB"	# NoALB = No albumin information, assume population typical, i.e., 4
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-	covariate <- "NoCov"	# NoCov = No covariates, assume population typical
-	suppressWarnings(source(paste0(work.dir,"run_bayes_save.R")))
-
-# -----------------------------------------------------------------------------
-# Quit R once all completed
-	q("no")
+}

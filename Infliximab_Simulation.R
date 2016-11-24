@@ -37,10 +37,12 @@
 	# Using mrgsolve - differential equations
 	# This compiled model is used for simulating n individuals and their concentration-time profiles
 		code <- '
-		$INIT			// Initial conditions for compartments
-							CENT = 0,	// Central
-							PERI = 0, // Peripheral
-							AUT = 0	//Time below target compartment
+		$CMT			// Specify compartments
+							CENT,	// Central
+							PERI, // Peripheral
+							TUT,	// Time below target compartment
+							ALB,	// Albumin, U/L
+							WT	// Weight, kg
 
 		$PARAM		// Population parameters
 							POPCL = 0.294,
@@ -57,9 +59,8 @@
 							ADA_CL = 0.257,	// Effect of anti-drug antibodies on clearance
 
 							// Covariate values for simulation
-							WT = 70,	// Weight (kg)
-							ALB = 4,	// Albumin
-							ADA = 0,	// Anti-drug antibodies (0 = No, 1 = Yes)
+							BASE_WT = 70,	// Weight (kg)
+							BASE_ALB = 4,	// Baseline albumin at treatment initiation
 							target = 3	// Target trough concentration (mg/L)
 
 		$OMEGA		name = "BSV"
@@ -77,6 +78,13 @@
 		$MAIN			// Infusion duration
 							D_CENT = 0.08333333;  // 2 hours
 
+							// Compartment initial conditions
+							CENT_0 = 0;
+							PERI_0 = 0;
+							TUT_0 = 0;
+							ALB_0 = BASE_ALB;
+							WT_0 = BASE_WT;
+
 							// Covariate effects
 							double ADACOV = 1;	// No anti-drug antibodies
 							if (ADA == 1) ADACOV = 1+ADA_CL;		// Anti-drug antibodies
@@ -91,15 +99,27 @@
 							dxdt_CENT = -Q/V1*CENT +Q/V2*PERI -CL/V1*CENT;
 							dxdt_PERI = Q/V1*CENT -Q/V2*PERI;
 
-							// Time below target
+							// Time under target
 							double CP = CENT/V1;	// Plasma concentration of the central compartment
-							dxdt_AUT = 0;
-							if (CP < target) dxdt_AUT = 1;
+							dxdt_TUT = 0;
+							if (CP < target) dxdt_TUT = 1;
+
+							// Proportion of time under target
+							double pTUT = 0;
+							if (SOLVERTIME > 0.08333333) pTUT = TUT/SOLVERTIME;
+
+							// Albumin
+							dxdt_ALB = ALB*((0.1-pTUT)/100);
+							// Weight
+							dxdt_WT = WT*((0.1-pTUT)/100);
+							// Anti-drug antibodies
+							double ADA = 0;
+							if (pTUT > 0.1) ADA = 1;
 
 		$TABLE		table(IPRE) = CENT/V1;
 							table(DV) = table(IPRE)*exp(ERRPRO);
 
-		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2
+		$CAPTURE	WT ADA ALB CL V1 Q V2 PPVCL PPVV1 PPVQ PPVV2 pTUT
 		'
 	# Compile the model code
 		mod <- mcode("popINFLIX",code)
@@ -109,28 +129,35 @@
 # Simulate patient population
 	TIME.tgrid <- tgrid(0,365,1)
 	ID.list <- 1:1000
-	population.function <- function(ID.list) {
-		ID.number <- ID.list[1]
+	# population.function <- function(ID.list) {
+	# 	ID.number <- ID.list[1]
 		input.conc.data <- data.frame(
-			ID = ID.number,
+			ID = 1,
 			amt = 5*70,
 			evid = 1,
 			cmt = 1,
 			time = c(0,14,42,98,154,210,266,322),
 			rate = -2
 		)
-	}
-	input.conc.data <- ldply(ID.list, population.function)
+	# }
+	# input.conc.data <- ldply(ID.list, population.function)
 
 	conc.data <- mod %>% data_set(input.conc.data) %>% carry.out(amt) %>% mrgsim(tgrid = TIME.tgrid)
 	conc.data <- as.data.frame(conc.data)
 
-	summary.data <- ddply(conc.data, .(time), function(conc.data) sumfuncx(conc.data$IPRE))
+	# summary.data <- ddply(conc.data, .(time), function(conc.data) sumfuncx(conc.data$IPRE))
+	#
+	# plotobj1 <- NULL
+	# plotobj1 <- ggplot(summary.data)
+	# plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median),colour = "red")
+	# plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi),fill = "red",alpha = 0.3)
+	# plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")
+	# plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
+	# plotobj1
 
-	plotobj1 <- NULL
-	plotobj1 <- ggplot(summary.data)
-	plotobj1 <- plotobj1 + geom_line(aes(x = time,y = median),colour = "red")
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = time,ymin = low,ymax = hi),fill = "red",alpha = 0.3)
-	plotobj1 <- plotobj1 + scale_x_continuous("\nTime (hours)")
-	plotobj1 <- plotobj1 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
-	plotobj1
+	plotobj2 <- NULL
+	plotobj2 <- ggplot(conc.data)
+	plotobj2 <- plotobj2 + geom_line(aes(x = time,y = IPRE),colour = "blue")
+	plotobj2 <- plotobj2 + scale_x_continuous("\nTime (hours)")
+	plotobj2 <- plotobj2 + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100,100),labels = c(0.001,0.01,0.1,1,10,100,100))
+	plotobj2
