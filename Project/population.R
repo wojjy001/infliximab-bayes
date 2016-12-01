@@ -2,12 +2,6 @@
 # Script for simulating characteristics of the study population
 # Does not simulation concentrations
 # ------------------------------------------------------------------------------
-# Source the other R scripts and execute
-	# work.dir <- "D:/infliximab-bayes/Project/"	# Windows directory
-	work.dir <- "E:/Wojciechowski/infliximab-bayes/Project/"	# Server directory
-	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/Project/"	# Mac directory
-
-# ------------------------------------------------------------------------------
 # Define population's characteristics
 # Only going to pre-specify weight as 70 kg and randomly generate ADA_TIME, BASE_ALB and FINAL_ALB
 	ID <- seq(from = 1,to = n,by = 1)	# Sequence of individual IDs

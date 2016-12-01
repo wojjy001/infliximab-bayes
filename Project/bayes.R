@@ -4,7 +4,6 @@
 # Doses are optimised using maximum likelihood estimation
 # ------------------------------------------------------------------------------
 # Optimise doses using maximum likelihood estimation
-	# first.int.data1 <- first.int.data1[first.int.data1$SIM == 1 & first.int.data1$ID == 2,]
 	bayes.function <- function(first.int.data) {
 		# Set up a loop that will sample the individual's concentration, estimate empirical Bayes parameters, optimise their dose and administer until time = 546 days
 			# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
@@ -255,7 +254,7 @@
 		conc.data
 	}	# Brackets closing "bayes.function"
 
-	optimise.bayes.data1 <- ddply(first.int.data1, .(SIM,ID), bayes.function, .parallel = FALSE, .progress = "text", .inform = TRUE)
+	optimise.bayes.data1 <- ddply(first.int.data1, .(SIM,ID), bayes.function, .progress = "text", .inform = TRUE)
 
 # ------------------------------------------------------------------------------
 # Write optimise.bayes.data to a .csv file

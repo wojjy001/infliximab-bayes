@@ -4,33 +4,31 @@
 # If trough target = 3 mg/L, and measured trough is 1.5 mg/L, then next dose will be doubled
 # Assuming linear kinetics - double the dose, double the trough concentration
 # ------------------------------------------------------------------------------
-# Set up a loop that will sample the individual's concentration optimise their dose and administer until time = 546 days
-	# first.int.data <- first.int.data[first.int.data$ID == 1 & first.int.data$SIM == 1,]
+# Set up a loop that will sample the individual's concentration optimise their dose and administer until time = 602 days
 	clinical.function <- function(first.int.data) {
-		# Make all predicted concentrations (IPRE) and PK parameter values after sample.time1 == NA
-			# first.int.data <- first.int.data1
+		# Make all predicted concentrations (IPRE) and PK parameter values after day 98 == NA
 			conc.data <- first.int.data
 			conc.data$IPRE[conc.data$time > max(sample.times)] <- NA
 			# Previous dose mg/kg
 				prev.mgkg.dose <- 5	# Initially 5 mg/kg
 				prev.dose <- head(conc.data$amt,1)
 				prev.int <- 56	# Initially every 56 days
-				increments <- 0
+				increments <- 0	# Stores number of time an incremental increase or decrease in dose has occurred
 
-		# If the last predicted concentration in the data frame (i.e., when time = 546) is NA, then continue with the loop
+		# If the last predicted concentration in the data frame (i.e., when time = 602) is NA, then continue with the loop
 			repeat {
 				# Time of most recent samples
 					last.two.samples <- tail(sample.times,2)
 					last.sample <- max(sample.times)
 				# Previous DV
 					prev.DV <- conc.data$DV[conc.data$time %in% last.two.samples]
-					prev.DV[prev.DV < 0] <- .Machine$double.eps
-				# Previous covariate values
+					prev.DV[prev.DV < 0] <- .Machine$double.eps	# Smallest positive number machine can handle
+				# Previous covariate values at time of sampling
 					prev.WT <- conc.data$WTCOV[conc.data$time == last.sample]
 					prev.ADA <- conc.data$ADA[conc.data$time == last.sample]
 					prev.ALB <- conc.data$ALBCOV[conc.data$time == last.sample]
-				# Previous dose
-					prev.dose.time <- head(last.two.samples,1)
+				# Previous dose time (not sample time)
+					prev.dose.time <- head(last.two.samples,1)	# First of the last 2 samples
 				# Calculate the new dose for the next interval based on "sample" and "dose"
 					if (prev.DV[2] < 1 & prev.mgkg.dose == 5) {
 						prev.mgkg.dose <- 7.5	# Now increase to 7.5 mg/kg
@@ -77,7 +75,7 @@
 						input.sim.data$evid[input.sim.data$amt == 0] <- 0
 						input.sim.data$rate <- -2	# Signifies that infusion duration is specified in model file
 						input.sim.data$rate[input.sim.data$amt == 0] <- 0
-					# Flag that this is simulation and want covariates to change depending on concentrations
+					# Flag if we want covariates to change depending on concentrations during simulation
 						input.sim.data$FLAG <- time.dep
 				# Simulate
 					conc.data <- mod %>% mrgsim(data = input.sim.data,carry.out = c("amt","ERRPRO")) %>% as.tbl
@@ -91,8 +89,8 @@
 			}	# Brackets closing "repeat"
 		conc.data
 	}	# Brackets closing "clinical.function"
-
-	clinical.data <- ddply(first.int.data1, .(SIM,ID), clinical.function, .parallel = FALSE)
+# Simulate the maintenance phase from "first.int.data1" using "clinical.function" for each ID (individual) in each SIM (simulation group)
+	clinical.data <- ddply(first.int.data1, .(SIM,ID), clinical.function)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file

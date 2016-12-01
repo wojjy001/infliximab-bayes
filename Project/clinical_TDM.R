@@ -73,7 +73,7 @@
 		conc.data
 	}	# Brackets closing "clinical.function"
 
-	clinical.TDM.data <- ddply(first.int.data1, .(SIM,ID), clinical.TDM.function, .parallel = FALSE)
+	clinical.TDM.data <- ddply(first.int.data1, .(SIM,ID), clinical.TDM.function)
 
 # ------------------------------------------------------------------------------
 # Write clinical.data to a .csv file

@@ -6,6 +6,7 @@
 	library(plyr)	# Split and rearrange data, ddply functions
 	library(dplyr)
 	library(mrgsolve)	# Metrum Research Group differential equation solver for pharmacometrics
+	
 # This compiled model is used for simulating n individuals and their concentration-time profiles
 	code <- '
 	$SET			atol = 1e-8, rtol = 1e-8
