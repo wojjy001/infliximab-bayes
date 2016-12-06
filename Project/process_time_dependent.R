@@ -1,5 +1,5 @@
 # Remove all current objects in the workspace
-	rm(list = ls(all = TRUE))
+	# rm(list = ls(all = TRUE))
 # Load package libraries
   library(ggplot2)  # Plotting
   library(grid)  # Plotting
@@ -60,28 +60,28 @@
 # Read in the simulation data
   read.data.function <- function(input.list) {
     # Label data
-      label.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
-      label.data0$STUDY <- 1
-			# label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
-      # label.data1$STUDY <- 5
+      # label.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
+      # label.data0$STUDY <- 1
+			label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
+      label.data1$STUDY <- 5
     # Clinical data
-      clinical.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
-      clinical.data0$STUDY <- 2
-			# clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
-      # clinical.data1$STUDY <- 6
+      # clinical.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
+      # clinical.data0$STUDY <- 2
+			clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
+      clinical.data1$STUDY <- 6
     # Clinical TDM data
-      clinical.TDM.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
-      clinical.TDM.data0$STUDY <- 3
-			# clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
-      # clinical.TDM.data1$STUDY <- 7
+      # clinical.TDM.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
+      # clinical.TDM.data0$STUDY <- 3
+			clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
+      clinical.TDM.data1$STUDY <- 7
     # Optimise.bayes1 data (5 mg/kg initiation)
-      optimise.bayes.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
-      optimise.bayes.data0$STUDY <- 4
-			# optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
-      # optimise.bayes.data1$STUDY <- 8
+      # optimise.bayes.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
+      # optimise.bayes.data0$STUDY <- 4
+			optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
+      optimise.bayes.data1$STUDY <- 8
     # Bind data from the set
-      set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
-			# set.data <- rbind(label.data1,clinical.data1,clinical.TDM.data1,optimise.bayes.data1)
+      # set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
+			set.data <- rbind(label.data1,clinical.data1,clinical.TDM.data1,optimise.bayes.data1)
   }
   all.data <- ddply(input.list, .(set.seq), read.data.function)
   all.data <- all.data[all.data$time <= 546,] # Remove NA rows
@@ -93,7 +93,7 @@
   all.data$STUDYf <- as.factor(all.data$STUDY)
   levels(all.data$STUDYf) <- c(
 		# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-	"Label","Clinical Protocol","Clinical TDM","Bayesian-Guided")
+	"Label","Clinical Protocol","Proportional Adjustment","Model-Guided")
 
 # Give each individual a unique ID number (uID)
   uID <- sort(c(rep(seq(from = 1,to = n*nsim*4,by = 1),times = length(unique(all.data$time)))))
@@ -137,7 +137,7 @@
     ind.summary.data$STUDYf <- as.factor(ind.summary.data$STUDY)
     levels(ind.summary.data$STUDYf) <- c(
 			# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-		"Label","Clinical Protocol","Clinical TDM","Bayesian-Guided")
+		"Label","Clinical Protocol","Proportional Adjustment","Model-Guided")
 
 ## Plot concentration-time for all studies
 # Calculate
@@ -155,7 +155,7 @@
   plotobj1 <- plotobj1 + geom_line(aes(x = TIMEBIN,y = median),data = STUDY.summary.data)
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = 3),linetype = "dashed")
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = 5),linetype = "dashed")
-  plotobj1 <- plotobj1 + scale_y_log10("Trough Infliximab Concentrations (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
+  plotobj1 <- plotobj1 + scale_y_log10("Trough Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
   plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
   plotobj1 <- plotobj1 + facet_wrap(~STUDYf,ncol = 4)
   plotobj1 <- plotobj1 + theme(legend.position = "none")
@@ -294,7 +294,7 @@
 	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
   plotobj7 <- plotobj7 + geom_line(aes(x = TIMEBIN,y = median))
   # plotobj7 <- plotobj7 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
-  plotobj7 <- plotobj7 + scale_y_continuous("Proportion of time under target trough\n")
+  plotobj7 <- plotobj7 + scale_y_continuous("Proportion of Time under Target Trough\n")
   plotobj7 <- plotobj7 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
   plotobj7 <- plotobj7 + facet_wrap(~STUDYf,ncol = 4)
   plotobj7 <- plotobj7 + theme(legend.position = "none")
@@ -314,7 +314,7 @@
 		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
     plotobj8 <- plotobj8 + geom_line(aes(x = TIMEBIN,y = median))
     # plotobj8 <- plotobj8 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
-    plotobj8 <- plotobj8 + scale_y_continuous("Proportion of time under target trough\n")
+    plotobj8 <- plotobj8 + scale_y_continuous("Proportion of Time under Target Trough\n")
     plotobj8 <- plotobj8 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
     plotobj8 <- plotobj8 + facet_wrap(~STUDYf,ncol = 4)
     plotobj8 <- plotobj8 + theme(legend.position = "none")
@@ -408,7 +408,7 @@
   plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,colour = STUDYf),position = position_dodge(width = 0.9),size = 4)
   plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,group = STUDYf),position = position_dodge(width = 0.9),size = 4,shape = 1)
   plotobj9 <- plotobj9 + scale_x_discrete("\nBaseline Seed")
-  plotobj9 <- plotobj9 + scale_y_continuous("Proportion of time below target trough\n",breaks = seq(from = 0,to = 1,by = 0.1))
+  plotobj9 <- plotobj9 + scale_y_continuous("Proportion of Time under Target Trough\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj9 <- plotobj9 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
 	plotobj9 <- plotobj9 + theme(legend.position = "none")
 	# plotobj9 <- plotobj9 + facet_wrap(~WT)
@@ -437,9 +437,9 @@
 	ID.main.pTUT.summary$WT[ID.main.pTUT.summary$ID %in% c(7,8,9)] <- 100
 
 	ID.main.pTUT.summary$ALBf <- as.factor(ID.main.pTUT.summary$ALB)
-	levels(ID.main.pTUT.summary$ALBf) <- c("ALB 2.5 g/dL","ALB 3 g/dL","ALB 3.5 g/dL")
+	levels(ID.main.pTUT.summary$ALBf) <- c("Albumin 2.5 g/dL","Albumin 3 g/dL","Albumin 3.5 g/dL")
 	ID.main.pTUT.summary$WTf <- as.factor(ID.main.pTUT.summary$WT)
-	levels(ID.main.pTUT.summary$WTf) <- c("WT 40 kg","WT 70 kg","WT 100 kg")
+	levels(ID.main.pTUT.summary$WTf) <- c("Weight 40 kg","Weight 70 kg","Weight 100 kg")
 
 	ID.main.pTUT.summary$ADApro <- round(ID.ada.main.proportion$V1,digits = 2)
 
@@ -455,7 +455,7 @@
   plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
 	plotobj13 <- plotobj13 + geom_text(aes(x = STUDYf,y = stat.50hi+0.07,label = ADApro))
   plotobj13 <- plotobj13 + scale_x_discrete("\nStudy")
-  plotobj13 <- plotobj13 + scale_y_continuous("Proportion of time below target trough during maintenance\n",breaks = seq(from = 0,to = 1,by = 0.1))
+  plotobj13 <- plotobj13 + scale_y_continuous("Proportion of Time under Target Trough during Maintenance\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj13 <- plotobj13 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
 	# plotobj13 <- plotobj13 + theme(legend.position = "none")
 	plotobj13 <- plotobj13 + facet_grid(ALBf~WTf)
@@ -469,7 +469,7 @@
   plotobj10 <- plotobj10 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,alpha = 0.5)
   plotobj10 <- plotobj10 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,shape = 1)
   plotobj10 <- plotobj10 + scale_x_discrete("\nBaseline seed")
-  plotobj10 <- plotobj10 + scale_y_continuous("Median change in weight (kg)\n")
+  plotobj10 <- plotobj10 + scale_y_continuous("Median Change in Weight (kg)\n")
   plotobj10 <- plotobj10 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
   plotobj10
 
@@ -481,7 +481,7 @@
   plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,alpha = 0.5)
   plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,shape = 1)
   plotobj11 <- plotobj11 + scale_x_discrete("\nBaseline seed")
-  plotobj11 <- plotobj11 + scale_y_continuous("Median change in albumin (g/dL)\n")
+  plotobj11 <- plotobj11 + scale_y_continuous("Median Change in Albumin (g/dL)\n")
   plotobj11 <- plotobj11 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
   plotobj11
 
@@ -514,9 +514,9 @@
 	time.to.target.ind.summary$WT[time.to.target.ind.summary$ID %in% c(7,8,9)] <- 100
 
 	time.to.target.ind.summary$ALBf <- as.factor(time.to.target.ind.summary$ALB)
-	levels(time.to.target.ind.summary$ALBf) <- c("ALB 2.5 g/dL","ALB 3 g/dL","ALB 3.5 g/dL")
+	levels(time.to.target.ind.summary$ALBf) <- c("Albumin 2.5 g/dL","Albumin 3 g/dL","Albumin 3.5 g/dL")
 	time.to.target.ind.summary$WTf <- as.factor(time.to.target.ind.summary$WT)
-	levels(time.to.target.ind.summary$WTf) <- c("WT 40 kg","WT 70 kg","WT 100 kg")
+	levels(time.to.target.ind.summary$WTf) <- c("Weight 40 kg","Weight 70 kg","Weight 100 kg")
 
 	plotobj16 <- NULL
   plotobj16 <- ggplot(time.to.target.ind.summary)
@@ -530,7 +530,7 @@
   plotobj16 <- plotobj16 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
 	plotobj16 <- plotobj16 + geom_text(aes(x = STUDYf,y = stat.50hi+15,label = pro))
   plotobj16 <- plotobj16 + scale_x_discrete("\nStudy")
-  plotobj16 <- plotobj16 + scale_y_continuous("Time to first trough target achievement (days)\n",breaks = seq(from = 98,to = 546,by = 56))
+  plotobj16 <- plotobj16 + scale_y_continuous("Time to First Trough Target Achievement (days)\n",breaks = seq(from = 98,to = 546,by = 56))
   plotobj16 <- plotobj16 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
 	# plotobj16 <- plotobj16 + theme(legend.position = "none")
 	plotobj16 <- plotobj16 + facet_grid(ALBf~WTf)
@@ -541,25 +541,30 @@
 # Plot 2 individual patients and their concentration-time profiles from all studies
 	# 1 = 40 kg, 2.5 g/dL
 	# 2 = 100 kg, 3.5 g/dL
+	# seed <- round(runif(1,min = 0,max = 999999),digits = 0)
+	seed <- 638518
+	seed
+	set.seed(seed)
 	random.set <- sample(all.data$set.seq,1)
 	low.random <- sample(all.data$SIM[all.data$ID == 1],1)
 	low.random.data <- all.data[all.data$ID == 1 & all.data$SIM == low.random & all.data$set.seq == random.set,]
-	low.random.data$IDf <- "Example 2: Baseline WT 40 kg, ALB 2.5 g/dL"
+	low.random.data$IDf <- "Example 2: Weight 40 kg, Albumin 2.5 g/dL"
 
 	high.random <- sample(all.data$SIM[all.data$ID == 9],1)
 	high.random.data <- all.data[all.data$ID == 9 & all.data$SIM == high.random & all.data$set.seq == random.set,]
-	high.random.data$IDf <- "Example 1: Baseline WT 100 kg, ALB 3.5 g/dL"
+	high.random.data$IDf <- "Example 1: Weight 100 kg, Albumin 3.5 g/dL"
 
 	random.data <- rbind(low.random.data,high.random.data)
+	names(random.data)[33] <- "Study"
 
 	plotobj14 <- NULL
 	plotobj14 <- ggplot(random.data)
-	plotobj14 <- plotobj14 + geom_line(aes(x = time,y = IPRE,colour = STUDYf))
-	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV,colour = STUDYf),data = random.data[random.data$amt != 0,],size = 2)
-	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0,],size = 2,shape = 1)
+	plotobj14 <- plotobj14 + geom_line(aes(x = time,y = IPRE,colour = Study))
+	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV,colour = Study),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2)
+	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2,shape = 1)
 	plotobj14 <- plotobj14 + geom_hline(aes(yintercept = 3),linetype = "dashed")
 	plotobj14 <- plotobj14 + geom_hline(aes(yintercept = 5),linetype = "dashed")
-	plotobj14 <- plotobj14 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.001,1000),breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
+	plotobj14 <- plotobj14 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.1,1000),breaks = c(0.01,0.1,1,10,100),labels = c(0.01,0.1,1,10,100))
 	plotobj14 <- plotobj14 + scale_x_continuous("\nTime (days)",lim = c(98,154),breaks = seq(from = 98,to = 154,by = 7),labels = seq(from = 98,to = 154,by = 7))
 	plotobj14 <- plotobj14 + theme(legend.position = "none")
 	plotobj14 <- plotobj14 + facet_wrap(~IDf)
@@ -569,18 +574,19 @@
 
 	plotobj15 <- NULL
 	plotobj15 <- ggplot(random.data)
-	plotobj15 <- plotobj15 + geom_line(aes(x = time,y = IPRE,colour = STUDYf))
-	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV,colour = STUDYf),data = random.data[random.data$amt != 0,],size = 2)
-	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0,],size = 2,shape = 1)
+	plotobj15 <- plotobj15 + geom_line(aes(x = time,y = IPRE,colour = Study))
+	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV,colour = Study),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2)
+	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2,shape = 1)
 	plotobj15 <- plotobj15 + geom_hline(aes(yintercept = 3),linetype = "dashed")
 	plotobj15 <- plotobj15 + geom_hline(aes(yintercept = 5),linetype = "dashed")
-	plotobj15 <- plotobj15 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.001,1000),breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
+	plotobj15 <- plotobj15 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.1,1000),breaks = c(0.01,0.1,1,10,100),labels = c(0.01,0.1,1,10,100))
 	plotobj15 <- plotobj15 + scale_x_continuous("\nTime (days)",lim = c(490,546),breaks = seq(from = 490,to = 546,by = 7),labels = seq(from = 490,to = 546,by = 7))
-	plotobj15 <- plotobj15 + theme(legend.position = "none")
+	plotobj15 <- plotobj15 + theme(legend.position = "bottom")
+	plotobj15 <- plotobj15 + theme(legend.title = element_text(face = "bold"))
 	plotobj15 <- plotobj15 + facet_wrap(~IDf)
 	plotobj15
 
-  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.png"),units = "cm",width = 20,height = 10)
+  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.png"),units = "cm",width = 20,height = 12)
 
 # Save the workspace so I don't have to re-read all of the data frames
 	save.image(file = paste0(plot.dir,"time_dependent.RData"))
