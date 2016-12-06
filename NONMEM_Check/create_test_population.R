@@ -70,10 +70,10 @@
 	input.data$rate[input.data$time %in% inf.times] <- -2	# Infusion duration is specified in the mrgsolve model code file
 
 # Save data frame to .csv
-	write.csv(input.data,file = paste0(work.dir,"mrgsolve_simulation_input.csv",na = ".",quote = F,row.names = F))
+	write.csv(input.data,file = paste0(work.dir,"mrgsolve_simulation_input.csv"),na = ".",quote = F,row.names = F)
 
 # ------------------------------------------------------------------------------
 # Make data frame NONMEM compatible for simulation
 	nonmem.input.data <- input.data
 	names(nonmem.input.data)[c(2,11:14)] <- c("TIME","AMT","CMT","EVID","RATE")
-	write.csv(nonmem.input.data,file = paste0(work.dir,"nonmem_simulation_input.csv",na = ".",quote = F,row.names = F))
+	write.csv(nonmem.input.data,file = paste0(work.dir,"nonmem_simulation_input.csv"),na = ".",quote = F,row.names = F)
