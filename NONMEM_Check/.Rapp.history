@@ -1,193 +1,26 @@
 rm(list = ls(all = TRUE))#
  	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/NONMEM_Check/"#
 	setwd(work.dir)#
-	source("mrgsolve_infliximab.R")
-n <- 100	#
+	source("mrgsolve_infliximab.R")#
+ 	set.seed(123456)#
+ 	n <- 100	#
 	ID <- 1:n	#
 	time <- seq(from = 0,to = 546,by = 7)	#
-	inf.times <- c(0,14,42,seq(from = 98,to = 546,by = 56))
-inf.times
-sample.times <- seq(from = 98,to = 546,by = 56)	#
- 	ALB <- rlnorm(n,meanlog = log(4),sdlog = 0.3)
-ALB <- rlnorm(n,meanlog = log(4),sdlog = 0.09)
-plot(hist(ALB))
-WT <- rlnorm(n,meanlog = log(70),sdlog = 0.09)	#
-	plot(hist(WT))
-ADA_TIME <- runif(n,min = 98,max = 546)
-ADA.onset.function <- function(ID) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ADA_TIME,600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-	}#
-	ADA <- llply(ID,ADA.onset.function)
-ADA.onset.function <- function(i in ID) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ADA_TIME,600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-	}#
-	ADA <- llply(ID,ADA.onset.function)
-?llply
-ada.data <- data.frame(ID,ADA_TIME)#
-#
-	ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA_TIME <- round(runif(n,min = 98,max = 546),digits = 0)	#
-	ada.data <- data.frame(ID,ADA_TIME)#
-#
-	ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA_TIME <- round(runif(n,min = 98,max = 600),digits = 0)	#
-	ada.data <- data.frame(ID,ADA_TIME)#
-#
-	ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ada.data$ADA <- ADA.onset(time)#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-	}#
-	ADA <- dlply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ID.rep <- sort(c(rep(ID,times = time)))#
-		output <- data.frame(ID = ID.rep,ADA)#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ID.rep <- sort(c(rep(ID,times = length(time))))#
-		output <- data.frame(ID = ID.rep,ADA)#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ID.rep <- sort(c(rep(ID,times = length(time))))#
-		output <- data.frame(ID = ID.rep,time,ADA)#
-	}#
-	ADA <- ddply(ada.data, .(ID), ADA.onset.function)
-head(ADA)
-ALB <- rlnorm(n,meanlog = log(4),sdlog = 0.09)	#
+	inf.times <- c(0,14,42,seq(from = 98,to = 546,by = 56))	#
+	sample.times <- seq(from = 98,to = 546,by = 56)	#
+ 	ALB <- rlnorm(n,meanlog = log(4),sdlog = 0.09)	#
 	plot(hist(ALB))#
 	WT <- rlnorm(n,meanlog = log(70),sdlog = 0.09)	#
 	plot(hist(WT))#
+#
+	ETA1 <- rnorm(n,mean = 0,sd = sqrt(0.106929))	#
+	ETA2 <- rnorm(n,mean = 0,sd = sqrt(0.0225))	#
+	ETA3 <- rnorm(n,mean = 0,sd = sqrt(1.21))	#
+	ETA4 <- rnorm(n,mean = 0,sd = sqrt(0.638401))	#
 	ADA_TIME <- round(runif(n,min = 98,max = 600),digits = 0)	#
-	ada.data <- data.frame(ID,ALB,WT,ADA_TIME)#
+	ada.data <- data.frame(ID,ETA1,ETA2,ETA3,ETA4,ALB,WT,ADA_TIME)#
 #
 	ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ada.data.rep <- lapply(ada.data,rep.int,times = length(time))#
-		ada.data.rep$ADA <- ADA#
-	}#
-	input.data <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ada.data.rep <- lapply(ada.data,rep.int,times = length(time))#
-		ada.data.rep$ADA <- ADA#
-		return(ada.data.rep)#
-	}#
-	input.data <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ada.data.rep <- lapply(ada.data,rep.int,times = length(time))#
-		ada.data.rep <- as.data.frame(ada.data.rep)#
-		ada.data.rep$ADA <- ADA#
-		ada.data.rep#
-	}#
-	input.data <- ddply(ada.data, .(ID), ADA.onset.function)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ada.data.rep <- lapply(ada.data,rep.int,times = length(time))#
-		ada.data.rep <- as.data.frame(ada.data.rep)	#
-		ada.data.rep <- ada.data.rep[,-4]	#
-		ada.data.rep$ADA <- ADA #
-		ada.data.rep	#
-	}#
-	input.data <- ddply(ada.data, .(ID), ADA.onset.function)
-tail(input.data)
-ADA.onset.function <- function(ada.data) {#
-		ADA.rate <- c(0,1,1)#
-		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
-		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
-		ADA <- ADA.onset(time)#
-#
-		ada.data.rep <- lapply(ada.data,rep.int,times = length(time))#
-		ada.data.rep <- as.data.frame(ada.data.rep)	#
-		ada.data.rep$ADA <- ADA #
-		ada.data.rep$time <- time	#
-		ada.data.rep <- ada.data.rep[,c(1,6,2,3,5)]	#
-		ada.data.rep	#
-	}#
-	input.data <- ddply(ada.data, .(ID), ADA.onset.function)
-ETA1 <- rnorm(n,mean = 0,sd = sqrt(0.106929))#
-	ETA2 <- rnorm(n,mean = 0,sd = sqrt(0.0225))#
-	ETA3 <- rnorm(n,mean = 0,sd = sqrt(1.21))#
-	ETA4 <- rnorm(n,mean = 0,sd = sqrt(0.638401))#
-	ADA_TIME <- round(runif(n,min = 98,max = 600),digits = 0)	#
-	ada.data <- data.frame(ID,ETA1,ETA2,ETA3,ETA4,ALB,WT,ADA_TIME)
-head(ada.data)
-dim(ada.data)
-ADA.onset.function <- function(ada.data) {#
 		ADA.rate <- c(0,1,1)#
 		ADA.times <- c(0,ada.data$ADA_TIME[1],600)#
 		ADA.onset <- approxfun(ADA.times,ADA.rate,method = "const")#
@@ -200,24 +33,17 @@ ADA.onset.function <- function(ada.data) {#
 		ada.data.rep <- ada.data.rep[,c(1,10,2:7,9)]	#
 		ada.data.rep	#
 	}#
-	input.data <- ddply(ada.data, .(ID), ADA.onset.function)
-tail(input.data[input.data$ID == 2,])
-tail(input.data[input.data$ID == 2,],20)
-tail(input.data[input.data$ID == 2,],26)
-tail(input.data[input.data$ID == 2,],40)
-input.data$ERRPRO <- rnorm(n*length(time),mean = 0,sd = sqrt(0.175561))
-input.data$amt <- 0	#
+	input.data <- ddply(ada.data, .(ID), ADA.onset.function)#
+ 	input.data$ERRPRO <- rnorm(n*length(time),mean = 0,sd = sqrt(0.175561))#
+	input.data$amt <- 0	#
 	input.data$cmt <- 1	#
 	input.data$evid <- 0	#
 	input.data$rate <- 0	#
 #
 	input.data$amt[input.data$time %in% inf.times] <- input.data$WT[input.data$time %in% inf.times]*5	#
 	input.data$evid[input.data$time %in% inf.times] <- 1	#
-	input.data$rate[input.data$time %in% inf.times] <- -2
-write.csv(input.data,file = paste0(work.dir,"mrgsolve_simulation_input.csv",na = ".",quote = F,row.names = F))
-dim(input.data)
-names(input.data)[c(2,11:14)] <- c("TIME","AMT","CMT","EVID","RATE")
-head(input.data)
-nonmem.input.data <- input.data#
+	input.data$rate[input.data$time %in% inf.times] <- -2	#
+	write.csv(input.data,file = paste0(work.dir,"mrgsolve_simulation_input.csv"),na = ".",quote = F,row.names = F)#
+	nonmem.input.data <- input.data#
 	names(nonmem.input.data)[c(2,11:14)] <- c("TIME","AMT","CMT","EVID","RATE")#
-	write.csv(nonmem.input.data,file = paste0(work.dir,"nonmem_simulation_input.csv",na = ".",quote = F,row.names = F))
+	write.csv(nonmem.input.data,file = paste0(work.dir,"nonmem_simulation_input.csv"),na = ".",quote = F,row.names = F)
