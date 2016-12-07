@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE nm:output SYSTEM "output.dtd">
+<nm:output
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://namespaces.oreilly.com/xmlnut/address output.xsd"
+xmlns:nm="http://namespaces.oreilly.com/xmlnut/address"
+>
+<nm:start_datetime>2016-12-06T15:10:43.752</nm:start_datetime>
+<nm:control_stream><![CDATA[
+$PROBLEM - INFLIXIMAB REFERENCE MODEL
+;REFERENCE:
+
+$INPUT ID TIME AMT RATE WT ADA ALB PPVCL PPVV1 PPVQ PPVV2 DV EVID CMT MDV
+
+$DATA ..\nonmem_bayes_input.csv IGNORE=C
+
+$SUBROUTINE ADVAN6 TOL=5
+
+$MODEL COMP=(CENT,DEFDOS,DEFOBS), COMP=(PERI)
+
+$PK
+ ;POPULATION PARAMETERS
+ POPCL=THETA(1)
+ POPV1=THETA(2)
+ POPQ=THETA(3)
+ POPV2=THETA(4)
+
+ ;COVARIATE EFFECTS
+ WT_CL=THETA(5) ;EFFECT OF WEIGHT ON CLEARANCE
+ ALB_CL=THETA(9) ;EFFECT OF ALBUMIN ON CLEARANCE
+ ADA_CL=THETA(10) ;EFFECT OF ANTI-DRUG ANTIBODIES ON CLEARANCE
+ WT_V1=THETA(6) ;EFFECT OF WEIGHT ON V1
+ WT_Q=THETA(7) ;EFFECT OF WEIGHT ON Q
+ WT_V2=THETA(8) ;EFFECT OF WEGIHT ON V2
+
+ D1=0.08333333 ;INFUSION INTO THE CENTRAL COMPARTMENT, SPECIFIED AS DURATION=2 HOURS (CONVERTED TO DAYS)
+
+ ;ANTI-DRUG ANTIBODIES
+ ADACOV=1 ;NO ANTI-DRUG ANTIBODIES
+ IF (ADA.EQ.1) ADACOV=1+ADA_CL ;ANTI-DRUG ANTIBODIES PRESENT
+
+ ;INDIVIDUAL PARAMETER VALUES
+ CL=POPCL*((WT/70)**WT_CL)*((ALB/4)**ALB_CL)*ADACOV*EXP(ETA(1))
+ V1=POPV1*((WT/70)**WT_V1)*EXP(ETA(2))
+ Q=POPQ*((WT/70)**WT_Q)*EXP(ETA(3))
+ V2=POPV2*((WT/70)**WT_V2)*EXP(ETA(4))
+
+ S1=V1 ;SCALE FACTOR FOR V
+
+$DES
+ DADT(1)=-Q/V1*A(1) +Q/V2*A(2) -CL/V1*A(1) ;CENTRAL COMPARTMENT
+ DADT(2)=Q/V1*A(1) -Q/V2*A(2) ;PERIPHERAL COMPARTMENT
+
+$THETA
+ (0,0.294,) ;TVCL
+ (0.1,3.33,) ;TVV1
+ (0,0.0719,) ;TVQ
+ (0,1.14,) ;TVV2
+
+ 0.614 ;WTONCL #POWER MODEL - REFERENCED TO 70 KG
+ 0.691 ;WTONV1
+ 1.10 ;WTONQ
+ 0.59 ;WTONV2
+
+ -1.17 ;ALBONCL #POWER MODEL - REFERENCED TO 4 G/DL
+ 0.257 ;ADAONCL #DICHOTOMOUS PROPORTIONAL MODEL - OFFSET IS 1+0.257 WHEN ADA=1
+
+$OMEGA
+ 0.106929 ;CLBSV  0.327^2
+ 0.0225 ;V1BSV 0.150^2
+ 1.21 ;QBSV  1.10^2
+ 0.638401 ;V2BSV  0.799^2
+
+$SIGMA
+ 0.175561 ;RUVPROP 0.419^2
+
+$ERROR
+ A1=A(1)
+ A2=A(2)
+ IPRE=F
+ Y=F*(1+ERR(1))
+
+;$SIMULATION (1234567) ONLYSIM SUBPROBLEMS=1
+
+$ESTIMATION METHOD=1 INTERACTION MAXEVALS=0 POSTHOC NOABORT NSIG=3 SIGL=9
+
+;$COVARIANCE UNCONDITIONAL SIGL=12 PRINT=E
+
+$TABLE ID TIME AMT RATE A1 A2 CL V1 Q V2 IPRE WT ADA ALB ETA1 PPVCL ETA2 PPVV1 ETA3 PPVQ ETA4 PPVV2 NOPRINT ONEHEADER FILE=nonmem_bayes_infliximab.fit
+]]></nm:control_stream>
+<nm:nmtran><![CDATA[
+
+ WARNINGS AND ERRORS (IF ANY) FOR PROBLEM    1
+
+ (WARNING  2) NM-TRAN INFERS THAT THE DATA ARE POPULATION.
+]]></nm:nmtran>
+<nm:nonmem nm:version='7.3.0'>
+<nm:license_information><![CDATA[
+License Registered to: UniSA - HQ - Australian Centre for Pharmacometrics - Academic
+Expiration Date:    14 APR 2020
+Current Date:        6 DEC 2016
+Days until program expires :1228
+]]></nm:license_information>
+<nm:program_information><![CDATA[
+1NONLINEAR MIXED EFFECTS MODEL PROGRAM (NONMEM) VERSION 7.3.0
+ ORIGINALLY DEVELOPED BY STUART BEAL, LEWIS SHEINER, AND ALISON BOECKMANN
+ CURRENT DEVELOPERS ARE ROBERT BAUER, ICON DEVELOPMENT SOLUTIONS,
+ AND ALISON BOECKMANN. IMPLEMENTATION, EFFICIENCY, AND STANDARDIZATION
+ PERFORMED BY NOUS INFOSYSTEMS.
+]]></nm:program_information>
+<nm:problem nm:number='1' nm:subproblem='0' nm:superproblem1='0' nm:iteration1='0' nm:superproblem2='0' nm:iteration2='0'>
+<nm:problem_title>- INFLIXIMAB REFERENCE MODEL</nm:problem_title>
+<nm:problem_information><![CDATA[
+
+ PROBLEM NO.:         1
+ - INFLIXIMAB REFERENCE MODEL
+0DATA CHECKOUT RUN:              NO
+ DATA SET LOCATED ON UNIT NO.:    2
+ THIS UNIT TO BE REWOUND:        NO
+ NO. OF DATA RECS IN DATA SET:     9100
+ NO. OF DATA ITEMS IN DATA SET:  15
+ ID DATA ITEM IS DATA ITEM NO.:   1
+ DEP VARIABLE IS DATA ITEM NO.:  12
+ MDV DATA ITEM IS DATA ITEM NO.: 15
+0INDICES PASSED TO SUBROUTINE PRED:
+  13   2   3   4   0   0  14   0   0   0   0
+0LABELS FOR DATA ITEMS:
+ ID TIME AMT RATE WT ADA ALB PPVCL PPVV1 PPVQ PPVV2 DV EVID CMT MDV
+0(NONBLANK) LABELS FOR PRED-DEFINED ITEMS:
+ CL V1 Q V2 A1 A2 IPRE
+0FORMAT FOR DATA:
+ (2(6E11.0/),3E11.0)
+
+ TOT. NO. OF OBS RECS:      300
+ TOT. NO. OF INDIVIDUALS:    100
+0LENGTH OF THETA:  10
+0DEFAULT THETA BOUNDARY TEST OMITTED:    NO
+0OMEGA HAS SIMPLE DIAGONAL FORM WITH DIMENSION:   4
+0DEFAULT OMEGA BOUNDARY TEST OMITTED:    NO
+0SIGMA HAS SIMPLE DIAGONAL FORM WITH DIMENSION:   1
+0DEFAULT SIGMA BOUNDARY TEST OMITTED:    NO
+0INITIAL ESTIMATE OF THETA:
+ LOWER BOUND    INITIAL EST    UPPER BOUND
+  0.0000E+00     0.2940E+00     0.1000E+07
+  0.1000E+00     0.3330E+01     0.1000E+07
+  0.0000E+00     0.7190E-01     0.1000E+07
+  0.0000E+00     0.1140E+01     0.1000E+07
+ -0.1000E+07     0.6140E+00     0.1000E+07
+ -0.1000E+07     0.6910E+00     0.1000E+07
+ -0.1000E+07     0.1100E+01     0.1000E+07
+ -0.1000E+07     0.5900E+00     0.1000E+07
+ -0.1000E+07    -0.1170E+01     0.1000E+07
+ -0.1000E+07     0.2570E+00     0.1000E+07
+0INITIAL ESTIMATE OF OMEGA:
+ 0.1069E+00
+ 0.0000E+00   0.2250E-01
+ 0.0000E+00   0.0000E+00   0.1210E+01
+ 0.0000E+00   0.0000E+00   0.0000E+00   0.6384E+00
+0INITIAL ESTIMATE OF SIGMA:
+ 0.1756E+00
+0TABLES STEP OMITTED:    NO
+ NO. OF TABLES:           1
+ SEED NUMBER (SEED):    11456
+ RANMETHOD:
+ MC SAMPLES (ESEED):    300
+ WRES SQUARE ROOT TYPE:            EIGENVALUE
+0-- TABLE   1 --
+ PRINTED:                NO
+ HEADERS:               ONE
+ FILE TO BE FORWARDED:   NO
+ FORMAT:                S1PE11.4
+ LFORMAT:
+ RFORMAT:
+0USER-CHOSEN ITEMS:
+ ID TIME AMT RATE A1 A2 CL V1 Q V2 IPRE WT ADA ALB ETA1 PPVCL ETA2 PPVV1 ETA3 PPVQ ETA4 PPVV2
+1DOUBLE PRECISION PREDPP VERSION 7.3.0
+
+ GENERAL NONLINEAR KINETICS MODEL (ADVAN6)
+0MODEL SUBROUTINE USER-SUPPLIED - ID NO. 9999
+0MAXIMUM NO. OF BASIC PK PARAMETERS:   4
+0COMPARTMENT ATTRIBUTES
+ COMPT. NO.   FUNCTION   INITIAL    ON/OFF      DOSE      DEFAULT    DEFAULT
+                         STATUS     ALLOWED    ALLOWED    FOR DOSE   FOR OBS.
+    1         CENT         ON         YES        YES        YES        YES
+    2         PERI         ON         YES        YES        NO         NO
+    3         OUTPUT       OFF        YES        NO         NO         NO
+0NRD VALUE FROM SUBROUTINE TOL:   5
+1
+ ADDITIONAL PK PARAMETERS - ASSIGNMENT OF ROWS IN GG
+ COMPT. NO.                             INDICES
+              SCALE      BIOAVAIL.   ZERO-ORDER  ZERO-ORDER  ABSORB
+                         FRACTION    RATE        DURATION    LAG
+    1            6           *           *           5           *
+    2            *           *           *           *           *
+    3            *           -           -           -           -
+             - PARAMETER IS NOT ALLOWED FOR THIS MODEL
+             * PARAMETER IS NOT SUPPLIED BY PK SUBROUTINE;
+               WILL DEFAULT TO ONE IF APPLICABLE
+0DATA ITEM INDICES USED BY PRED ARE:
+   EVENT ID DATA ITEM IS DATA ITEM NO.:     13
+   TIME DATA ITEM IS DATA ITEM NO.:          2
+   DOSE AMOUNT DATA ITEM IS DATA ITEM NO.:   3
+   DOSE RATE DATA ITEM IS DATA ITEM NO.:     4
+   COMPT. NO. DATA ITEM IS DATA ITEM NO.:   14
+
+0PK SUBROUTINE CALLED WITH EVERY EVENT RECORD.
+ PK SUBROUTINE NOT CALLED AT NONEVENT (ADDITIONAL OR LAGGED) DOSE TIMES.
+0ERROR SUBROUTINE CALLED WITH EVERY EVENT RECORD.
+0DES SUBROUTINE USES COMPACT STORAGE MODE.
+]]></nm:problem_information>
+<nm:estimation nm:number='1' nm:type='1'>
+<nm:table_series>1</nm:table_series>
+<nm:estimation_method>focei</nm:estimation_method>
+<nm:estimation_title>First Order Conditional Estimation with Interaction (Evaluation)</nm:estimation_title>
+<nm:final_objective_function_text>MINIMUM VALUE OF OBJECTIVE FUNCTION</nm:final_objective_function_text>
+<nm:final_objective_function>449.963139994429</nm:final_objective_function>
+<nm:theta>
+<nm:val nm:name='1'>0.294000000000000</nm:val>
+<nm:val nm:name='2'>3.33000000000000</nm:val>
+<nm:val nm:name='3'>7.190000000000001E-002</nm:val>
+<nm:val nm:name='4'>1.14000000000000</nm:val>
+<nm:val nm:name='5'>0.614000000000000</nm:val>
+<nm:val nm:name='6'>0.691000000000000</nm:val>
+<nm:val nm:name='7'>1.10000000000000</nm:val>
+<nm:val nm:name='8'>0.590000000000000</nm:val>
+<nm:val nm:name='9'>-1.17000000000000</nm:val>
+<nm:val nm:name='10'>0.257000000000000</nm:val>
+</nm:theta>
+<nm:omega>
+<nm:row nm:rname='1'>
+<nm:col nm:cname='1'>0.106929000000000</nm:col>
+</nm:row>
+<nm:row nm:rname='2'>
+<nm:col nm:cname='1'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='2'>2.250000000000001E-002</nm:col>
+</nm:row>
+<nm:row nm:rname='3'>
+<nm:col nm:cname='1'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='2'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='3'>1.21000000000000</nm:col>
+</nm:row>
+<nm:row nm:rname='4'>
+<nm:col nm:cname='1'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='2'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='3'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='4'>0.638401000000000</nm:col>
+</nm:row>
+</nm:omega>
+<nm:sigma>
+<nm:row nm:rname='1'>
+<nm:col nm:cname='1'>0.175561000000000</nm:col>
+</nm:row>
+</nm:sigma>
+<nm:omegac>
+<nm:row nm:rname='1'>
+<nm:col nm:cname='1'>0.327000000000000</nm:col>
+</nm:row>
+<nm:row nm:rname='2'>
+<nm:col nm:cname='1'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='2'>0.150000000000000</nm:col>
+</nm:row>
+<nm:row nm:rname='3'>
+<nm:col nm:cname='1'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='2'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='3'>1.10000000000000</nm:col>
+</nm:row>
+<nm:row nm:rname='4'>
+<nm:col nm:cname='1'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='2'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='3'>0.000000000000000E+000</nm:col>
+<nm:col nm:cname='4'>0.799000000000000</nm:col>
+</nm:row>
+</nm:omegac>
+<nm:sigmac>
+<nm:row nm:rname='1'>
+<nm:col nm:cname='1'>0.419000000000000</nm:col>
+</nm:row>
+</nm:sigmac>
+</nm:estimation>
+</nm:problem>
+</nm:nonmem>
+<nm:stop_datetime>2016-12-06T15:10:49.287</nm:stop_datetime>
+<nm:total_cputime>5.453</nm:total_cputime>
+</nm:output>

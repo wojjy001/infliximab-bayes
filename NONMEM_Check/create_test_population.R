@@ -5,12 +5,10 @@
 # Remove all current objects in the workspace
 	rm(list = ls(all = TRUE))
 
-# Set working direcctory
- 	work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/NONMEM_Check/"
+# Set working directory
+ 	# work.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/infliximab-bayes/NONMEM_Check/"	# Mac directory
+	work.dir <- "E:/Wojciechowski/infliximab-bayes/NONMEM_Check/"	# Server directory
 	setwd(work.dir)
-
-# Source and compile mrgsolve model file
-	source("mrgsolve_infliximab.R")
 
 # Set seed for reproducible results
  	set.seed(123456)
@@ -23,7 +21,6 @@
 # Define event times and time sequence
 	time <- seq(from = 0,to = 546,by = 7)	# General time sequence for simulation
 	inf.times <- c(0,14,42,seq(from = 98,to = 546,by = 56))	# Infusion times (induction and maintenance phase dosing)
-	sample.times <- seq(from = 98,to = 546,by = 56)	# Sampling times, i.e., when measured concentrations will be taken
 
 # Define population's covariate and random effect values
  	ALB <- rlnorm(n,meanlog = log(4),sdlog = 0.09)	# Albumin, g/dL
@@ -75,5 +72,14 @@
 # ------------------------------------------------------------------------------
 # Make data frame NONMEM compatible for simulation
 	nonmem.input.data <- input.data
-	names(nonmem.input.data)[c(2,11:14)] <- c("TIME","AMT","CMT","EVID","RATE")
+	names(nonmem.input.data)[c(1,2,11:14)] <- c("CID","TIME","AMT","CMT","EVID","RATE")
+	nonmem.input.data$DV <- "."
+# NONMEM requires separate lines for observation and dosing event
+	extra.obs.data <- nonmem.input.data[nonmem.input.data$TIME %in% inf.times,]
+	extra.obs.data$AMT <- 0	# Value for no dose
+	extra.obs.data$EVID <- 0	# Value for observation
+	extra.obs.data$RATE <- 0
+# Combine with input data
+	nonmem.input.data <- rbind(nonmem.input.data,extra.obs.data)
+	nonmem.input.data <- nonmem.input.data[with(nonmem.input.data, order(nonmem.input.data$CID,nonmem.input.data$TIME,-nonmem.input.data$EVID)),]	
 	write.csv(nonmem.input.data,file = paste0(work.dir,"nonmem_simulation_input.csv"),na = ".",quote = F,row.names = F)

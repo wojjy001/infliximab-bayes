@@ -1,0 +1,12 @@
+Wings for NONMEM
+C:\nm73ifort\wfn7\bin\nmfewfn73 nonmem_bayes_infliximab.ctl nonmem_bayes_infliximab.lst -prdefault [nodes]=1 "-nmexec=nonmem_bayes_infliximab.exe" "-runpdir=../temp_ivf11.dir"
+C:\nm73ifort\tr\nmtran.exe 
+  
+ WARNINGS AND ERRORS (IF ANY) FOR PROBLEM    1
+             
+ (WARNING  2) NM-TRAN INFERS THAT THE DATA ARE POPULATION.
+ifort /nologo /nbs /w /4Yportlib /Gs /Ob1gyti /Qprec_div /Fenonmem_bayes_infliximab.exe  FSUBS.f90 C:\nm73ifort\nm\pnm_mpid.obj /include:C:\nm73ifort\resource /include:C:\nm73ifort\resource @link.lnk  C:\nm73ifort\resource\PRGLOBALP.obj C:\nm73ifort\pr\MUMODEL.obj C:\nm73ifort\util\PARALLEL.obj C:\nm73ifort\pr\prpnm.obj C:\nm73ifort\nm\nonmem.obj C:\nm73ifort\nm\nonmem.lib  C:\nm73ifort\resource\resource.lib 
+[User] wojjy001
+[CPU] HSCPW-DF3 Intel64 Family 6 Model 62 Stepping 7, GenuineIntel
+[status]
+Error=None 
