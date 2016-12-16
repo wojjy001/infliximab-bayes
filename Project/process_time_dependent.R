@@ -46,8 +46,8 @@
 
 # ------------------------------------------------------------------------------
 # Set working directory
-  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
-  # project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
+  # project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
+  project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
 	plot.dir <- paste0(project.dir,"Plots3/")
 
 # Read in simulation output
@@ -61,24 +61,24 @@
   read.data.function <- function(input.list) {
     # Label data
       # label.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
-      # label.data0$STUDY <- 1
+      # label.data0$PROTOCOL <- 1
 			label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
-      label.data1$STUDY <- 5
+      label.data1$PROTOCOL <- 5
     # Clinical data
       # clinical.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
-      # clinical.data0$STUDY <- 2
+      # clinical.data0$PROTOCOL <- 2
 			clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
-      clinical.data1$STUDY <- 6
+      clinical.data1$PROTOCOL <- 6
     # Clinical TDM data
       # clinical.TDM.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
-      # clinical.TDM.data0$STUDY <- 3
+      # clinical.TDM.data0$PROTOCOL <- 3
 			clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
-      clinical.TDM.data1$STUDY <- 7
+      clinical.TDM.data1$PROTOCOL <- 7
     # Optimise.bayes1 data (5 mg/kg initiation)
       # optimise.bayes.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
-      # optimise.bayes.data0$STUDY <- 4
+      # optimise.bayes.data0$PROTOCOL <- 4
 			optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
-      optimise.bayes.data1$STUDY <- 8
+      optimise.bayes.data1$PROTOCOL <- 8
     # Bind data from the set
       # set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
 			set.data <- rbind(label.data1,clinical.data1,clinical.TDM.data1,optimise.bayes.data1)
@@ -89,11 +89,11 @@
 
   all.data$IDf <- as.factor(all.data$ID)
   levels(all.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
-# Assign descriptions to STUDY
-  all.data$STUDYf <- as.factor(all.data$STUDY)
-  levels(all.data$STUDYf) <- c(
+# Assign descriptions to PROTOCOL
+  all.data$PROTOCOLf <- as.factor(all.data$PROTOCOL)
+  levels(all.data$PROTOCOLf) <- c(
 		# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-	"Label","Clinical Protocol","Proportional Adjustment","Model-Guided")
+	"Label","Stepwise-Adjusted","Proportionally-Adjusted","Model-Guided")
 
 # Give each individual a unique ID number (uID)
   uID <- sort(c(rep(seq(from = 1,to = n*nsim*4,by = 1),times = length(unique(all.data$time)))))
@@ -116,13 +116,13 @@
       "mg/kg" = all.data$amt[all.data$amt != 0]/all.data$WTCOV[all.data$amt != 0]
     )
   }
-  ind.summary.data <- ddply(all.data, .(STUDY,set.seq,SIM,ID,uID), ind.summary.function)
+  ind.summary.data <- ddply(all.data, .(PROTOCOL,set.seq,SIM,ID,uID), ind.summary.function)
 
 # Line (median) and ribbon (prediction intervals)
   # Bin time
     ind.summary.data$TIMEBIN <- ind.summary.data$time
-		# ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,6)]-98)/56)*56+98
-		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,3,4,6,7,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$STUDY %in% c(2,3,4,6,7,8)]-98)/56)*56+98
+		# ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,6)]-98)/56)*56+98
+		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,3,4,6,7,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,3,4,6,7,8)]-98)/56)*56+98
 
 		standard.times <- c(0,14,42,98,154,210,266,322,378,434,490,546)
 		# subset.ind.summary.data <- ind.summary.data[ind.summary.data$time %in% standard.times,]
@@ -133,57 +133,57 @@
     ind.summary.data$ALB <- as.numeric(ind.summary.data$ALB)
     ind.summary.data$IDf <- as.factor(ind.summary.data$ID)
     levels(ind.summary.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
-  # Assign descriptions to STUDY
-    ind.summary.data$STUDYf <- as.factor(ind.summary.data$STUDY)
-    levels(ind.summary.data$STUDYf) <- c(
+  # Assign descriptions to PROTOCOL
+    ind.summary.data$PROTOCOLf <- as.factor(ind.summary.data$PROTOCOL)
+    levels(ind.summary.data$PROTOCOLf) <- c(
 			# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-		"Label","Clinical Protocol","Proportional Adjustment","Model-Guided")
+		"Label","Stepwise-Adjusted","Proportionally-Adjusted","Model-Guided")
 
 ## Plot concentration-time for all studies
 # Calculate
-  STUDY.summary.data <- ddply(ind.summary.data, .(STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$IPRE))
-  ID.STUDY.summary.data <- ddply(ind.summary.data, .(ID,IDf,STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$IPRE))
+  PROTOCOL.summary.data <- ddply(ind.summary.data, .(PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$IPRE))
+  ID.PROTOCOL.summary.data <- ddply(ind.summary.data, .(ID,IDf,PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$IPRE))
 
-# Plot by STUDY
+# Plot by PROTOCOL
   plotobj1 <- NULL
-  plotobj1 <- ggplot(STUDY.summary.data)
-  plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
-  plotobj1 <- plotobj1 + geom_line(aes(x = TIMEBIN,y = median),data = STUDY.summary.data)
+  plotobj1 <- ggplot(PROTOCOL.summary.data)
+  plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj1 <- plotobj1 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
+  plotobj1 <- plotobj1 + geom_line(aes(x = TIMEBIN,y = median),data = PROTOCOL.summary.data)
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = 3),linetype = "dashed")
   plotobj1 <- plotobj1 + geom_hline(aes(yintercept = 5),linetype = "dashed")
   plotobj1 <- plotobj1 + scale_y_log10("Trough Infliximab Concentration (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
   plotobj1 <- plotobj1 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj1 <- plotobj1 + facet_wrap(~STUDYf,ncol = 4)
+  plotobj1 <- plotobj1 + facet_wrap(~PROTOCOLf,ncol = 4)
   plotobj1 <- plotobj1 + theme(legend.position = "none")
   plotobj1
 
   ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.png"),units = "cm",width = 30,height = 10)
 
-# Plot - Each ID separately by STUDY
+# Plot - Each ID separately by PROTOCOL
   ID.list <- 1:n
   plot.function <- function(ID.list) {
     plotobj2 <- NULL
-    plotobj2 <- ggplot(ID.STUDY.summary.data[ID.STUDY.summary.data$ID == ID.list,])
-    plotobj2 <- plotobj2 + ggtitle(ID.STUDY.summary.data$IDf[ID.STUDY.summary.data$ID == ID.list])
-		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+    plotobj2 <- ggplot(ID.PROTOCOL.summary.data[ID.PROTOCOL.summary.data$ID == ID.list,])
+    plotobj2 <- plotobj2 + ggtitle(ID.PROTOCOL.summary.data$IDf[ID.PROTOCOL.summary.data$ID == ID.list])
+		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj2 <- plotobj2 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
     plotobj2 <- plotobj2 + geom_line(aes(x = TIMEBIN,y = median))
     plotobj2 <- plotobj2 + geom_hline(aes(yintercept = 3),linetype = "dashed")
     plotobj2 <- plotobj2 + geom_hline(aes(yintercept = 5),linetype = "dashed")
     plotobj2 <- plotobj2 + scale_y_log10("Trough Infliximab Concentrations (mg/L)\n",breaks = c(0.001,0.01,0.1,1,10,100),labels = c(0.001,0.01,0.1,1,10,100))
     plotobj2 <- plotobj2 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj2 <- plotobj2 + facet_wrap(~STUDYf,ncol = 4)
+    plotobj2 <- plotobj2 + facet_wrap(~PROTOCOLf,ncol = 4)
     plotobj2 <- plotobj2 + theme(legend.position = "none")
     plotobj2
 
-    ID.label <- ID.STUDY.summary.data$IDf[ID.STUDY.summary.data$ID == ID.list][1]
+    ID.label <- ID.PROTOCOL.summary.data$IDf[ID.PROTOCOL.summary.data$ID == ID.list][1]
     ggsave(plot = plotobj2,filename = paste0(plot.dir,ID.label,"_trough_time.png"),units = "cm",width = 30,height = 10)
   }
   plot.list <- lapply(ID.list,plot.function)
@@ -191,44 +191,44 @@
 
 ## Plot weight-time for all studies
 # Calculate
-  STUDY.wt.summary.data <- ddply(ind.summary.data, .(STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$WT))
-  ID.STUDY.wt.summary.data <- ddply(ind.summary.data, .(ID,IDf,STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$WT))
+  PROTOCOL.wt.summary.data <- ddply(ind.summary.data, .(PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$WT))
+  ID.PROTOCOL.wt.summary.data <- ddply(ind.summary.data, .(ID,IDf,PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$WT))
 
-# Plot by STUDY
+# Plot by PROTOCOL
   plotobj3 <- NULL
-  plotobj3 <- ggplot(STUDY.wt.summary.data)
-	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+  plotobj3 <- ggplot(PROTOCOL.wt.summary.data)
+	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj3 <- plotobj3 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
   plotobj3 <- plotobj3 + geom_line(aes(x = TIMEBIN,y = median))
   plotobj3 <- plotobj3 + scale_y_continuous("Weight at Trough Times (kg)\n")
   plotobj3 <- plotobj3 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj3 <- plotobj3 + facet_wrap(~STUDYf,ncol = 4)
+  plotobj3 <- plotobj3 + facet_wrap(~PROTOCOLf,ncol = 4)
   plotobj3 <- plotobj3 + theme(legend.position = "none")
   plotobj3
 
   ggsave(plot = plotobj3,filename = paste0(plot.dir,"WT_time.png"),units = "cm",width = 30,height = 10)
 
-# Plot - Each ID separately by STUDY
+# Plot - Each ID separately by PROTOCOL
   wt.plot.function <- function(ID.list) {
     plotobj4 <- NULL
-    plotobj4 <- ggplot(ID.STUDY.wt.summary.data[ID.STUDY.wt.summary.data$ID == ID.list,])
-    plotobj4 <- plotobj4 + ggtitle(ID.STUDY.wt.summary.data$IDf[ID.STUDY.wt.summary.data$ID == ID.list])
-		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+    plotobj4 <- ggplot(ID.PROTOCOL.wt.summary.data[ID.PROTOCOL.wt.summary.data$ID == ID.list,])
+    plotobj4 <- plotobj4 + ggtitle(ID.PROTOCOL.wt.summary.data$IDf[ID.PROTOCOL.wt.summary.data$ID == ID.list])
+		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj4 <- plotobj4 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
     plotobj4 <- plotobj4 + geom_line(aes(x = TIMEBIN,y = median))
     plotobj4 <- plotobj4 + scale_y_continuous("Weight at Trough Times (kg)\n")
     plotobj4 <- plotobj4 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj4 <- plotobj4 + facet_wrap(~STUDYf,ncol = 4)
+    plotobj4 <- plotobj4 + facet_wrap(~PROTOCOLf,ncol = 4)
     plotobj4 <- plotobj4 + theme(legend.position = "none")
     plotobj4
 
-    ID.label <- ID.STUDY.wt.summary.data$IDf[ID.STUDY.wt.summary.data$ID == ID.list][1]
+    ID.label <- ID.PROTOCOL.wt.summary.data$IDf[ID.PROTOCOL.wt.summary.data$ID == ID.list][1]
     ggsave(plot = plotobj4,filename = paste0(plot.dir,ID.label,"_WT_time.png"),units = "cm",width = 30,height = 10)
   }
   wt.plot.list <- lapply(ID.list,wt.plot.function)
@@ -236,44 +236,44 @@
 
 ## Plot albumin-time for all studies
 # Calculate
-  STUDY.alb.summary.data <- ddply(ind.summary.data, .(STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$ALB))
-  ID.STUDY.alb.summary.data <- ddply(ind.summary.data, .(ID,IDf,STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$ALB))
+  PROTOCOL.alb.summary.data <- ddply(ind.summary.data, .(PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$ALB))
+  ID.PROTOCOL.alb.summary.data <- ddply(ind.summary.data, .(ID,IDf,PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$ALB))
 
-# Plot by STUDY
+# Plot by PROTOCOL
   plotobj5 <- NULL
-  plotobj5 <- ggplot(STUDY.alb.summary.data)
-	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+  plotobj5 <- ggplot(PROTOCOL.alb.summary.data)
+	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj5 <- plotobj5 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
   plotobj5 <- plotobj5 + geom_line(aes(x = TIMEBIN,y = median))
   plotobj5 <- plotobj5 + scale_y_continuous("Albumin at Trough Times (g/dL)\n")
   plotobj5 <- plotobj5 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj5 <- plotobj5 + facet_wrap(~STUDYf,ncol = 4)
+  plotobj5 <- plotobj5 + facet_wrap(~PROTOCOLf,ncol = 4)
   plotobj5 <- plotobj5 + theme(legend.position = "none")
   plotobj5
 
   ggsave(plot = plotobj5,filename = paste0(plot.dir,"ALB_time.png"),units = "cm",width = 30,height = 10)
 
-# Plot - Each ID separately by STUDY
+# Plot - Each ID separately by PROTOCOL
   alb.plot.function <- function(ID.list) {
     plotobj6 <- NULL
-    plotobj6 <- ggplot(ID.STUDY.alb.summary.data[ID.STUDY.alb.summary.data$ID == ID.list,])
-    plotobj6 <- plotobj6 + ggtitle(ID.STUDY.alb.summary.data$IDf[ID.STUDY.alb.summary.data$ID == ID.list])
-		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+    plotobj6 <- ggplot(ID.PROTOCOL.alb.summary.data[ID.PROTOCOL.alb.summary.data$ID == ID.list,])
+    plotobj6 <- plotobj6 + ggtitle(ID.PROTOCOL.alb.summary.data$IDf[ID.PROTOCOL.alb.summary.data$ID == ID.list])
+		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj6 <- plotobj6 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
     plotobj6 <- plotobj6 + geom_line(aes(x = TIMEBIN,y = median))
     plotobj6 <- plotobj6 + scale_y_continuous("Albumin at Trough Times (g/dL)\n")
     plotobj6 <- plotobj6 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj6 <- plotobj6 + facet_wrap(~STUDYf,ncol = 4)
+    plotobj6 <- plotobj6 + facet_wrap(~PROTOCOLf,ncol = 4)
     plotobj6 <- plotobj6 + theme(legend.position = "none")
     plotobj6
 
-    ID.label <- ID.STUDY.alb.summary.data$IDf[ID.STUDY.alb.summary.data$ID == ID.list][1]
+    ID.label <- ID.PROTOCOL.alb.summary.data$IDf[ID.PROTOCOL.alb.summary.data$ID == ID.list][1]
     ggsave(plot = plotobj6,filename = paste0(plot.dir,ID.label,"_ALB_time.png"),units = "cm",width = 30,height = 10)
   }
   alb.plot.list <- lapply(ID.list,alb.plot.function)
@@ -281,73 +281,73 @@
 
 ## Proportion of time below target trough concentration
 # Calculate
-  STUDY.ptut.summary.data <- ddply(ind.summary.data, .(STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$pTUT))
-  ID.STUDY.ptut.summary.data <- ddply(ind.summary.data, .(ID,IDf,STUDY,STUDYf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$pTUT))
+  PROTOCOL.ptut.summary.data <- ddply(ind.summary.data, .(PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$pTUT))
+  ID.PROTOCOL.ptut.summary.data <- ddply(ind.summary.data, .(ID,IDf,PROTOCOL,PROTOCOLf,TIMEBIN), function(ind.summary.data) summary.function(ind.summary.data$pTUT))
 
-# Plot by STUDY
+# Plot by PROTOCOL
   plotobj7 <- NULL
-  plotobj7 <- ggplot(STUDY.ptut.summary.data)
-	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+  plotobj7 <- ggplot(PROTOCOL.ptut.summary.data)
+	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+	plotobj7 <- plotobj7 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
   plotobj7 <- plotobj7 + geom_line(aes(x = TIMEBIN,y = median))
   # plotobj7 <- plotobj7 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
   plotobj7 <- plotobj7 + scale_y_continuous("Proportion of Time under Target Trough\n")
   plotobj7 <- plotobj7 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-  plotobj7 <- plotobj7 + facet_wrap(~STUDYf,ncol = 4)
+  plotobj7 <- plotobj7 + facet_wrap(~PROTOCOLf,ncol = 4)
   plotobj7 <- plotobj7 + theme(legend.position = "none")
   plotobj7
 
   ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.png"),units = "cm",width = 30,height = 10)
 
-# Plot - Each ID separately by STUDY
+# Plot - Each ID separately by PROTOCOL
   ptut.plot.function <- function(ID.list) {
     plotobj8 <- NULL
-    plotobj8 <- ggplot(ID.STUDY.ptut.summary.data[ID.STUDY.ptut.summary.data$ID == ID.list,])
-    plotobj8 <- plotobj8 + ggtitle(ID.STUDY.ptut.summary.data$IDf[ID.STUDY.ptut.summary.data$ID == ID.list])
-		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = STUDYf),alpha = 0.2)
-		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = STUDYf),alpha = 0.2)
-		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = STUDYf),alpha = 0.2)
-		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = STUDYf),alpha = 0.2)
-		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = STUDYf),alpha = 0.2)
+    plotobj8 <- ggplot(ID.PROTOCOL.ptut.summary.data[ID.PROTOCOL.ptut.summary.data$ID == ID.list,])
+    plotobj8 <- plotobj8 + ggtitle(ID.PROTOCOL.ptut.summary.data$IDf[ID.PROTOCOL.ptut.summary.data$ID == ID.list])
+		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.90lo,ymax = stat.90hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.80lo,ymax = stat.80hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.60lo,ymax = stat.60hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.40lo,ymax = stat.40hi,fill = PROTOCOLf),alpha = 0.2)
+		plotobj8 <- plotobj8 + geom_ribbon(aes(x = TIMEBIN,ymin = stat.20lo,ymax = stat.20hi,fill = PROTOCOLf),alpha = 0.2)
     plotobj8 <- plotobj8 + geom_line(aes(x = TIMEBIN,y = median))
     # plotobj8 <- plotobj8 + geom_hline(aes(yintercept = 0.1),linetype = "dashed")
     plotobj8 <- plotobj8 + scale_y_continuous("Proportion of Time under Target Trough\n")
     plotobj8 <- plotobj8 + scale_x_continuous("\nTime (days)",breaks = c(0,98,210,322,434,546),labels = c(0,98,210,322,434,546))
-    plotobj8 <- plotobj8 + facet_wrap(~STUDYf,ncol = 4)
+    plotobj8 <- plotobj8 + facet_wrap(~PROTOCOLf,ncol = 4)
     plotobj8 <- plotobj8 + theme(legend.position = "none")
     plotobj8
 
-    ID.label <- ID.STUDY.ptut.summary.data$IDf[ID.STUDY.ptut.summary.data$ID == ID.list][1]
+    ID.label <- ID.PROTOCOL.ptut.summary.data$IDf[ID.PROTOCOL.ptut.summary.data$ID == ID.list][1]
     ggsave(plot = plotobj8,filename = paste0(plot.dir,ID.label,"_ptut_time.png"),units = "cm",width = 30,height = 10)
   }
   ptut.plot.list <- lapply(ID.list,ptut.plot.function)
   ptut.plot.list
 
-## Study Numerical Summaries
+## Protocol Numerical Summaries
 # Proportion of time under target trough at study conclusion, days (pTUT)
-  pTUT.summary <- ddply(all.data[all.data$time == 546,], .(STUDY), function(all.data) summary.function(all.data$pTUT))
+  pTUT.summary <- ddply(all.data[all.data$time == 546,], .(PROTOCOL), function(all.data) summary.function(all.data$pTUT))
 
 # Maintenance dose, mg/kg
   main.data <- ind.summary.data[ind.summary.data$time >= 98 & ind.summary.data$amt != 0,] # Subset only maintenance dosing data
-  mg.kg.summary <- ddply(main.data, .(STUDY), function(main.data) summary.function(main.data$mg.kg))
+  mg.kg.summary <- ddply(main.data, .(PROTOCOL), function(main.data) summary.function(main.data$mg.kg))
 
 # Maintenance dose frequency, days
-  int.summary <- ddply(main.data, .(STUDY), function(main.data) summary.function(main.data$int))
+  int.summary <- ddply(main.data, .(PROTOCOL), function(main.data) summary.function(main.data$int))
 
 # Maintenance dose amounts administered
-	amount.summary <- ddply(main.data, .(STUDY), function(main.data) sum(main.data$amt))
+	amount.summary <- ddply(main.data, .(PROTOCOL), function(main.data) sum(main.data$amt))
 
 # Change in total body weight, kg
   last.data <- all.data[all.data$time == 546,]
   last.data$cWT <- last.data$WTCOV-last.data$BASE_WT
-  wt.summary <- ddply(last.data, .(STUDY), function(last.data) summary.function(last.data$cWT))
+  wt.summary <- ddply(last.data, .(PROTOCOL), function(last.data) summary.function(last.data$cWT))
 
 # Change in albumin, g/dL
   last.data$cALB <- last.data$ALBCOV-last.data$BASE_ALB
-  alb.summary <- ddply(last.data, .(STUDY), function(last.data) summary.function(last.data$cALB))
+  alb.summary <- ddply(last.data, .(PROTOCOL), function(last.data) summary.function(last.data$cALB))
 
 # Proportion that develop ADA
   ADA.onset.function <- function(ind.summary.data) {
@@ -359,54 +359,54 @@
     if (length(ADA.onoff[ADA.onoff == -1]) != 1) time.off <- 600
     ADA.onset.data <- data.frame(time.on,time.off)
   }
-  ADA.onset.summary <- ddply(ind.summary.data, .(STUDY,STUDYf,set.seq,SIM,ID,IDf), ADA.onset.function)
-  ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
-  ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(n*nsim))
-  # ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
+  ADA.onset.summary <- ddply(ind.summary.data, .(PROTOCOL,PROTOCOLf,set.seq,SIM,ID,IDf), ADA.onset.function)
+  ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(PROTOCOL,PROTOCOLf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
+  ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(PROTOCOL,PROTOCOLf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(n*nsim))
+  # ada.revert.proportion <- ddply(ADA.onset.summary, .(PROTOCOL), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 	# ada.revert.proportion
 
-	ada.init.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on))
-	ada.init.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(STUDY,STUDYf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(n*nsim))
+	ada.init.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(PROTOCOL,PROTOCOLf), function(ADA.onset.summary) length(ADA.onset.summary$time.on))
+	ada.init.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(PROTOCOL,PROTOCOLf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(n*nsim))
 	ada.main.proportion <- (ada.on.summary$n-ada.init.summary$V1)/(n*nsim)
 
-## Study Numerical Summaries by Seed
+## Protocol Numerical Summaries by Seed
 # Proportion of time under target trough at study conclusion, days (pTUT)
-  ID.pTUT.summary <- ddply(all.data[all.data$time == 546,], .(STUDY,STUDYf,ID,IDf), function(all.data) summary.function(all.data$pTUT))
+  ID.pTUT.summary <- ddply(all.data[all.data$time == 546,], .(PROTOCOL,PROTOCOLf,ID,IDf), function(all.data) summary.function(all.data$pTUT))
 
 # Maintenance dose, mg/kg
-  ID.mg.kg.summary <- ddply(main.data, .(STUDY,STUDYf,ID,IDf), function(main.data) summary.function(main.data$mg.kg))
+  ID.mg.kg.summary <- ddply(main.data, .(PROTOCOL,PROTOCOLf,ID,IDf), function(main.data) summary.function(main.data$mg.kg))
 
 # Maintenance dose frequency, days
-  ID.int.summary <- ddply(main.data, .(STUDY,STUDYf,ID,IDf), function(main.data) summary.function(main.data$int))
+  ID.int.summary <- ddply(main.data, .(PROTOCOL,PROTOCOLf,ID,IDf), function(main.data) summary.function(main.data$int))
 
 # Change in total body weight, kg
-  ID.wt.summary <- ddply(last.data, .(STUDY,STUDYf,ID,IDf), function(last.data) summary.function(last.data$cWT))
+  ID.wt.summary <- ddply(last.data, .(PROTOCOL,PROTOCOLf,ID,IDf), function(last.data) summary.function(last.data$cWT))
 
 # Change in albumin, g/dL
-  ID.alb.summary <- ddply(last.data, .(STUDY,STUDYf,ID,IDf), function(last.data) summary.function(last.data$cALB))
+  ID.alb.summary <- ddply(last.data, .(PROTOCOL,PROTOCOLf,ID,IDf), function(last.data) summary.function(last.data$cALB))
 
 # Proportion that develop ADA
-  ID.ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
-  ID.ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/nsim)
+  ID.ada.on.summary <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(PROTOCOL,PROTOCOLf,ID,IDf), function(ADA.onset.summary) summary.function(ADA.onset.summary$time.on))
+  ID.ada.on.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on != 600,], .(PROTOCOL,PROTOCOLf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/nsim)
 
-	ID.ada.init.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(nsim))
+	ID.ada.init.proportion <- ddply(ADA.onset.summary[ADA.onset.summary$time.on <= 98,], .(PROTOCOL,PROTOCOLf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.on)/(nsim))
 	ID.ada.main.proportion <- ID.ada.init.proportion
 	ID.ada.main.proportion$V1 <- (ID.ada.on.summary$n/nsim)-ID.ada.init.proportion$V1
 
-  # ID.ada.revert.proportion <- ddply(ADA.onset.summary, .(STUDY,STUDYf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
+  # ID.ada.revert.proportion <- ddply(ADA.onset.summary, .(PROTOCOL,PROTOCOLf,ID,IDf), function(ADA.onset.summary) length(ADA.onset.summary$time.off[ADA.onset.summary$time.on != 600 & ADA.onset.summary$time.off != 600])/length(ADA.onset.summary$time.on[ADA.onset.summary$time.on != 600]))
 
-## Study graphical summaries by seed
+## Protocol graphical summaries by seed
 # Proportion of time below target trough
   plotobj9 <- NULL
   plotobj9 <- ggplot(ID.pTUT.summary)
-	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	plotobj9 <- plotobj9 + geom_errorbar(aes(x = IDf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.9),size = 1)
-  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,colour = STUDYf),position = position_dodge(width = 0.9),size = 4)
-  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,group = STUDYf),position = position_dodge(width = 0.9),size = 4,shape = 1)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj9 <- plotobj9 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	plotobj9 <- plotobj9 + geom_errorbar(aes(x = IDf,ymin = stat.50lo,ymax = stat.50hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),size = 1)
+  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,colour = PROTOCOLf),position = position_dodge(width = 0.9),size = 4)
+  plotobj9 <- plotobj9 + geom_point(aes(x = IDf,y = median,group = PROTOCOLf),position = position_dodge(width = 0.9),size = 4,shape = 1)
   plotobj9 <- plotobj9 + scale_x_discrete("\nBaseline Seed")
   plotobj9 <- plotobj9 + scale_y_continuous("Proportion of Time under Target Trough\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj9 <- plotobj9 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
@@ -426,9 +426,9 @@
 		all.data
 	}
 	main.ind.tut.data <- ddply(all.data[all.data$time %in% standard.times,], .(uID), main.tut.function)
-	main.ind.tut.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(STUDY,STUDYf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
+	main.ind.tut.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(PROTOCOL,PROTOCOLf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
 
-  ID.main.pTUT.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(STUDY,STUDYf,ID,IDf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
+  ID.main.pTUT.summary <- ddply(main.ind.tut.data[main.ind.tut.data$time == 546,], .(PROTOCOL,PROTOCOLf,ID,IDf), function(main.ind.tut.data) summary.function(main.ind.tut.data$mainpTUT))
 	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(1,4,7)] <- 2.5
 	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(2,5,8)] <- 3
 	ID.main.pTUT.summary$ALB[ID.main.pTUT.summary$ID %in% c(3,6,9)] <- 3.5
@@ -445,16 +445,16 @@
 
 	plotobj13 <- NULL
   plotobj13 <- ggplot(ID.main.pTUT.summary)
-	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	plotobj13 <- plotobj13 + geom_errorbar(aes(x = STUDYf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.2),size = 1)
-  plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,colour = STUDYf),position = position_dodge(width = 0.2),size = 4)
-  plotobj13 <- plotobj13 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
-	plotobj13 <- plotobj13 + geom_text(aes(x = STUDYf,y = stat.50hi+0.07,label = ADApro))
-  plotobj13 <- plotobj13 + scale_x_discrete("\nStudy")
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj13 <- plotobj13 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	plotobj13 <- plotobj13 + geom_errorbar(aes(x = PROTOCOLf,ymin = stat.50lo,ymax = stat.50hi,colour = PROTOCOLf),position = position_dodge(width = 0.2),size = 1)
+  plotobj13 <- plotobj13 + geom_point(aes(x = PROTOCOLf,y = median,colour = PROTOCOLf),position = position_dodge(width = 0.2),size = 4)
+  plotobj13 <- plotobj13 + geom_point(aes(x = PROTOCOLf,y = median,group = PROTOCOLf),position = position_dodge(width = 0.2),size = 4,shape = 1)
+	plotobj13 <- plotobj13 + geom_text(aes(x = PROTOCOLf,y = stat.50hi+0.07,label = ADApro))
+  plotobj13 <- plotobj13 + scale_x_discrete("\nProtocol")
   plotobj13 <- plotobj13 + scale_y_continuous("Proportion of Time under Target Trough during Maintenance\n",breaks = seq(from = 0,to = 1,by = 0.1))
   plotobj13 <- plotobj13 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
 	# plotobj13 <- plotobj13 + theme(legend.position = "none")
@@ -466,8 +466,8 @@
 # Change in weight
   plotobj10 <- NULL
   plotobj10 <- ggplot(ID.wt.summary)
-  plotobj10 <- plotobj10 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,alpha = 0.5)
-  plotobj10 <- plotobj10 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,shape = 1)
+  plotobj10 <- plotobj10 + geom_point(aes(x = IDf,y = median,colour = PROTOCOLf),size = 4,alpha = 0.5)
+  plotobj10 <- plotobj10 + geom_point(aes(x = IDf,y = median,colour = PROTOCOLf),size = 4,shape = 1)
   plotobj10 <- plotobj10 + scale_x_discrete("\nBaseline seed")
   plotobj10 <- plotobj10 + scale_y_continuous("Median Change in Weight (kg)\n")
   plotobj10 <- plotobj10 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
@@ -478,8 +478,8 @@
 # Change in albumin
   plotobj11 <- NULL
   plotobj11 <- ggplot(ID.alb.summary)
-  plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,alpha = 0.5)
-  plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = STUDYf),size = 4,shape = 1)
+  plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = PROTOCOLf),size = 4,alpha = 0.5)
+  plotobj11 <- plotobj11 + geom_point(aes(x = IDf,y = median,colour = PROTOCOLf),size = 4,shape = 1)
   plotobj11 <- plotobj11 + scale_x_discrete("\nBaseline seed")
   plotobj11 <- plotobj11 + scale_y_continuous("Median Change in Albumin (g/dL)\n")
   plotobj11 <- plotobj11 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
@@ -502,8 +502,8 @@
 	}
 
 	time.to.target.data <- ddply(ind.summary.data, .(uID), time.to.target.function)
-	time.to.target.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(STUDY,STUDYf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
-	time.to.target.ind.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(STUDY,STUDYf,ID,IDf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
+	time.to.target.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(PROTOCOL,PROTOCOLf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
+	time.to.target.ind.summary <- ddply(time.to.target.data[time.to.target.data$time == 98,], .(PROTOCOL,PROTOCOLf,ID,IDf), function(time.to.target.data) summary.function(na.omit(time.to.target.data$target)))
 	time.to.target.ind.summary$pro <- round(time.to.target.ind.summary$n/1000,digits = 2)
 
 	time.to.target.ind.summary$ALB[time.to.target.ind.summary$ID %in% c(1,4,7)] <- 2.5
@@ -520,16 +520,16 @@
 
 	plotobj16 <- NULL
   plotobj16 <- ggplot(time.to.target.ind.summary)
-	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = STUDYf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
-	plotobj16 <- plotobj16 + geom_errorbar(aes(x = STUDYf,ymin = stat.50lo,ymax = stat.50hi,colour = STUDYf),position = position_dodge(width = 0.2),size = 1)
-  plotobj16 <- plotobj16 + geom_point(aes(x = STUDYf,y = median,colour = STUDYf),position = position_dodge(width = 0.2),size = 4)
-  plotobj16 <- plotobj16 + geom_point(aes(x = STUDYf,y = median,group = STUDYf),position = position_dodge(width = 0.2),size = 4,shape = 1)
-	plotobj16 <- plotobj16 + geom_text(aes(x = STUDYf,y = stat.50hi+15,label = pro))
-  plotobj16 <- plotobj16 + scale_x_discrete("\nStudy")
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.90lo,ymax = stat.90hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.80lo,ymax = stat.80hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.60lo,ymax = stat.60hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.40lo,ymax = stat.40hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	# plotobj16 <- plotobj16 + geom_linerange(aes(x = IDf,ymin = stat.20lo,ymax = stat.20hi,colour = PROTOCOLf),position = position_dodge(width = 0.9),alpha = 0.2,size = 4)
+	plotobj16 <- plotobj16 + geom_errorbar(aes(x = PROTOCOLf,ymin = stat.50lo,ymax = stat.50hi,colour = PROTOCOLf),position = position_dodge(width = 0.2),size = 1)
+  plotobj16 <- plotobj16 + geom_point(aes(x = PROTOCOLf,y = median,colour = PROTOCOLf),position = position_dodge(width = 0.2),size = 4)
+  plotobj16 <- plotobj16 + geom_point(aes(x = PROTOCOLf,y = median,group = PROTOCOLf),position = position_dodge(width = 0.2),size = 4,shape = 1)
+	plotobj16 <- plotobj16 + geom_text(aes(x = PROTOCOLf,y = stat.50hi+15,label = pro))
+  plotobj16 <- plotobj16 + scale_x_discrete("\nProtocol")
   plotobj16 <- plotobj16 + scale_y_continuous("Time to First Trough Target Achievement (days)\n",breaks = seq(from = 98,to = 546,by = 56))
   plotobj16 <- plotobj16 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
 	# plotobj16 <- plotobj16 + theme(legend.position = "none")
@@ -555,13 +555,13 @@
 	high.random.data$IDf <- "Example 1: Weight 100 kg, Albumin 3.5 g/dL"
 
 	random.data <- rbind(low.random.data,high.random.data)
-	names(random.data)[33] <- "Study"
+	names(random.data)[33] <- "Protocol"
 
 	plotobj14 <- NULL
 	plotobj14 <- ggplot(random.data)
-	plotobj14 <- plotobj14 + geom_line(aes(x = time,y = IPRE,colour = Study))
-	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV,colour = Study),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2)
-	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2,shape = 1)
+	plotobj14 <- plotobj14 + geom_line(aes(x = time,y = IPRE,colour = Protocol))
+	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV,colour = Protocol),data = random.data[random.data$amt != 0 & random.data$PROTOCOL != 5,],size = 2)
+	plotobj14 <- plotobj14 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0 & random.data$PROTOCOL != 5,],size = 2,shape = 1)
 	plotobj14 <- plotobj14 + geom_hline(aes(yintercept = 3),linetype = "dashed")
 	plotobj14 <- plotobj14 + geom_hline(aes(yintercept = 5),linetype = "dashed")
 	plotobj14 <- plotobj14 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.1,1000),breaks = c(0.01,0.1,1,10,100),labels = c(0.01,0.1,1,10,100))
@@ -574,9 +574,9 @@
 
 	plotobj15 <- NULL
 	plotobj15 <- ggplot(random.data)
-	plotobj15 <- plotobj15 + geom_line(aes(x = time,y = IPRE,colour = Study))
-	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV,colour = Study),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2)
-	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0 & random.data$STUDY != 5,],size = 2,shape = 1)
+	plotobj15 <- plotobj15 + geom_line(aes(x = time,y = IPRE,colour = Protocol))
+	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV,colour = Protocol),data = random.data[random.data$amt != 0 & random.data$PROTOCOL != 5,],size = 2)
+	plotobj15 <- plotobj15 + geom_point(aes(x = time,y = DV),data = random.data[random.data$amt != 0 & random.data$PROTOCOL != 5,],size = 2,shape = 1)
 	plotobj15 <- plotobj15 + geom_hline(aes(yintercept = 3),linetype = "dashed")
 	plotobj15 <- plotobj15 + geom_hline(aes(yintercept = 5),linetype = "dashed")
 	plotobj15 <- plotobj15 + scale_y_log10("Infliximab Concentration (mg/L)\n",lim = c(0.1,1000),breaks = c(0.01,0.1,1,10,100),labels = c(0.01,0.1,1,10,100))
