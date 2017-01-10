@@ -147,6 +147,7 @@
 
   ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.png"),units = "cm",width = 30,height = 10)
   ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)
+  ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.eps"),units = "cm",width = 30,height = 10,dpi = 300)
 
 # Plot - Each ID separately by PROTOCOL
   ID.list <- 1:n
@@ -286,7 +287,8 @@
   plotobj7
 
   ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.png"),units = "cm",width = 30,height = 10)
-  ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)	
+  ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)
+  ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.eps"),units = "cm",width = 30,height = 10,dpi = 300)
 
 # Plot - Each ID separately by PROTOCOL
   ptut.plot.function <- function(ID.list) {
@@ -448,6 +450,8 @@
   plotobj13
 
   ggsave(plot = plotobj13,filename = paste0(plot.dir,"mainpTUT_546_Seed.png"),units = "cm",width = 20,height = 20)
+  ggsave(plot = plotobj13,filename = paste0(plot.dir,"mainpTUT_546_Seed.pdf"),units = "cm",width = 20,height = 20,dpi = 300)
+  ggsave(plot = plotobj13,filename = paste0(plot.dir,"mainpTUT_546_Seed.eps"),units = "cm",width = 20,height = 20,dpi = 300)
 
 # Change in weight
   plotobj10 <- NULL
@@ -524,6 +528,7 @@
 
   ggsave(plot = plotobj16,filename = paste0(plot.dir,"mainT2T_546_Seed.png"),units = "cm",width = 20,height = 20)
   ggsave(plot = plotobj16,filename = paste0(plot.dir,"mainT2T_546_Seed.pdf"),units = "cm",width = 20,height = 20,dpi = 300)
+  ggsave(plot = plotobj16,filename = paste0(plot.dir,"mainT2T_546_Seed.eps"),units = "cm",width = 20,height = 20,dpi = 300)
 
 # Plot 2 individual patients and their concentration-time profiles from all studies
 	# 1 = 40 kg, 2.5 g/dL
@@ -559,6 +564,7 @@
 
   ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.png"),units = "cm",width = 24,height = 10)
   ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.pdf"),units = "cm",width = 24,height = 10,dpi = 300)
+  ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.eps"),units = "cm",width = 24,height = 10,dpi = 300)
 
 	plotobj15 <- NULL
 	plotobj15 <- ggplot(random.data)
@@ -576,6 +582,7 @@
 
   ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.png"),units = "cm",width = 24,height = 12)
   ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.pdf"),units = "cm",width = 24,height = 12,dpi = 300)
+  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.eps"),units = "cm",width = 24,height = 12,dpi = 300)
 
 # Save the workspace so I don't have to re-read all of the data frames
 	save.image(file = paste0(plot.dir,"time_dependent.RData"))

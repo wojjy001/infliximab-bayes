@@ -147,6 +147,7 @@
 
   ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.png"),units = "cm",width = 30,height = 10)
   ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)
+  ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.eps"),units = "cm",width = 30,height = 10,dpi = 300)	
 
 # Plot - Each ID separately by PROTOCOL
   ID.list <- 1:n
@@ -287,6 +288,7 @@
 
   ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.png"),units = "cm",width = 30,height = 10)
   ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)
+  ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.eps"),units = "cm",width = 30,height = 10,dpi = 300)
 
 # Plot - Each ID separately by PROTOCOL
   ptut.plot.function <- function(ID.list) {
