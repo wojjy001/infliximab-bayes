@@ -46,8 +46,8 @@
 
 # ------------------------------------------------------------------------------
 # Set working directory
-  # project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
-  project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
+  project.dir <- "/Volumes/Prosecutor/PhD/InfliximabBayes/Moved-Infliximab-Output/" # Mac directory
+  # project.dir <- "E:/Wojciechowski/Moved-Infliximab-Output/"  # Server directory
 	plot.dir <- paste0(project.dir,"Plots2/")
 
 # Read in simulation output
@@ -60,40 +60,28 @@
 # Read in the simulation data
   read.data.function <- function(input.list) {
     # Label data
-      label.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
-      label.data0$PROTOCOL <- 1
-			# label.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_label_simulation.csv"))
-      # label.data1$PROTOCOL <- 5
+			label.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_label_simulation.csv"))
+      label.data$PROTOCOL <- 1
     # Clinical data
-      clinical.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
-      clinical.data0$PROTOCOL <- 2
-			# clinical.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_simulation.csv"))
-      # clinical.data1$PROTOCOL <- 6
+			clinical.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_simulation.csv"))
+      clinical.data$PROTOCOL <- 2
     # Clinical TDM data
-      clinical.TDM.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
-      clinical.TDM.data0$PROTOCOL <- 3
-			# clinical.TDM.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_clinical_TDM_simulation.csv"))
-      # clinical.TDM.data1$PROTOCOL <- 7
+			clinical.TDM.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_clinical_TDM_simulation.csv"))
+      clinical.TDM.data$PROTOCOL <- 3
     # Optimise.bayes1 data (5 mg/kg initiation)
-      optimise.bayes.data0 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
-      optimise.bayes.data0$PROTOCOL <- 4
-			# optimise.bayes.data1 <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_1_optimise_bayes_data1.csv"))
-      # optimise.bayes.data1$PROTOCOL <- 8
+			optimise.bayes.data <- read.csv(file = paste0(project.dir,input.list$file.list,"/time_dep_0_optimise_bayes_data1.csv"))
+      optimise.bayes.data$PROTOCOL <- 4
     # Bind data from the set
-      # set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
-			set.data <- rbind(label.data0,clinical.data0,clinical.TDM.data0,optimise.bayes.data0)
+			set.data <- rbind(label.data,clinical.data,clinical.TDM.data,optimise.bayes.data)
   }
   all.data <- ddply(input.list, .(set.seq), read.data.function)
   all.data <- all.data[all.data$time <= 546,] # Remove NA rows
-  # all.data$IPRE <- as.numeric(levels(all.data$IPRE))[all.data$IPRE]
 
   all.data$IDf <- as.factor(all.data$ID)
   levels(all.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
 # Assign descriptions to PROTOCOL
   all.data$PROTOCOLf <- as.factor(all.data$PROTOCOL)
-  levels(all.data$PROTOCOLf) <- c(
-		# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-	"Label","Stepwise-Adjusted","Proportionally-Adjusted","Model-Guided")
+  levels(all.data$PROTOCOLf) <- c("Label","TDM with Stepwise Dosing","TDM with Proportional Dosing","TDM with Model-Based Dosing")
 
 # Give each individual a unique ID number (uID)
   uID <- sort(c(rep(seq(from = 1,to = n*nsim*4,by = 1),times = length(unique(all.data$time)))))
@@ -121,11 +109,9 @@
 # Line (median) and ribbon (prediction intervals)
   # Bin time
     ind.summary.data$TIMEBIN <- ind.summary.data$time
-		# ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,6)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,6)]-98)/56)*56+98
 		ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,3,4,6,7,8)] <- ceiling((ind.summary.data$TIMEBIN[ind.summary.data$TIMEBIN > 98 & ind.summary.data$PROTOCOL %in% c(2,3,4,6,7,8)]-98)/56)*56+98
 
 		standard.times <- c(0,14,42,98,154,210,266,322,378,434,490,546)
-		# subset.ind.summary.data <- ind.summary.data[ind.summary.data$time %in% standard.times,]
 
   # Assign descriptions to ID
     ind.summary.data$IPRE <- as.numeric(ind.summary.data$IPRE)
@@ -135,9 +121,7 @@
     levels(ind.summary.data$IDf) <- c("WT 40, ALB 2.5","WT 40, ALB 3","WT 40, ALB 3.5","WT 70, ALB 2.5","WT 70, ALB 3","WT 70, ALB 3.5","WT 100, ALB 2.5","WT 100, ALB 3","WT 100, ALB 3.5")
   # Assign descriptions to PROTOCOL
     ind.summary.data$PROTOCOLf <- as.factor(ind.summary.data$PROTOCOL)
-    levels(ind.summary.data$PROTOCOLf) <- c(
-			# "Non-TD Label","Non-TD Clinical","Non-TD Clinical TDM","Non-TD Bayes",
-		"Label","Stepwise-Adjusted","Proportionally-Adjusted","Model-Guided")
+    levels(ind.summary.data$PROTOCOLf) <- c("Label","TDM with Stepwise Dosing","TDM with Proportional Dosing","TDM with Model-Based Dosing")
 
 ## Plot concentration-time for all studies
 # Calculate
@@ -162,6 +146,7 @@
   plotobj1
 
   ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.png"),units = "cm",width = 30,height = 10)
+  ggsave(plot = plotobj1,filename = paste0(plot.dir,"trough_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)
 
 # Plot - Each ID separately by PROTOCOL
   ID.list <- 1:n
@@ -301,6 +286,7 @@
   plotobj7
 
   ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.png"),units = "cm",width = 30,height = 10)
+  ggsave(plot = plotobj7,filename = paste0(plot.dir,"ptut_time.pdf"),units = "cm",width = 30,height = 10,dpi = 300)
 
 # Plot - Each ID separately by PROTOCOL
   ptut.plot.function <- function(ID.list) {
@@ -528,7 +514,7 @@
 	plotobj16 <- plotobj16 + geom_errorbar(aes(x = PROTOCOLf,ymin = stat.50lo,ymax = stat.50hi,colour = PROTOCOLf),position = position_dodge(width = 0.2),size = 1)
   plotobj16 <- plotobj16 + geom_point(aes(x = PROTOCOLf,y = median,colour = PROTOCOLf),position = position_dodge(width = 0.2),size = 4)
   plotobj16 <- plotobj16 + geom_point(aes(x = PROTOCOLf,y = median,group = PROTOCOLf),position = position_dodge(width = 0.2),size = 4,shape = 1)
-	plotobj16 <- plotobj16 + geom_text(aes(x = PROTOCOLf,y = stat.50hi+15,label = pro))
+	plotobj16 <- plotobj16 + geom_text(aes(x = PROTOCOLf,y = stat.50hi+30,label = pro))
   plotobj16 <- plotobj16 + scale_x_discrete("\nProtocol")
   plotobj16 <- plotobj16 + scale_y_continuous("Time to First Trough Target Achievement (days)\n",breaks = seq(from = 98,to = 546,by = 56))
   plotobj16 <- plotobj16 + theme(axis.text.x = element_text(angle = 45,hjust = 1),legend.position = "none")
@@ -537,6 +523,7 @@
   plotobj16
 
   ggsave(plot = plotobj16,filename = paste0(plot.dir,"mainT2T_546_Seed.png"),units = "cm",width = 20,height = 20)
+  ggsave(plot = plotobj16,filename = paste0(plot.dir,"mainT2T_546_Seed.pdf"),units = "cm",width = 20,height = 20,dpi = 300)
 
 # Plot 2 individual patients and their concentration-time profiles from all studies
 	# 1 = 40 kg, 2.5 g/dL
@@ -570,7 +557,8 @@
 	plotobj14 <- plotobj14 + facet_wrap(~IDf)
 	plotobj14
 
-  ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.png"),units = "cm",width = 20,height = 10)
+  ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.png"),units = "cm",width = 24,height = 10)
+  ggsave(plot = plotobj14,filename = paste0(plot.dir,"individual_concs_first_int.pdf"),units = "cm",width = 24,height = 10,dpi = 300)
 
 	plotobj15 <- NULL
 	plotobj15 <- ggplot(random.data)
@@ -586,7 +574,8 @@
 	plotobj15 <- plotobj15 + facet_wrap(~IDf)
 	plotobj15
 
-  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.png"),units = "cm",width = 20,height = 12)
+  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.png"),units = "cm",width = 24,height = 12)
+  ggsave(plot = plotobj15,filename = paste0(plot.dir,"individual_concs_last_int.pdf"),units = "cm",width = 24,height = 12,dpi = 300)
 
 # Save the workspace so I don't have to re-read all of the data frames
 	save.image(file = paste0(plot.dir,"non_time_dependent.RData"))

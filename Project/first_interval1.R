@@ -9,7 +9,7 @@
 				input.first.int.data <- data.frame(
 					ID = pop.data$ID[1],	# Individual ID
 					time = TIME,	# Time points for simulation
-					BASE_WT = pop.data$BASE_WT[1]	# Baseline weight
+					BASE_WT = pop.data$BASE_WT[1],	# Baseline weight
 					BASE_ALB = pop.data$BASE_ALB[1],	# Baseline albumin
 					TIME_WT = pop.data$BASE_WT[1],	# Default weight at TIME
 					TIME_ADA = 0,	# Default ADA status at TIME

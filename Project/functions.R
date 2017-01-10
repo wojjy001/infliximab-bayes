@@ -6,6 +6,7 @@
 	n <- 9	# Number of seed individuals (where each seed individual has a different set of covariate values)
 	nsim <- 10	# Number of simulations of the seed individuals to perform
 	# Set seed for reproducible results
+		seed <- round(runif(1,min = 1,max = 999999),digits = 0)
 		set.seed(seed)
 	sim.name <- paste("SUCCESS_SIM",nsim,"_IND",n,"_seed",seed,sep = "")	# Simulation folder's name
 	sim.output.dir <- paste0("E:/Wojciechowski/Moved-Infliximab-Output/",sim.name,"/")
