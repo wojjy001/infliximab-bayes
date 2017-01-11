@@ -60,6 +60,8 @@
 		plotobj <- plotobj + scale_y_log10("Infliximab Concentration (mg/L)\n",breaks = c(0.1,1,10,100),labels = c(0.1,1,10,100))
 		plotobj <- plotobj + scale_x_continuous("\nTime (days)",breaks = c(0,14,42,seq(from = 98,to = 546,by = 56)),labels = c(0,14,42,seq(from = 98,to = 546,by = 56)))
 		plotobj
+		
+		ggsave(plot = plotobj,filename = paste0(work.dir,"concentrations_error.png"),units = "cm",width = 20,height = 20,dpi = 300)		
 
 # ------------------------------------------------------------------------------
 # Prepare NONMEM simulation output ready for Bayesian estimation of individual PK parameters
