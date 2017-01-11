@@ -82,7 +82,7 @@
 				bayes.result <- optim(par,bayes.estimate,hessian = FALSE,
 					method = "L-BFGS-B",
 					lower = c(0.001,0.001,0.001,0.001),upper = c(Inf,Inf,Inf,Inf),
-					control = list(parscale = par,fnscale = bayes.estimate(par),factr = 1e12,pgtol = 1e-8)#,
+					control = list(parscale = par,fnscale = bayes.estimate(par))#,
 					# gr = gradient.function
 				)
 				run.once <- TRUE
@@ -154,8 +154,9 @@
 	plotobj <- plotobj + geom_point(aes(x = .id,y = median,colour = .id),size = 4)
 	plotobj <- plotobj + geom_errorbar(aes(x = .id,ymin = CI50lo,ymax = CI50hi,colour = .id),size = 1)
 	plotobj <- plotobj + geom_hline(aes(yintercept = 0),linetype = "dashed")
-	plotobj <- plotobj + scale_y_continuous("Absolute Error of R with Respect to NONMEM\n",lim = c(-0.25,0.25))
+	plotobj <- plotobj + scale_y_continuous("Absolute Error of R with Respect to NONMEM\n",lim = c(-0.05,0.05))
 	plotobj <- plotobj + scale_x_discrete("\nParameter")
 	plotobj <- plotobj + theme(legend.position = "none")
 	plotobj
 
+  ggsave(plot = plotobj,filename = paste0(work.dir,"bayes_estimates_error.png"),units = "cm",width = 20,height = 20,dpi = 300)
