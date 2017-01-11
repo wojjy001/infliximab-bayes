@@ -20,7 +20,7 @@
 					ETA3 = pop.data$ETA3,	# Random effect for Q
 					ETA4 = pop.data$ETA4,	# Random effect for V2
 					ERRPRO = pop.data$ERRPRO,	# Residual error
-					amt = amt.init1*BASE_WT,	# mg/kg dose
+					amt = amt.init1*pop.data$BASE_WT[1],	# mg/kg dose
 					evid = 1,	# Dosing event
 					cmt = 1,	# Dose into the central compartment (compartment = 1)
 					rate = -2	# Infusion duration is specified in the model file
