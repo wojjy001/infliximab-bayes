@@ -586,3 +586,18 @@
 
 # Save the workspace so I don't have to re-read all of the data frames
 	save.image(file = paste0(plot.dir,"time_dependent.RData"))
+
+
+
+
+	plotobj.wt <- NULL
+	plotobj.wt <- ggplot(random.data[random.data$ID == 1,])
+	plotobj.wt <- plotobj.wt + geom_line(aes(x = time,y = WTCOV,colour = Protocol))
+	plotobj.wt <- plotobj.wt + geom_hline(aes(yintercept = BASE_WT),linetype = "dashed")
+	plotobj.wt <- plotobj.wt + scale_x_continuous("\n Time (days)",breaks = c(0,14,42,98,156,210,266,322,378,434,490,546))
+	plotobj.wt <- plotobj.wt + scale_y_continuous("Weight (kg)\n")
+	plotobj.wt <- plotobj.wt + theme(legend.position = "bottom")
+	plotobj.wt <- plotobj.wt + theme(legend.title = element_text(face = "bold"))
+	plotobj.wt
+
+	ggsave(plot = plotobj.wt,filename = paste0(plot.dir,"weight_change.pdf"),dpi = 300)
